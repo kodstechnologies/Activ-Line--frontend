@@ -1166,7 +1166,7 @@ const AssignedTickets = () => {
                         ${activeRoomId === room._id ? "bg-blue-600" : isDark ? "bg-gray-700" : "bg-gray-300"}
                       `}
                     >
-                      {(+room.customer?.userName?.[0] || "?").toUpperCase()}
+                      {(room.customer?.userName?.[0] || "?").toUpperCase()}
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -1174,13 +1174,13 @@ const AssignedTickets = () => {
                         <h4
                           className={`font-semibold truncate ${isDark ? "text-white" : "text-gray-900"}`}
                         >
-                          {+room.customer?.userName || "Unknown Customer"}
+                          {room.customer?.userName || "Unknown Customer"}
                         </h4>
-                        {+room.lastMessageAt && (
+                        {room.lastMessageAt && (
                           <span
                             className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"}`}
                           >
-                            {new Date(+room.lastMessageAt).toLocaleTimeString(
+                            {new Date(room.lastMessageAt).toLocaleTimeString(
                               [],
                               {
                                 hour: "2-digit",
@@ -1341,4 +1341,4 @@ const AssignedTickets = () => {
   );
 };
 
-export default AssignedTicketsChat;
+export default AssignedTickets;

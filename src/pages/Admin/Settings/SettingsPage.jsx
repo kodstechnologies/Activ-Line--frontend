@@ -7,7 +7,7 @@ import ApiKeys from "./ApiKeys";
 import { useTheme } from "../../../context/ThemeContext";
 
 import Lottie from "lottie-react";
-import settingsAnimation from "../../../animations/Customer Care.json";
+import settingsAnimation from "../../../animations/Desktop and smartphone app development (1).json";
 
 const SettingsPage = () => {
   const location = useLocation();
@@ -35,7 +35,7 @@ const SettingsPage = () => {
         </div>
 
         {/* SMALL ANIMATION */}
-        <div className="w-60 h-25">
+        <div className="w-50 h-1 mt-0.5 flex justify-center items-center">
           <Lottie animationData={settingsAnimation} loop autoplay />
         </div>
       </div>
