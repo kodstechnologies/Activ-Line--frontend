@@ -68,6 +68,8 @@ const MainLayout = () => {
         }
       } else if (location.pathname === "/customers" && (role === 'franchise' || role === 'franchise_admin')) {
         navigate('/my-customers', { replace: true });
+      } else if (location.pathname === "/tickets" && (role === 'franchise' || role === 'franchise_admin')) {
+        navigate('/Zone-tickets', { replace: true });
       }
     }
   }, [user, location.pathname, navigate]);

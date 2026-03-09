@@ -51,6 +51,7 @@ const FranchiseCustomers = lazy(() => import('../pages/Franchise/Customers'));
 const LocalStaff = lazy(() => import("../pages/Franchise/LocalStaff"));
 const Collections = lazy(() => import("../pages/Franchise/Collections"));
 // const ZoneSupport = lazy(() => import('../pages/Franchise/ZoneSupport'));
+const ZoneTickets = lazy(() => import("../pages/Franchise/ZoneTickets"));
 const Profile = lazy(() => import("../pages/Franchise/Profile"));
 
 //staff
@@ -343,9 +344,7 @@ const Router = () => {
             path="Zone-tickets"
             element={
               <ProtectedRoute allowedRoles={["franchise", "franchise_admin"]}>
-                
-                  <Tickets />
-                
+                  <ZoneTickets />
               </ProtectedRoute>
             }
           />
