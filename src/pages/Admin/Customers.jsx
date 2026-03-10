@@ -1174,23 +1174,25 @@ const [selectedStatus, setSelectedStatus] = useState('All');
 const fetchCustomers = useCallback(async (page, limit) => {
   try {
     setLoading(true);
+    const params = {
+      page,
+      limit,
+      search: searchTerm?.trim() || undefined,
+      status: selectedStatus !== "All" ? selectedStatus : undefined,
+      plan: selectedPlan !== "All" ? selectedPlan : undefined,
+    };
 
-      const res = await api.get('/api/customer/customers', {
-        params: {
-          page,
-          limit,
-          search: searchTerm,
-          status: selectedStatus,
-          plan: selectedPlan,
-        }
-    });
+    const res = await api.get('/api/customer/customers', { params });
+    const payload = res.data || {};
+    const customers = payload.data || [];
+    const pagination = payload.pagination || payload.meta?.pagination || payload.meta || {};
 
-    const { data, pagination } = res.data;
-
-    setTotalItems(pagination.total || 0);
-    setTotalPages(pagination.totalPages || 1);
-
-    const customers = data || [];
+    setTotalItems(
+      Number(pagination.total ?? pagination.totalItems ?? customers.length ?? 0)
+    );
+    setTotalPages(
+      Math.max(1, Number(pagination.totalPages ?? pagination.pages ?? 1))
+    );
 
     const formatted = customers.map(c => ({
       ...c,
@@ -1201,7 +1203,7 @@ const fetchCustomers = useCallback(async (page, limit) => {
       location: c.address?.city || "N/A",
       plan: c.userType || "Plan N/A",
       tech: "Fiber",
-      status: c.status || "Active",
+      status: c.status || "ACTIVE",
     }));
 
     setSubscribers(formatted);
@@ -1446,14 +1448,14 @@ const handlePageChange = (page) => {
                           <div className={`text-sm mt-0.5 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>{sub.tech}</div>
                         </td>
                         <td className="py-5 px-6">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${sub.status === 'Active'
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${String(sub.status).toUpperCase() === 'ACTIVE'
                             ? (isDark ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-green-50 text-green-700 border border-green-200')
-                            : sub.status === 'Suspended'
+                            : String(sub.status).toUpperCase() === 'SUSPENDED'
                               ? (isDark ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-red-50 text-red-700 border border-red-200')
                               : (isDark ? 'bg-slate-800 text-slate-300 border border-slate-700' : 'bg-gray-100 text-gray-600 border border-gray-300')
                             }`}>
-                            {sub.status === 'Active' && <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 animate-pulse"></span>}
-                            {sub.status}
+                            {String(sub.status).toUpperCase() === 'ACTIVE' && <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 animate-pulse"></span>}
+                            {String(sub.status)}
                           </span>
                         </td>
                         <td className="py-5 px-6">
