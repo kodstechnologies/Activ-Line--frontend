@@ -10,7 +10,8 @@ import {
   ChartNoAxesColumnIncreasing,
   UserCog,
   FileClock,
-  LayoutGrid
+  LayoutGrid,
+  User
 } from "lucide-react";
 
 export const adminSidebarItems = [
@@ -126,9 +127,9 @@ export const franchiseSidebarItems = [
     paths: ["/zone-tickets"],
   },
   {
-    icon: Settings,
-    label: "Settings",
-    key: "Settings",
+    icon: User,
+    label: "Profile",
+    key: "Profile",
     paths: ["/profile"],
   },
 ];

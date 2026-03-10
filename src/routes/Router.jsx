@@ -53,7 +53,7 @@ const Collections = lazy(() => import("../pages/Franchise/Collections"));
 const FranchisePlans = lazy(() => import("../pages/Franchise/Frenchiseplans"));
 // const ZoneSupport = lazy(() => import('../pages/Franchise/ZoneSupport'));
 const ZoneTickets = lazy(() => import("../pages/Franchise/ZoneTickets"));
-const Profile = lazy(() => import("../pages/Franchise/Profile"));
+const FranchiseProfile = lazy(() => import("../pages/Franchise/Frenchiseprofile"));
 
 //staff
 const AssignedTickets = lazy(() => import("../pages/Staff/AssignedTickets"));
@@ -78,8 +78,9 @@ const PublicRoute = ({ children }) => {
 
 const ProfileSwitcher = ({ franchiseUser, onUpdate }) => {
   const { user } = useAuth();
-  if (user?.role === 'franchise') {
-    return <Profile franchiseUser={franchiseUser} onUpdate={onUpdate} />;
+  const role = user?.role?.toLowerCase();
+  if (["franchise", "franchise_admin"].includes(role)) {
+    return <FranchiseProfile franchiseUser={franchiseUser} onUpdate={onUpdate} />;
   }
   return <ProfilePage />;
 };
