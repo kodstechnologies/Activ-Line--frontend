@@ -7,3 +7,7 @@ export const getPlans = (accountId, params) => {
 export const getPlanById = (accountId, profileId) => {
   return api.get(`/api/franchise/${accountId}/profiles/${profileId}`);
 };
+
+export const getProfileDetails = (accountId, profileId) => {
+  return api.get(`/api/franchise/${accountId}/profile-details/${profileId}`);
+};
