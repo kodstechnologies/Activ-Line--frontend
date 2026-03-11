@@ -375,16 +375,16 @@ const handlePageChange = (page) => {
 
 </div>
 
+<div className="flex items-center gap-3 w-full lg:w-auto">
 
- <div className="relative w-full md:w-auto flex flex-col sm:flex-row sm:items-center gap-3">
-
-  {/* 🔍 Search Box */}
-  <div className="relative w-full sm:w-80 md:w-64">
+  {/* Search */}
+  <div className="relative w-full lg:w-72">
     <Search
       className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${
-        isDark ? 'text-slate-400' : 'text-gray-400'
+        isDark ? "text-slate-400" : "text-gray-400"
       }`}
     />
+
     <input
       type="text"
       placeholder="Search Customers..."
@@ -393,86 +393,29 @@ const handlePageChange = (page) => {
         setSearchTerm(e.target.value);
         setCurrentPage(1);
       }}
-      className={`w-full pl-9 pr-3 py-2 border rounded-lg text-sm outline-none 
-        focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all
-        ${
-          isDark
-            ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500'
-            : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-        }`}
+      className={`w-full pl-9 pr-3 py-2 border rounded-lg text-sm outline-none
+      focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
+      ${
+        isDark
+          ? "bg-slate-800 border-slate-700 text-white placeholder-slate-500"
+          : "bg-white border-gray-300 text-gray-900 placeholder-gray-400"
+      }`}
     />
   </div>
 
-  {/* 🧰 Filter Button */}
+  {/* Filter */}
   <button
-    onClick={() => setShowFilter(prev => !prev)}
-    className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-base transition-all
-      ${isDark 
-        ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700' 
-        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-      }`}
+    onClick={() => setShowFilter((prev) => !prev)}
+    className={`flex items-center gap-2 px-4 py-2 border rounded-lg whitespace-nowrap
+    ${
+      isDark
+        ? "bg-slate-800 border-slate-700 text-white hover:bg-slate-700"
+        : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+    }`}
   >
     <Filter className="w-4 h-4" />
     Filter
   </button>
-
-  {/* ✅ Filter Popup (UNCHANGED) */}
-  {showFilter && (
-    <div className={`absolute right-0 top-12 w-72 p-4 rounded-xl shadow-2xl border z-50 animate-in fade-in zoom-in duration-150
-      ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}>
-
-      <h4 className={`text-base font-bold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-        Filters
-      </h4>
-
-      <label className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
-        Plan
-      </label>
-      <select
-        value={selectedPlan}
-        onChange={(e) => {
-          setSelectedPlan(e.target.value);
-          setCurrentPage(1);
-        }}
-        className={`w-full mt-1 mb-3 p-2 border rounded-lg text-base
-          ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300'}`}
-      >
-        <option value="All">All Plans</option>
-        <option value="business">Business</option>
-        <option value="home">Home</option>
-      </select>
-
-      <label className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
-        Status
-      </label>
-      <select
-        value={selectedStatus}
-        onChange={(e) => {
-          setSelectedStatus(e.target.value);
-          setCurrentPage(1);
-        }}
-        className={`w-full mt-1 mb-3 p-2 border rounded-lg text-base
-          ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300'}`}
-      >
-        <option value="All">All Status</option>
-        <option value="ACTIVE">Active</option>
-        <option value="SUSPENDED">Suspended</option>
-        <option value="INACTIVE">Inactive</option>
-      </select>
-
-      <button
-        onClick={() => {
-          setSelectedPlan('All');
-          setSelectedStatus('All');
-          setSearchTerm('');
-          setCurrentPage(1);
-        }}
-        className="w-full mt-2 py-2 text-base font-semibold bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
-      >
-        Clear Filters
-      </button>
-    </div>
-  )}
 </div>
 
 
