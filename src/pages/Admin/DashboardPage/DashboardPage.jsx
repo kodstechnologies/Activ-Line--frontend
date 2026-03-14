@@ -1,355 +1,3 @@
-// import React, { useEffect } from "react";
-// import {
-//   MessageSquare,
-//   Clock,
-//   DollarSign,
-//   Users,
-//   ChevronRight,
-//   ArrowUpRight,
-//   TrendingUp,
-//   MoreVertical,
-//   Search,
-//   Filter,
-//   Download,
-//   Sun,
-//   Moon,
-// } from "lucide-react";
-// import { useTheme } from "../../../context/ThemeContext";
-// import { topCardsData, lightModeCardData, recentTickets, recentPayments, lightModeAvatarColors } from "../../../data/dashboardData";
-
-// const DashboardPage = () => {
-//   const { theme, toggleTheme, isDark } = useTheme();
-
-//   // Add initial load animation
-//   useEffect(() => {
-//     document.body.style.opacity = '0';
-//     document.body.style.transition = 'opacity 0.5s ease-in-out';
-//     requestAnimationFrame(() => {
-//       document.body.style.opacity = '1';
-//     });
-//   }, []);
-
-//   // Get icon component by name
-//   const getIconComponent = (iconName) => {
-//     const icons = {
-//       MessageSquare,
-//       Clock,
-//       DollarSign,
-//       Users
-//     };
-//     return icons[iconName] || MessageSquare;
-//   };
-
-//   return (
-//     <div className={`min-h-screen p-6 ${isDark ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}>
-//       {/* HEADER */}
-//       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 animate-fade-in">
-//         <div>
-//           <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Dashboard</h1>
-//           <p className={`mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Welcome back! Here's what's happening today.</p>
-//         </div>
-//       </div>
-
-//       {/* TOP CARDS */}
-//       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-//         {topCardsData.map((card, index) => {
-//           const IconComponent = getIconComponent(card.iconName);
-//           const lightModeData = lightModeCardData[index] || {};
-          
-//           return (
-//             <DashboardCard
-//               key={card.id}
-//               title={card.title}
-//               value={card.value}
-//               change={card.change}
-//               icon={<IconComponent className="h-6 w-6" />}
-//               iconBg={isDark ? card.iconBg : lightModeData.iconBg}
-//               iconColor={isDark ? card.iconColor : lightModeData.iconColor}
-//               trend={card.trend}
-//               isDark={isDark}
-//               index={index}
-//             />
-//           );
-//         })}
-//       </div>
-
-//       {/* MAIN CONTENT */}
-//       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-//         {/* RECENT TICKETS */}
-//         <div className={`rounded-2xl overflow-hidden animate-slide-up ${isDark ? 'bg-gray-800 shadow-xl shadow-black/20' : 'bg-white shadow-lg'}`} style={{ animationDelay: '0.3s' }}>
-//           <div className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-//             <div className="flex items-center justify-between">
-//               <div>
-//                 <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Recent Tickets</h2>
-//                 <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Latest customer support requests</p>
-//               </div>
-//             </div>
-//           </div>
-          
-//           <div className="overflow-x-auto">
-//             <table className="w-full">
-//               <thead className={isDark ? 'bg-gray-900/50' : 'bg-gray-50'}>
-//                 <tr>
-//                   <th className={`text-left py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Subject</th>
-//                   <th className={`text-left py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Customer</th>
-//                 </tr>
-//               </thead>
-//               <tbody className={isDark ? 'divide-y divide-gray-700' : 'divide-y divide-gray-200'}>
-//                 {recentTickets.map((ticket, index) => (
-//                   <TicketRow
-//                     key={ticket.id}
-//                     subject={`${ticket.ticketNumber} - ${ticket.subject}`}
-//                     customer={ticket.customer}
-//                     isDark={isDark}
-//                     index={index}
-//                   />
-//                 ))}
-//               </tbody>
-//             </table>
-//           </div>
-//         </div> 
-
-//         {/* RECENT PAYMENTS */}
-//         <div className={`rounded-2xl overflow-hidden animate-slide-up ${isDark ? 'bg-gray-800 shadow-xl shadow-black/20' : 'bg-white shadow-lg'}`} style={{ animationDelay: '0.4s' }}>
-//           <div className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-//             <div className="flex items-center justify-between">
-//               <div>
-//                 <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Recent Payments</h2>
-//                 <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Latest payment transactions</p>
-//               </div>
-//             </div>
-//           </div>
-          
-//           <div className="overflow-x-auto">
-//             <table className="w-full">
-//               <thead className={isDark ? 'bg-gray-900/50' : 'bg-gray-50'}>
-//                 <tr>
-//                   <th className={`text-left py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Customer</th>
-//                   <th className={`text-left py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Amount</th>
-//                   <th className={`text-left py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Status</th>
-//                 </tr>
-//               </thead>
-//               <tbody className={isDark ? 'divide-y divide-gray-700' : 'divide-y divide-gray-200'}>
-//                 {recentPayments.map((payment, index) => (
-//                   <PaymentRow 
-//                     key={payment.id}
-//                     name={payment.name}
-//                     amount={payment.amount}
-//                     status={payment.status}
-//                     avatarColor={isDark ? payment.avatarColor : lightModeAvatarColors[index] || lightModeAvatarColors[0]}
-//                     isDark={isDark}
-//                     index={index}
-//                   />
-//                 ))}
-//               </tbody>
-//             </table>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* Add animation styles */}
-//       <style jsx>{`
-//         @keyframes fadeIn {
-//           from {
-//             opacity: 0;
-//             transform: translateY(10px);
-//           }
-//           to {
-//             opacity: 1;
-//             transform: translateY(0);
-//           }
-//         }
-        
-//         @keyframes slideUp {
-//           from {
-//             opacity: 0;
-//             transform: translateY(20px);
-//           }
-//           to {
-//             opacity: 1;
-//             transform: translateY(0);
-//           }
-//         }
-        
-//         @keyframes cardEntrance {
-//           from {
-//             opacity: 0;
-//             transform: translateY(20px) scale(0.95);
-//           }
-//           to {
-//             opacity: 1;
-//             transform: translateY(0) scale(1);
-//           }
-//         }
-        
-//         @keyframes rowEntrance {
-//           from {
-//             opacity: 0;
-//             transform: translateX(-10px);
-//           }
-//           to {
-//             opacity: 1;
-//             transform: translateX(0);
-//           }
-//         }
-        
-//         @keyframes pulseGlow {
-//           0%, 100% {
-//             box-shadow: 0 0 0 rgba(59, 130, 246, 0);
-//           }
-//           50% {
-//             box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
-//           }
-//         }
-        
-//         @keyframes float {
-//           0%, 100% {
-//             transform: translateY(0);
-//           }
-//           50% {
-//             transform: translateY(-5px);
-//           }
-//         }
-        
-//         .animate-fade-in {
-//           animation: fadeIn 0.6s ease-out forwards;
-//         }
-        
-//         .animate-slide-up {
-//           animation: slideUp 0.5s ease-out forwards;
-//           opacity: 0;
-//         }
-        
-//         .animate-card-entrance {
-//           animation: cardEntrance 0.4s ease-out forwards;
-//           opacity: 0;
-//         }
-        
-//         .animate-row-entrance {
-//           animation: rowEntrance 0.3s ease-out forwards;
-//           opacity: 0;
-//         }
-        
-//         .animate-pulse-glow {
-//           animation: pulseGlow 2s infinite;
-//         }
-        
-//         .animate-float {
-//           animation: float 3s ease-in-out infinite;
-//         }
-        
-//         .hover-lift {
-//           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-//         }
-        
-//         .hover-lift:hover {
-//           transform: translateY(-4px);
-//         }
-        
-//         .hover-glow {
-//           transition: all 0.3s ease;
-//         }
-        
-//         .hover-glow:hover {
-//           box-shadow: ${isDark ? '0 20px 40px rgba(0, 0, 0, 0.3)' : '0 20px 40px rgba(0, 0, 0, 0.1)'};
-//         }
-//       `}</style>
-//     </div>
-//   );
-// };
-
-// /* CARD COMPONENT */
-// const DashboardCard = ({ title, value, change, icon, iconBg, iconColor, trend, isDark, index }) => (
-//   <div 
-//     className={`rounded-2xl p-6 transition-all duration-300 hover-lift hover-glow animate-card-entrance ${
-//       isDark ? 'bg-gray-800 shadow-xl shadow-black/20 hover:shadow-2xl hover:shadow-black/30' : 'bg-white shadow-lg hover:shadow-xl'
-//     }`}
-//     style={{ 
-//       animationDelay: `${index * 0.1}s`,
-//       animationFillMode: 'forwards'
-//     }}
-//   >
-//     <div className="flex justify-between items-start">
-//       <div>
-//         <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{title}</p>
-//         <h2 className={`text-2xl font-bold mt-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{value}</h2>
-//         <div className={`flex items-center mt-2 ${trend === 'up' ? (isDark ? 'text-green-400' : 'text-green-600') : (isDark ? 'text-red-400' : 'text-red-600')}`}>
-//           <TrendingUp className={`h-4 w-4 mr-1 transition-transform duration-300 ${trend === 'down' ? 'rotate-180' : ''}`} />
-//           <span className="text-sm font-medium">{change}</span>
-//           <span className={`text-sm ml-1 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>from last month</span>
-//         </div>
-//       </div>
-//       <div className={`${iconBg} p-3 rounded-xl animate-float ${isDark ? 'backdrop-blur-sm' : ''}`}>
-//         <div className={`${iconColor} transition-transform duration-300 group-hover:scale-110`}>{icon}</div>
-//       </div>
-//     </div>
-//   </div>
-// );
-
-// /* TICKET ROW */
-// const TicketRow = ({ subject, customer, isDark, index }) => {
-//   return (
-//     <tr 
-//       className={`transition-all duration-300 animate-row-entrance ${isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'}`}
-//       style={{ 
-//         animationDelay: `${0.1 + (index * 0.05)}s`,
-//         animationFillMode: 'forwards'
-//       }}
-//     >
-//       <td className="py-4 px-6">
-//         <div className="flex items-center">
-//           <div className={`h-10 w-10 rounded-lg flex-shrink-0 flex items-center justify-center mr-3 transition-transform duration-300 hover:scale-110 ${
-//             isDark ? 'bg-gray-900' : 'bg-gray-100'
-//           }`}>
-//             <MessageSquare className={`h-5 w-5 transition-colors duration-300 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-//           </div>
-//           <span className={`font-medium truncate transition-colors duration-300 ${isDark ? 'text-white' : 'text-gray-900'}`}>{subject}</span>
-//         </div>
-//       </td>
-//       <td className="py-4 px-6">
-//         <span className={`truncate transition-colors duration-300 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>{customer}</span>
-//       </td>
-//     </tr>
-//   );
-// };
-
-// /* PAYMENT ROW */
-// const PaymentRow = ({ name, amount, status, date, avatarColor, isDark, index }) => {
-//   const statusStyles = {
-//     Paid: isDark ? "bg-green-900/30 text-green-400 border border-green-800/50" : "bg-green-100 text-green-700 border border-green-200",
-//     Pending: isDark ? "bg-yellow-900/30 text-yellow-400 border border-yellow-800/50" : "bg-yellow-100 text-yellow-700 border border-yellow-200",
-//     Failed: isDark ? "bg-red-900/30 text-red-400 border border-red-800/50" : "bg-red-100 text-red-700 border border-red-200",
-//   };
-
-//   return (
-//     <tr 
-//       className={`transition-all duration-300 animate-row-entrance ${isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'}`}
-//       style={{ 
-//         animationDelay: `${0.1 + (index * 0.05)}s`,
-//         animationFillMode: 'forwards'
-//       }}
-//     >
-//       <td className="py-4 px-6">
-//         <div className="flex items-center">
-//           <div className={`h-10 w-10 rounded-full ${avatarColor} flex items-center justify-center text-white font-semibold mr-3 transition-all duration-300 hover:scale-110`}>
-//             {name.charAt(0)}
-//           </div>
-//           <span className={`font-medium transition-colors duration-300 ${isDark ? 'text-white' : 'text-gray-900'}`}>{name}</span>
-//         </div>
-//       </td>
-//       <td className="py-4 px-6">
-//         <span className={`font-bold transition-all duration-300 ${isDark ? 'text-white' : 'text-gray-900'}`}>{amount}</span>
-//       </td>
-//       <td className="py-4 px-6">
-//         <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 hover:scale-105 ${statusStyles[status]}`}>
-//           {status}
-//         </span>
-//       </td>
-//     </tr>
-//   );
-// };
-
-// export default DashboardPage; 
 import React, { useEffect, useState } from "react";
 import {
   MessageSquare,
@@ -363,6 +11,7 @@ import {
   ArrowUpRight,
   Zap,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../../context/ThemeContext";
 import {
   getOpenTickets,
@@ -370,6 +19,7 @@ import {
   getTodayResolvedTickets,
   getTotalCustomers,
   getRecentTickets,
+  getRecentPayments,
 } from "../../../api/admindashboard.api";
 import Lottie from "lottie-react";
 import telecomAnimation from "../../../animations/Activline-Dashboard.json";
@@ -395,9 +45,11 @@ const DashboardHeaderAnimation = ({ isDark }) => {
 };
 
 const DashboardPage = () => {
+  const navigate = useNavigate();
   const { isDark } = useTheme();
   const [stats, setStats] = useState(null);
   const [recentTickets, setRecentTickets] = useState([]);
+  const [recentPayments, setRecentPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hoveredCard, setHoveredCard] = useState(null);
 
@@ -411,12 +63,14 @@ const DashboardPage = () => {
           todayResolvedRes,
           totalCustomersRes,
           ticketsRes,
+          paymentsRes,
         ] = await Promise.all([
           getOpenTickets(),
           getInProgressTickets(),
           getTodayResolvedTickets(),
           getTotalCustomers(),
           getRecentTickets(5),
+          getRecentPayments(5),
         ]);
 
         setStats({
@@ -427,8 +81,10 @@ const DashboardPage = () => {
         });
 
         setRecentTickets(ticketsRes);
+        setRecentPayments(Array.isArray(paymentsRes) ? paymentsRes : []);
       } catch (err) {
         console.error("Dashboard load error:", err);
+        setRecentPayments([]);
       } finally {
         setLoading(false);
       }
@@ -523,6 +179,51 @@ const DashboardPage = () => {
           ? "bg-gray-500/20 text-gray-300 border-gray-500/30"
           : "bg-gray-50 text-gray-700 border-gray-200";
     }
+  };
+
+  const getPaymentStatusColor = (status) => {
+    switch (String(status || "").toUpperCase()) {
+      case "SUCCESS":
+      case "PAID":
+        return isDark
+          ? "bg-green-500/20 text-green-300 border-green-500/30"
+          : "bg-green-50 text-green-700 border-green-200";
+      case "PENDING":
+        return isDark
+          ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+          : "bg-amber-50 text-amber-700 border-amber-200";
+      case "FAILED":
+        return isDark
+          ? "bg-red-500/20 text-red-300 border-red-500/30"
+          : "bg-red-50 text-red-700 border-red-200";
+      default:
+        return isDark
+          ? "bg-gray-500/20 text-gray-300 border-gray-500/30"
+          : "bg-gray-50 text-gray-700 border-gray-200";
+    }
+  };
+
+  const formatPaymentAmount = (amount, currency = "INR") => {
+    const value = Number(amount || 0);
+    if (Number.isNaN(value)) return "--";
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
+  const formatDateTime = (value) => {
+    if (!value) return "--";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "--";
+    return new Intl.DateTimeFormat("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
   };
 
   return (
@@ -662,7 +363,9 @@ const DashboardPage = () => {
           isDark={isDark}
         >
           <div className="overflow-hidden rounded-xl">
-            {recentTickets.length === 0 ? (
+            {loading ? (
+              <SkeletonTickets isDark={isDark} />
+            ) : recentTickets.length === 0 ? (
               <div
                 className={`p-8 text-center rounded-xl ${
                   isDark ? "bg-gray-700/50" : "bg-gray-100"
@@ -807,6 +510,7 @@ const DashboardPage = () => {
                 }`}
               >
                 <button
+                  onClick={() => navigate("/tickets")}
                   className={`text-sm font-medium transition-all duration-300 hover:gap-2 ${
                     isDark
                       ? "text-blue-400 hover:text-blue-300"
@@ -821,89 +525,147 @@ const DashboardPage = () => {
           </div>
         </SectionCard>
 
-        {/* RECENT PAYMENTS WITH PLACEHOLDER ANIMATION */}
+        {/* RECENT PAYMENTS */}
         <SectionCard
           title="Recent Payments"
           subtitle="Latest financial transactions"
           icon={<TrendingUp className="h-5 w-5" />}
           isDark={isDark}
         >
-          <div className="space-y-6">
-            {/* Animated placeholder */}
-            <div className="relative overflow-hidden rounded-xl">
-              <div
-                className={`p-8 rounded-xl ${
-                  isDark ? "bg-gray-700/50" : "bg-gray-100"
-                }`}
-              >
-                <div className="flex items-center justify-center mb-4">
-                  <div className="relative">
-                    <div
-                      className={`h-24 w-24 rounded-full border-4 ${
-                        isDark
-                          ? "border-gray-600"
-                          : "border-gray-300"
-                      }`}
-                    ></div>
-                    <div
-                      className={`absolute inset-0 h-24 w-24 rounded-full border-4 border-t-transparent border-blue-500 animate-spin`}
-                    ></div>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <h3
-                    className={`text-xl font-semibold mb-2 ${
-                      isDark ? "text-white" : "text-gray-900"
-                    }`}
-                  >
-                    Payments Module
-                  </h3>
-                  <p
-                    className={`mb-4 ${
-                      isDark ? "text-gray-400" : "text-gray-600"
-                    }`}
-                  >
-                    Coming Soon
-                  </p>
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-medium animate-pulse">
-                    <span>●</span> In Development
-                  </div>
-                </div>
-              </div>
-
-              {/* Progress animation */}
-              <div
-                className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-shimmer`}
-              ></div>
-            </div>
-
-            {/* Stats preview */}
+          {loading ? (
+            <SkeletonPayments isDark={isDark} />
+          ) : recentPayments.length === 0 ? (
             <div
-              className={`grid grid-cols-3 gap-4 p-4 rounded-xl ${
-                isDark ? "bg-gray-800/50" : "bg-white"
+              className={`p-8 text-center rounded-xl ${
+                isDark ? "bg-gray-700/50" : "bg-gray-100"
               }`}
             >
-              {["Today", "Week", "Month"].map((period) => (
-                <div
-                  key={period}
-                  className="text-center p-3 rounded-lg transition-all duration-300 hover:scale-105"
-                >
-                  <div
-                    className={`text-2xl font-bold mb-1 bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent`}
-                  >
-                    $0
-                  </div>
-                  <div
-                    className={`text-xs ${
-                      isDark ? "text-gray-400" : "text-gray-600"
+              <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <p className="text-gray-400">No recent payments</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-xl">
+              <table className="w-full">
+                <thead>
+                  <tr
+                    className={`border-b ${
+                      isDark ? "border-gray-700" : "border-gray-200"
                     }`}
                   >
-                    {period}
-                  </div>
-                </div>
-              ))}
+                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">
+                      Payment
+                    </th>
+                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">
+                      Plan
+                    </th>
+                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">
+                      Status
+                    </th>
+                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">
+                      Paid At
+                    </th>
+                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentPayments.map((payment) => (
+                    <tr
+                      key={payment.paymentId || payment.razorpayPaymentId || payment.orderId}
+                      className={`group transition-all duration-300 hover:scale-[1.02] ${
+                        isDark
+                          ? "hover:bg-gray-700/50 border-b border-gray-700/50"
+                          : "hover:bg-gray-50 border-b border-gray-100"
+                      }`}
+                    >
+                      <td className="py-3 px-4">
+                        <div className="flex flex-col">
+                          <span
+                            className={`font-medium ${
+                              isDark ? "text-white" : "text-gray-900"
+                            }`}
+                          >
+                            {formatPaymentAmount(
+                              payment.amount ?? payment.planAmount,
+                              payment.currency || "INR"
+                            )}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            #{String(payment.paymentId || payment.razorpayPaymentId || "--").slice(-8)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex flex-col">
+                          <span
+                            className={`font-medium ${
+                              isDark ? "text-gray-200" : "text-gray-800"
+                            }`}
+                          >
+                            {payment.planName || payment?.plan?.planName || "--"}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {payment.profileId || "--"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium ${getPaymentStatusColor(
+                            payment.status
+                          )}`}
+                        >
+                          {String(payment.status || "UNKNOWN").toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div
+                          className={`text-sm ${
+                            isDark ? "text-gray-400" : "text-gray-600"
+                          }`}
+                        >
+                          {formatDateTime(payment.paidAt || payment.createdAt)}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <button
+                          onClick={() => navigate("/payments")}
+                          className={`p-1.5 rounded-lg transition-all duration-300 hover:scale-110 ${
+                            isDark
+                              ? "hover:bg-gray-700 text-gray-400 hover:text-white"
+                              : "hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+                          }`}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div
+                className={`p-3 text-center border-t ${
+                  isDark
+                    ? "border-gray-700 bg-gray-800/50"
+                    : "border-gray-200 bg-gray-50"
+                }`}
+              >
+                <button
+                  onClick={() => navigate("/payments")}
+                  className={`text-sm font-medium transition-all duration-300 hover:gap-2 ${
+                    isDark
+                      ? "text-blue-400 hover:text-blue-300"
+                      : "text-blue-600 hover:text-blue-500"
+                  }`}
+                >
+                  View all payments
+                  <ArrowUpRight className="inline h-4 w-4 ml-1" />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </SectionCard>
       </div>
 
@@ -1084,13 +846,52 @@ const SkeletonCards = () => (
     {[1, 2, 3, 4].map((i) => (
       <div
         key={i}
-        className="h-32 rounded-2xl animate-pulse"
+        className="relative overflow-hidden h-40 rounded-2xl border border-gray-200/20 bg-gradient-to-br from-gray-200/40 to-gray-300/20 dark:from-gray-700/40 dark:to-gray-800/30 animate-pulse"
         style={{
           animationDelay: `${i * 100}ms`,
         }}
-      />
+      >
+        <div className="p-6 h-full flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <div className="h-12 w-12 rounded-xl bg-gray-300/50 dark:bg-gray-600/40" />
+            <div className="h-4 w-10 rounded bg-gray-300/50 dark:bg-gray-600/40" />
+          </div>
+          <div className="space-y-2">
+            <div className="h-8 w-24 rounded bg-gray-300/50 dark:bg-gray-600/40" />
+            <div className="h-4 w-36 rounded bg-gray-300/50 dark:bg-gray-600/40" />
+            <div className="h-1.5 w-full rounded bg-gray-300/50 dark:bg-gray-600/40" />
+          </div>
+        </div>
+      </div>
     ))}
   </>
+);
+
+const SkeletonTickets = ({ isDark }) => (
+  <div className={`rounded-xl p-4 ${isDark ? "bg-gray-700/40" : "bg-gray-100"} animate-pulse`}>
+    <div className="space-y-3">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="grid grid-cols-5 gap-3">
+          <div className={`h-4 rounded ${isDark ? "bg-gray-600" : "bg-gray-300"}`} />
+          <div className={`h-4 rounded ${isDark ? "bg-gray-600" : "bg-gray-300"}`} />
+          <div className={`h-4 rounded ${isDark ? "bg-gray-600" : "bg-gray-300"}`} />
+          <div className={`h-4 rounded ${isDark ? "bg-gray-600" : "bg-gray-300"}`} />
+          <div className={`h-4 rounded ${isDark ? "bg-gray-600" : "bg-gray-300"}`} />
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const SkeletonPayments = ({ isDark }) => (
+  <div className="space-y-6 animate-pulse">
+    <div className={`h-56 rounded-xl ${isDark ? "bg-gray-700/40" : "bg-gray-100"}`} />
+    <div className="grid grid-cols-3 gap-4">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className={`h-20 rounded-xl ${isDark ? "bg-gray-700/40" : "bg-gray-100"}`} />
+      ))}
+    </div>
+  </div>
 );
 
 // Add CSS animations
@@ -1182,3 +983,4 @@ const styles = `
 const styleSheet = document.createElement("style");
 styleSheet.innerText = styles;
 document.head.appendChild(styleSheet);
+

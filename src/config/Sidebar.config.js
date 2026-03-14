@@ -10,7 +10,8 @@ import {
   ChartNoAxesColumnIncreasing,
   UserCog,
   FileClock,
-  LayoutGrid
+  LayoutGrid,
+  User
 } from "lucide-react";
 
 export const adminSidebarItems = [
@@ -114,15 +115,33 @@ export const franchiseSidebarItems = [
     paths: ["/collections"],
   },
   {
+    icon: LayoutGrid,
+    label: "Plans",
+    key: "Plans",
+    paths: ["/franchise-plans"],
+  },
+  {
+    icon: CreditCard,
+    label: "Payment History",
+    key: "Payment History",
+    paths: ["/payment-history"],
+  },
+  {
+    icon: ChartNoAxesColumnIncreasing,
+    label: "Reports",
+    key: "Reports",
+    paths: ["/franchise-reports"],
+  },
+  {
     icon: MessageSquare,
     label: "Tickets",
     key: "Tickets",
     paths: ["/zone-tickets"],
   },
   {
-    icon: Settings,
-    label: "Settings",
-    key: "Settings",
+    icon: User,
+    label: "Profile",
+    key: "Profile",
     paths: ["/profile"],
   },
 ];
@@ -151,12 +170,6 @@ export const staffSidebarItems = [
     label: "Reports",
     key: "Reports",
     paths: ["/reports"],
-  },
-  {
-    icon: FileClock,
-    label: "Logs",
-    key: "Logs",
-    paths: ["/logs"],
   },
   {
     icon: Settings,

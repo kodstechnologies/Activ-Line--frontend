@@ -30,3 +30,10 @@ export const getRecentTickets = async (limit = 5) => {
   );
   return res.data.data;
 };
+
+export const getRecentPayments = async (limit = 5) => {
+  const res = await api.get(
+    `/api/admin/dashboard/recent-payments?limit=${limit}`
+  );
+  return res.data.data;
+};

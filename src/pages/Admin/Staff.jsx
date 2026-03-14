@@ -376,11 +376,11 @@ const Staff = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="w-full lg:w-auto grid grid-cols-1 sm:grid-cols-2 xl:flex gap-3">
             {/* Search */}
             <motion.div
               whileHover={{ scale: 1.02 }}
-              className={`relative flex-1 min-w-[200px] ${isDark ? "text-slate-300" : "text-gray-600"}`}
+              className={`relative col-span-1 sm:col-span-2 xl:col-span-1 xl:min-w-[300px] ${isDark ? "text-slate-300" : "text-gray-600"}`}
             >
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" />
               <input
@@ -404,7 +404,7 @@ const Staff = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setShowFilter(!showFilter)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all
+                className={`w-full sm:w-auto justify-center flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all
                   ${
                     isDark
                       ? "bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700"
@@ -502,7 +502,7 @@ const Staff = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={exportStaffData}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all
+              className={`w-full sm:w-auto justify-center flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all
                 ${
                   isDark
                     ? "bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700"
@@ -522,7 +522,7 @@ const Staff = () => {
               }}
               whileTap={{ scale: 0.95 }}
               onClick={() => openModal()}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white rounded-xl shadow-lg transition-all group
+              className={`w-full sm:w-auto justify-center flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white rounded-xl shadow-lg transition-all group
                 ${
                   isDark
                     ? "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 shadow-blue-500/25"
@@ -557,7 +557,13 @@ const Staff = () => {
                 <p
                   className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"} mt-1`}
                 >
-                  {staffs.length}
+                  {isLoading ? (
+                    <span
+                      className={`inline-block h-7 w-16 rounded animate-pulse ${isDark ? "bg-slate-700" : "bg-gray-200"}`}
+                    />
+                  ) : (
+                    staffs.length
+                  )}
                 </p>
               </div>
               <div className="w-12 h-12">
@@ -583,7 +589,13 @@ const Staff = () => {
                   Active
                 </p>
                 <p className={`text-2xl font-bold text-green-500 mt-1`}>
-                  {staffs.filter((s) => s.status === "ACTIVE").length}
+                  {isLoading ? (
+                    <span
+                      className={`inline-block h-7 w-16 rounded animate-pulse ${isDark ? "bg-slate-700" : "bg-gray-200"}`}
+                    />
+                  ) : (
+                    staffs.filter((s) => s.status === "ACTIVE").length
+                  )}
                 </p>
               </div>
               <div className="w-12 h-12">
@@ -611,7 +623,13 @@ const Staff = () => {
                 <p
                   className={`text-2xl font-bold ${isDark ? "text-blue-400" : "text-purple-600"} mt-1`}
                 >
-                  {staffs.filter((s) => s.role === "ADMIN").length}
+                  {isLoading ? (
+                    <span
+                      className={`inline-block h-7 w-16 rounded animate-pulse ${isDark ? "bg-slate-700" : "bg-gray-200"}`}
+                    />
+                  ) : (
+                    staffs.filter((s) => s.role === "ADMIN").length
+                  )}
                 </p>
               </div>
               <div className="w-12 h-12">
@@ -639,7 +657,13 @@ const Staff = () => {
                 <p
                   className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"} mt-1`}
                 >
-                  {filteredStaffs.length}
+                  {isLoading ? (
+                    <span
+                      className={`inline-block h-7 w-16 rounded animate-pulse ${isDark ? "bg-slate-700" : "bg-gray-200"}`}
+                    />
+                  ) : (
+                    filteredStaffs.length
+                  )}
                 </p>
               </div>
               <div className="w-12 h-12">
@@ -663,17 +687,59 @@ const Staff = () => {
         className={`rounded-2xl border overflow-hidden shadow-lg staff-table ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"}`}
       >
         {isLoading ? (
-          <div className="p-8 text-center">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="inline-block rounded-full h-8 w-8 border-b-2 border-blue-500"
-            ></motion.div>
-            <p
-              className={`mt-2 ${isDark ? "text-slate-400" : "text-gray-600"}`}
-            >
-              Loading staff data...
-            </p>
+          <div className="p-4 sm:p-6">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left">
+                <thead
+                  className={
+                    isDark
+                      ? "bg-gradient-to-r from-slate-800 to-slate-900/80"
+                      : "bg-gradient-to-r from-gray-50 to-gray-100"
+                  }
+                >
+                  <tr>
+                    {["Name", "Email", "Role", "Status", "Actions"].map((label) => (
+                      <th
+                        key={label}
+                        className={`px-6 py-4 text-xs font-semibold uppercase ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                      >
+                        {label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className={isDark ? "divide-y divide-slate-800" : "divide-y divide-gray-100"}>
+                  {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full ${isDark ? "bg-slate-800" : "bg-gray-200"}`} />
+                          <div className="space-y-2">
+                            <div className={`h-3.5 w-28 rounded ${isDark ? "bg-slate-800" : "bg-gray-200"}`} />
+                            <div className={`h-3 w-20 rounded ${isDark ? "bg-slate-800" : "bg-gray-200"}`} />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className={`h-3.5 w-44 rounded ${isDark ? "bg-slate-800" : "bg-gray-200"}`} />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className={`h-7 w-24 rounded-full ${isDark ? "bg-slate-800" : "bg-gray-200"}`} />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className={`h-7 w-24 rounded-full ${isDark ? "bg-slate-800" : "bg-gray-200"}`} />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className={`h-8 w-8 rounded-lg ${isDark ? "bg-slate-800" : "bg-gray-200"}`} />
+                          <div className={`h-8 w-8 rounded-lg ${isDark ? "bg-slate-800" : "bg-gray-200"}`} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : filteredStaffs.length === 0 ? (
           <motion.div
@@ -716,7 +782,8 @@ const Staff = () => {
           </motion.div>
         ) : (
           <>
-            <table className="w-full text-left">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-left">
               <thead
                 className={
                   isDark
@@ -887,6 +954,7 @@ const Staff = () => {
                 ))}
               </tbody>
             </table>
+            </div>
 
             {/* Pagination */}
             {totalPages > 1 && (

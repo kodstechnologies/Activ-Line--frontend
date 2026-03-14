@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Formik, Form, Field, ErrorMessage } from "formik";
-import { Eye, EyeOff, Mail, Lock, LogIn, AlertTriangle } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, LogIn } from "lucide-react";
 import toast from "react-hot-toast";
 import LoginAnimation from "../../components/LoginAnimation";
 
@@ -19,8 +19,6 @@ const LoginPage = () => {
   const { isDark } = useTheme();
   const [apiError, setApiError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [showTerminationPopup, setShowTerminationPopup] = useState(false);
-  const [popupMessage, setPopupMessage] = useState("");
 
   const getInitialValues = () => ({
     email: "",
@@ -28,6 +26,7 @@ const LoginPage = () => {
   });
 
 const handleSubmit = async (values, { setSubmitting }) => {
+  setApiError("");
   try {
     const response = await adminLogin(values);
 
@@ -54,6 +53,7 @@ const handleSubmit = async (values, { setSubmitting }) => {
         navigate("/dashboard");
         break;
       case "franchise":
+      case "franchise_admin":
         navigate("/franchise-dashboard");
         break;
       default:
@@ -61,32 +61,9 @@ const handleSubmit = async (values, { setSubmitting }) => {
         logout(); // Important: clear login state if role is invalid
         break;
     }
-  } catch (error) {
-    const statusCode = error.response?.status;
-    const errorMsg = error.response?.data?.message || error.message || "Login failed";
+  } catch {
+    setApiError("Invalid email or password. Please try again.");
 
-    // 🔴 TERMINATED
-    if (
-      errorMsg === "Your account is terminated. Contact admin." || errorMsg?.toLowerCase().includes("terminated")
-    ) {
-      setPopupMessage(
-        "Your account is terminated. Contact admin."
-      );
-      setShowTerminationPopup(true);
-    } 
-    // 🟡 INACTIVE
-    else if (
-      statusCode === 403 &&
-      errorMsg.toLowerCase().includes("inactive")
-    ) {
-      setPopupMessage(
-        "Your account is currently inactive. Please ask the administrator to activate your account."
-      );
-      setShowTerminationPopup(true);
-    } else {
-      // ⚠️ OTHER ERRORS
-      toast.error(errorMsg);
-    }
   } finally {
     setSubmitting(false);
   }
@@ -217,6 +194,18 @@ const handleSubmit = async (values, { setSubmitting }) => {
               >
                 {({ isSubmitting, errors, touched }) => (
                   <Form className="space-y-6">
+                    {apiError && (
+                      <div
+                        className={`rounded-xl border px-4 py-3 text-sm font-medium ${
+                          isDark
+                            ? "bg-red-900/20 border-red-500/40 text-red-300"
+                            : "bg-red-50 border-red-200 text-red-700"
+                        }`}
+                      >
+                        {apiError}
+                      </div>
+                    )}
+
                     {/* EMAIL FIELD */}
                     <div className="space-y-2">
                       <label className="text-sm font-semibold flex items-center gap-2 transition-colors duration-300">
@@ -430,34 +419,6 @@ const handleSubmit = async (values, { setSubmitting }) => {
         </div>
       </div>
 
-      {/* Termination Popup */}
-      {showTerminationPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className={`w-full max-w-md rounded-2xl shadow-2xl p-8 transform scale-100 animate-in zoom-in-95 duration-200 ${isDark ? 'bg-gray-900 border border-red-500/30' : 'bg-white border border-red-100'}`}>
-            <div className="flex flex-col items-center text-center space-y-6">
-              <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center">
-                <AlertTriangle className="w-10 h-10 text-red-500" />
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  Account Terminated
-                </h3>
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {popupMessage || "Your access to the admin portal has been revoked. Please contact the administrator for assistance."}
-                </p>
-              </div>
-
-              <button
-                onClick={() => setShowTerminationPopup(false)}
-                className="w-full py-3.5 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-red-500/20 active:scale-95"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

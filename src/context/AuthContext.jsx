@@ -16,10 +16,14 @@ export const AuthProvider = ({ children }) => {
 
   /* ---------- LOAD FROM STORAGE ON REFRESH ---------- */
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
+    const rawStoredToken = localStorage.getItem("token");
+    const storedToken =
+      rawStoredToken && rawStoredToken !== "null" && rawStoredToken !== "undefined"
+        ? rawStoredToken
+        : null;
     const storedUser = localStorage.getItem("user");
 
-    if (storedToken && storedUser) {
+    if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
 
@@ -38,11 +42,15 @@ export const AuthProvider = ({ children }) => {
 
   /* ---------- LOGIN ---------- */
   const login = (userData, tokenValue) => {
-    localStorage.setItem("token", tokenValue);
+    if (tokenValue) {
+      localStorage.setItem("token", tokenValue);
+    } else {
+      localStorage.removeItem("token");
+    }
     localStorage.setItem("user", JSON.stringify(userData));
 
     setUser(userData);
-    setToken(tokenValue);
+    setToken(tokenValue || null);
   };
 
   /* ---------- LOGOUT ---------- */
@@ -92,6 +100,10 @@ const logout = async () => {
         updateProfile,
         isAdmin: () =>
           ["admin", "admin_staff", "super_admin"].includes(
+            user?.role?.toLowerCase()
+          ),
+        isFranchise: () =>
+          ["franchise", "franchise_admin"].includes(
             user?.role?.toLowerCase()
           ),
       }}

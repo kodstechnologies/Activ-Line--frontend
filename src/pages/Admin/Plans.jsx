@@ -1,441 +1,415 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useEffect } from "react";
 import {
-    Plus,
-    Search,
-    Filter,
-    MoreVertical,
-    Edit,
-    Trash2,
-    Wifi,
-    CheckCircle,
-    XCircle,
-    ChevronLeft,
-    ChevronRight,
-    Download
-} from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
-import { toast } from 'react-hot-toast';
+  fetchFranchiseList,
+  fetchGroupDetails,
+  fetchProfileDetails,
+} from "../../api/plans";
 
-// Mock Data
-const INITIAL_PLANS = [
-    { id: 1, name: 'Basic Home', speed: '50 Mbps', fup: '1000 GB', price: '499', type: 'Home', status: 'Active' },
-    { id: 2, name: 'Super Stream', speed: '100 Mbps', fup: 'Unlimited', price: '799', type: 'Home', status: 'Active' },
-    { id: 3, name: 'Office Basic', speed: '100 Mbps', fup: '2000 GB', price: '999', type: 'Office', status: 'Active' },
-    { id: 4, name: 'Office Pro', speed: '300 Mbps', fup: 'Unlimited', price: '1499', type: 'Office', status: 'Active' },
-    { id: 5, name: 'Gamer Elite', speed: '500 Mbps', fup: '5000 GB', price: '1299', type: 'Home', status: 'Inactive' },
-    { id: 6, name: 'Enterprise', speed: '1 Gbps', fup: 'Unlimited', price: '4999', type: 'Office', status: 'Active' },
-];
+// ─── Shared UI Components ──────────────────────────────────────────────────────
 
-const Plans = () => {
-    const { isDark } = useTheme();
+const Spinner = () => (
+  <div className="flex items-center justify-center py-20">
+    <div className="relative w-10 h-10">
+      <div className="absolute inset-0 rounded-full border-4 border-slate-200" />
+      <div className="absolute inset-0 rounded-full border-4 border-t-blue-500 animate-spin" />
+    </div>
+  </div>
+);
 
-    // State
-    const [plans, setPlans] = useState(INITIAL_PLANS);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [typeFilter, setTypeFilter] = useState('All');
-    const [statusFilter, setStatusFilter] = useState('All');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingPlan, setEditingPlan] = useState(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(5);
+const ErrorMsg = ({ message }) => (
+  <div className="flex items-center justify-center py-20">
+    <div className="text-center">
+      <p className="text-3xl mb-2">⚠️</p>
+      <p className="text-rose-500 text-sm font-medium">{message}</p>
+    </div>
+  </div>
+);
 
-    // Form State
-    const initialFormState = { name: '', speed: '', fup: '', price: '', type: 'Home', status: 'Active' };
-    const [formData, setFormData] = useState(initialFormState);
-
-    // Handlers
-    const handleOpenModal = (plan = null) => {
-        if (plan) {
-            setEditingPlan(plan);
-            setFormData(plan);
-        } else {
-            setEditingPlan(null);
-            setFormData(initialFormState);
-        }
-        setIsModalOpen(true);
-    };
-
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        setEditingPlan(null);
-        setFormData(initialFormState);
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (editingPlan) {
-            // Update
-            setPlans(plans.map(p => p.id === editingPlan.id ? { ...formData, id: p.id } : p));
-            toast.success('Plan updated successfully');
-        } else {
-            // Create
-            const newPlan = { ...formData, id: Date.now() }; // Simple ID gen
-            setPlans([newPlan, ...plans]);
-            toast.success('Plan created successfully');
-        }
-        handleCloseModal();
-    };
-
-    const handleDelete = (id) => {
-        if (window.confirm('Are you sure you want to delete this plan?')) {
-            setPlans(plans.filter(p => p.id !== id));
-            toast.success('Plan deleted');
-        }
-    };
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    // Filter & Search Logic
-    const filteredPlans = useMemo(() => {
-        return plans.filter(plan => {
-            const matchesSearch = plan.name.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesType = typeFilter === 'All' || plan.type === typeFilter;
-            const matchesStatus = statusFilter === 'All' || plan.status === statusFilter;
-            return matchesSearch && matchesType && matchesStatus;
-        });
-    }, [plans, searchTerm, typeFilter, statusFilter]);
-
-    // Pagination Logic
-    const totalPages = Math.ceil(filteredPlans.length / itemsPerPage);
-    const paginatedPlans = filteredPlans.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
-
-    return (
-        <div className="space-y-6">
-
-            {/* Header Actions */}
-            <div className={`p-4 rounded-xl shadow-sm border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-purple-100'}`}>
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="relative w-full md:w-96">
-                        <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
-                        <input
-                            type="text"
-                            placeholder="Search plans..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className={`w-full pl-10 pr-4 py-2 text-sm border rounded-lg outline-none focus:ring-2 transition-all ${isDark
-                                ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:ring-blue-500/20'
-                                : 'bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:ring-purple-500/20 focus:border-purple-300'
-                                }`}
-                        />
-                    </div>
-
-                    <div className="flex gap-3 w-full md:w-auto">
-                        <select
-                            value={typeFilter}
-                            onChange={(e) => setTypeFilter(e.target.value)}
-                            className={`px-4 py-2 text-sm border rounded-lg outline-none cursor-pointer transition-colors ${isDark
-                                ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700'
-                                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-                                }`}
-                        >
-                            <option value="All">All Types</option>
-                            <option value="Home">Home</option>
-                            <option value="Office">Office</option>
-                        </select>
-
-                        <button
-                            onClick={() => handleOpenModal()}
-                            className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg shadow-lg transition-all active:scale-95 ${isDark
-                                ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20'
-                                : 'bg-purple-600 hover:bg-purple-500 shadow-purple-500/20'
-                                }`}
-                        >
-                            <Plus className="w-4 h-4" />
-                            Add Plan
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Table Card */}
-            <div className={`rounded-xl shadow-sm border overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-purple-100'}`}>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className={`${isDark ? 'bg-slate-800/50 border-b border-slate-800' : 'bg-gray-50/50 border-b border-purple-100'}`}>
-                                <th className={`py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Plan Name</th>
-                                <th className={`py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Speed</th>
-                                <th className={`py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>FUP Limit</th>
-                                <th className={`py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Price (₹)</th>
-                                <th className={`py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Type</th>
-                                <th className={`py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Status</th>
-                                <th className={`py-4 px-6 text-xs font-semibold uppercase tracking-wider text-right ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className={`divide-y ${isDark ? 'divide-slate-800' : 'divide-purple-50'}`}>
-                            {paginatedPlans.length > 0 ? (
-                                paginatedPlans.map((plan) => (
-                                    <tr key={plan.id} className={`group transition-colors ${isDark ? 'hover:bg-slate-800/30' : 'hover:bg-purple-50/30'}`}>
-                                        <td className="py-4 px-6">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-800 text-blue-400' : 'bg-purple-100/50 text-purple-600'}`}>
-                                                    <Wifi className="w-4 h-4" />
-                                                </div>
-                                                <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{plan.name}</span>
-                                            </div>
-                                        </td>
-                                        <td className={`py-4 px-6 text-sm ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{plan.speed}</td>
-                                        <td className={`py-4 px-6 text-sm ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{plan.fup}</td>
-                                        <td className={`py-4 px-6 font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>₹{plan.price}</td>
-                                        <td className="py-4 px-6">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${plan.type === 'Home'
-                                                ? (isDark ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-blue-50 text-blue-700 border-blue-200')
-                                                : (isDark ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-purple-50 text-purple-700 border-purple-200')
-                                                }`}>
-                                                {plan.type}
-                                            </span>
-                                        </td>
-                                        <td className="py-4 px-6">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${plan.status === 'Active'
-                                                ? (isDark ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-green-50 text-green-700 border-green-200')
-                                                : (isDark ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-red-50 text-red-700 border-red-200')
-                                                }`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full ${plan.status === 'Active' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                                                {plan.status}
-                                            </span>
-                                        </td>
-                                        <td className="py-4 px-6">
-                                            <div className="flex items-center justify-end gap-2 opacity-0 opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={() => handleOpenModal(plan)}
-                                                    className={`p-2 rounded-lg transition-all ${isDark ? 'hover:bg-slate-800 text-slate-400 hover:text-green-400' : 'hover:bg-gray-100 text-gray-400 hover:text-green-600'}`}
-
-                                                    title="Edit Plan"
-                                                >
-                                                    <Edit className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(plan.id)}
-                                                    className={`p-2 rounded-lg transition-all ${isDark ? 'hover:bg-slate-800 text-slate-400 hover:text-red-400' : 'hover:bg-gray-100 text-gray-400 hover:text-red-600'}`}
-
-                                                    title="Delete Plan"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="7" className={`py-12 text-center ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                                        No plans found matching your criteria.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Pagination */}
-                {filteredPlans.length > 0 && (
-                    <div className={`p-4 border-t flex items-center justify-between ${isDark ? 'border-slate-800' : 'border-purple-100'}`}>
-                        <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredPlans.length)} of {filteredPlans.length} plans
-                        </span>
-                        <div className="flex items-center gap-2">
-                            {/* Prev */}
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                disabled={currentPage === 1}
-                                className={`p-2 rounded-lg border transition-colors
-      disabled:opacity-50 disabled:cursor-not-allowed
-      ${isDark
-                                        ? 'border-slate-700 hover:bg-slate-800 text-slate-300'
-                                        : 'border-purple-200 hover:bg-purple-50 text-purple-700'
-                                    }`}
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                            </button>
-
-                            {/* Page Numbers */}
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                <button
-                                    key={page}
-                                    onClick={() => setCurrentPage(page)}
-                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium border
-        ${currentPage === page
-                                            ? isDark
-                                                ? 'bg-blue-600 text-white border-blue-500'
-                                                : 'bg-purple-600 text-white border-purple-500'
-                                            : isDark
-                                                ? 'border-slate-700 text-slate-300 hover:bg-slate-800'
-                                                : 'border-purple-200 text-purple-700 hover:bg-purple-50'
-                                        }`}
-                                >
-                                    {page}
-                                </button>
-                            ))}
-
-                            {/* Next */}
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                disabled={currentPage === totalPages}
-                                className={`p-2 rounded-lg border transition-colors
-      disabled:opacity-50 disabled:cursor-not-allowed
-      ${isDark
-                                        ? 'border-slate-700 hover:bg-slate-800 text-slate-300'
-                                        : 'border-purple-200 hover:bg-purple-50 text-purple-700'
-                                    }`}
-                            >
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
-                        </div>
-
-                    </div>
-                )}
-            </div>
-
-            {/* Add/Edit Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className={`w-full max-w-lg rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200 ${isDark ? 'bg-slate-900 border border-slate-700' : 'bg-white border border-purple-100 ring-4 ring-purple-50'
-                        }`}>
-                        <div className={`p-6 border-b flex justify-between items-center ${isDark ? 'border-slate-800' : 'border-purple-100'}`}>
-                            <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                                {editingPlan ? 'Edit Plan' : 'Add New Plan'}
-                            </h2>
-                            <button
-                                onClick={handleCloseModal}
-                                className={`p-1 rounded-full hover:bg-gray-100 transition-colors ${isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-gray-400 hover:text-gray-600'}`}
-                            >
-                                <XCircle className="w-6 h-6" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>Plan Name</label>
-                                    <input
-                                        type="text"
-                                        name="name"
-                                        required
-                                        value={formData.name}
-                                        onChange={handleInputChange}
-                                        placeholder="e.g. Basic Home"
-                                        className={`w-full p-2.5 rounded-lg border text-sm outline-none focus:ring-2 transition-all ${isDark
-                                            ? 'bg-slate-800 border-slate-700 text-white focus:border-blue-500 focus:ring-blue-500/20'
-                                            : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500 focus:ring-purple-500/20'
-                                            }`}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>Speed</label>
-                                    <input
-                                        type="text"
-                                        name="speed"
-                                        required
-                                        value={formData.speed}
-                                        onChange={handleInputChange}
-                                        placeholder="e.g. 50 Mbps"
-                                        className={`w-full p-2.5 rounded-lg border text-sm outline-none focus:ring-2 transition-all ${isDark
-                                            ? 'bg-slate-800 border-slate-700 text-white focus:border-blue-500 focus:ring-blue-500/20'
-                                            : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500 focus:ring-purple-500/20'
-                                            }`}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>FUP Limit</label>
-                                    <input
-                                        type="text"
-                                        name="fup"
-                                        required
-                                        value={formData.fup}
-                                        onChange={handleInputChange}
-                                        placeholder="e.g. 1000 GB"
-                                        className={`w-full p-2.5 rounded-lg border text-sm outline-none focus:ring-2 transition-all ${isDark
-                                            ? 'bg-slate-800 border-slate-700 text-white focus:border-blue-500 focus:ring-blue-500/20'
-                                            : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500 focus:ring-purple-500/20'
-                                            }`}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>Price (₹)</label>
-                                    <input
-                                        type="number"
-                                        name="price"
-                                        required
-                                        value={formData.price}
-                                        onChange={handleInputChange}
-                                        placeholder="e.g. 999"
-                                        className={`w-full p-2.5 rounded-lg border text-sm outline-none focus:ring-2 transition-all ${isDark
-                                            ? 'bg-slate-800 border-slate-700 text-white focus:border-blue-500 focus:ring-blue-500/20'
-                                            : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500 focus:ring-purple-500/20'
-                                            }`}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>Type</label>
-                                    <select
-                                        name="type"
-                                        value={formData.type}
-                                        onChange={handleInputChange}
-                                        className={`w-full p-2.5 rounded-lg border text-sm outline-none focus:ring-2 transition-all cursor-pointer ${isDark
-                                            ? 'bg-slate-800 border-slate-700 text-white focus:border-blue-500 focus:ring-blue-500/20'
-                                            : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500 focus:ring-purple-500/20'
-                                            }`}
-                                    >
-                                        <option value="Home">Home</option>
-                                        <option value="Office">Office</option>
-                                    </select>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>Status</label>
-                                    <select
-                                        name="status"
-                                        value={formData.status}
-                                        onChange={handleInputChange}
-                                        className={`w-full p-2.5 rounded-lg border text-sm outline-none focus:ring-2 transition-all cursor-pointer ${isDark
-                                            ? 'bg-slate-800 border-slate-700 text-white focus:border-blue-500 focus:ring-blue-500/20'
-                                            : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500 focus:ring-purple-500/20'
-                                            }`}
-                                    >
-                                        <option value="Active">Active</option>
-                                        <option value="Inactive">Inactive</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="pt-4 flex justify-end gap-3">
-                                <button
-                                    type="button"
-                                    onClick={handleCloseModal}
-                                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isDark
-                                        ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                        }`}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className={`px-6 py-2 text-sm font-bold text-white rounded-lg shadow-lg transition-all active:scale-95 ${isDark
-                                        ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20'
-                                        : 'bg-purple-600 hover:bg-purple-500 shadow-purple-500/20'
-                                        }`}
-                                >
-                                    {editingPlan ? 'Update Plan' : 'Create Plan'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
+const Badge = ({ children, color = "slate" }) => {
+  const colors = {
+    green: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    amber: "bg-amber-100 text-amber-700 border-amber-200",
+    rose: "bg-rose-100 text-rose-700 border-rose-200",
+    blue: "bg-blue-100 text-blue-700 border-blue-200",
+    slate: "bg-slate-100 text-slate-600 border-slate-200",
+  };
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${colors[color]}`}>
+      {children}
+    </span>
+  );
 };
 
-export default Plans;
+const Breadcrumb = ({ steps }) => (
+  <nav className="flex items-center flex-wrap gap-1.5 text-sm mb-6">
+    {steps.map((step, i) => (
+      <span key={i} className="flex items-center gap-1.5">
+        {i > 0 && <span className="text-slate-300">›</span>}
+        <span className={i === steps.length - 1 ? "text-blue-600 font-semibold" : "text-slate-400"}>
+          {step}
+        </span>
+      </span>
+    ))}
+  </nav>
+);
+
+const SectionCard = ({ title, icon, children }) => (
+  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 bg-slate-50">
+      <span className="text-base">{icon}</span>
+      <h3 className="font-semibold text-slate-700 text-xs tracking-widest uppercase">{title}</h3>
+    </div>
+    <div className="divide-y divide-slate-100">{children}</div>
+  </div>
+);
+
+const DetailRow = ({ property, value }) => (
+  <div className="flex items-center justify-between px-6 py-3 hover:bg-slate-50 transition-colors">
+    <span className="text-sm text-slate-500 font-medium">{property}</span>
+    <span className="text-sm text-slate-800 font-semibold text-right max-w-xs">{String(value)}</span>
+  </div>
+);
+
+const BackButton = ({ onClick }) => (
+  <button
+    onClick={onClick}
+    className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-medium transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-100"
+  >
+    ← Back
+  </button>
+);
+
+// ─── Step Progress ─────────────────────────────────────────────────────────────
+const StepProgress = ({ current }) => {
+  const steps = ["Franchise", "Groups", "Profile"];
+  return (
+    <div className="hidden sm:flex items-center gap-2">
+      {steps.map((label, i) => {
+        const n = i + 1;
+        const isDone = current > n;
+        const isActive = current === n;
+        return (
+          <div key={label} className="flex items-center gap-2">
+            {i > 0 && <div className={`w-8 h-px ${isDone ? "bg-blue-400" : "bg-slate-200"}`} />}
+            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              isActive
+                ? "bg-blue-600 text-white shadow-sm shadow-blue-200"
+                : isDone
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-slate-100 text-slate-400"
+            }`}>
+              <span>{isDone ? "✓" : n}</span>
+              <span>{label}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// ─── Step 1: Franchise List ────────────────────────────────────────────────────
+const FranchiseList = ({ onSelect }) => {
+  const [franchises, setFranchises] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchFranchiseList()
+      .then((res) => {
+        const list = Array.isArray(res?.data) ? res.data : [];
+        if (!res?.success && list.length === 0) {
+          setError("Failed to load franchises.");
+        } else {
+          setFranchises(list);
+        }
+      })
+      .catch((err) =>
+        setError(err?.response?.data?.message || err?.message || "Network error. Is the server running?")
+      )
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Spinner />;
+  if (error) return <ErrorMsg message={error} />;
+
+  return (
+    <div>
+      <Breadcrumb steps={["Franchises"]} />
+      <div className="mb-6">
+        <h2 className="text-xl font-bold text-slate-800">Select a Franchise</h2>
+        <p className="text-sm text-slate-500 mt-1">Choose an account to view its group plans</p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {franchises.map((f) => (
+          <button
+            key={f._id}
+            onClick={() => onSelect(f)}
+            className="group text-left bg-white rounded-2xl border border-slate-200 p-5 hover:border-blue-400 hover:shadow-md hover:shadow-blue-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                {f.companyName?.[0]?.toUpperCase() || "F"}
+              </div>
+              <Badge color="slate">{f.accountId}</Badge>
+            </div>
+            <p className="font-bold text-slate-800 text-base group-hover:text-blue-600 transition-colors">
+              {f.companyName}
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              Parent: <span className="font-medium text-slate-500">{f.parentAccountId}</span>
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Created: {new Date(f.dateCreated).toLocaleDateString()}
+            </p>
+            <div className="mt-4 flex items-center gap-1.5 text-xs text-blue-500 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+              View Groups →
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ─── Step 2: Group List ────────────────────────────────────────────────────────
+const GroupList = ({ franchise, onSelect, onBack }) => {
+  const [groups, setGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchGroupDetails(franchise.accountId)
+      .then((res) => {
+        // Safely handle multiple possible response shapes:
+        // { success, data: { data: [...] } }  OR  { success, data: [...] }
+        const list =
+          Array.isArray(res?.data?.data)  ? res.data.data  :
+          Array.isArray(res?.data)        ? res.data       :
+          [];
+
+        if (!res?.success && list.length === 0) {
+          setError("Failed to load group details.");
+        } else {
+          setGroups(list);
+        }
+      })
+      .catch((err) =>
+        setError(err?.response?.data?.message || err?.message || "Network error while loading groups.")
+      )
+      .finally(() => setLoading(false));
+  }, [franchise]);
+
+  const activeBadgeColor = (active, total) => {
+    if (total === 0) return "slate";
+    const pct = active / total;
+    if (pct >= 0.8) return "green";
+    if (pct >= 0.4) return "amber";
+    return "rose";
+  };
+
+  if (loading) return <Spinner />;
+  if (error) return <ErrorMsg message={error} />;
+
+  return (
+    <div>
+      <Breadcrumb steps={["Franchises", franchise.companyName, "Groups"]} />
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-bold text-slate-800">Group Plans</h2>
+          <p className="text-sm text-slate-500 mt-1">
+            {franchise.companyName} · {groups.length} group{groups.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+        <BackButton onClick={onBack} />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {groups.map((g) => (
+          <button
+            key={g.Group_id}
+            onClick={() => onSelect(g)}
+            className="group text-left bg-white rounded-2xl border border-slate-200 p-5 hover:border-indigo-400 hover:shadow-md hover:shadow-indigo-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                {g.Group_name?.[0]?.toUpperCase()}
+              </div>
+              <Badge color={activeBadgeColor(g.Active_Users, g.Total_Users)}>
+                {g.Active_Users}/{g.Total_Users} active
+              </Badge>
+            </div>
+            <p className="font-bold text-slate-800 text-base group-hover:text-indigo-600 transition-colors">
+              {g.Group_name}
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              Profile: <span className="font-medium text-slate-500">{g.Profile_Name}</span>
+            </p>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {[
+                { label: "Total", val: g.Total_Users, color: "text-slate-700" },
+                { label: "Active", val: g.Active_Users, color: "text-emerald-600" },
+                { label: "Online", val: g.Online_Users, color: "text-blue-600" },
+              ].map(({ label, val, color }) => (
+                <div key={label} className="bg-slate-50 rounded-lg px-2 py-1.5 text-center">
+                  <p className={`text-base font-bold ${color}`}>{val}</p>
+                  <p className="text-[10px] text-slate-400 font-medium">{label}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 flex items-center gap-1.5 text-xs text-indigo-500 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+              View Profile Details →
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ─── Step 3: Profile Details ───────────────────────────────────────────────────
+const ProfileDetails = ({ franchise, group, onBack }) => {
+  const [details, setDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchProfileDetails(franchise.accountId, group.Profile_id)
+      .then((res) => {
+        // Safely handle: { success, data: { data: { message: {...} } } }
+        const message =
+          res?.data?.data?.message ||
+          res?.data?.message ||
+          res?.message ||
+          null;
+
+        if (!res?.success && !message) {
+          setError("Failed to load profile details.");
+        } else {
+          setDetails(message);
+        }
+      })
+      .catch((err) =>
+        setError(err?.response?.data?.message || err?.message || "Network error while loading profile details.")
+      )
+      .finally(() => setLoading(false));
+  }, [franchise, group]);
+
+  if (loading) return <Spinner />;
+  if (error) return <ErrorMsg message={error} />;
+
+  return (
+    <div>
+      <Breadcrumb steps={["Franchises", franchise.companyName, "Groups", group.Group_name, "Profile"]} />
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-bold text-slate-800">{group.Profile_Name}</h2>
+          <p className="text-sm text-slate-500 mt-1">Full plan &amp; billing configuration</p>
+        </div>
+        <BackButton onClick={onBack} />
+      </div>
+
+      {/* Stats Row */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        {[
+          { label: "Total Users", val: group.Total_Users, icon: "👥", grad: "from-slate-500 to-slate-700" },
+          { label: "Active Users", val: group.Active_Users, icon: "✅", grad: "from-emerald-500 to-teal-600" },
+          { label: "Online Now", val: group.Online_Users, icon: "🟢", grad: "from-blue-500 to-indigo-600" },
+        ].map(({ label, val, icon, grad }) => (
+          <div key={label} className={`bg-gradient-to-br ${grad} rounded-2xl p-4 text-white shadow-sm`}>
+            <p className="text-2xl font-black">{val}</p>
+            <p className="text-xs font-medium opacity-80 mt-1">{icon} {label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Detail Sections */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {details?.["profile Details"] && (
+          <SectionCard title="Profile Details" icon="⚙️">
+            {details["profile Details"].map((item, i) => (
+              <DetailRow key={i} property={item.property.trim()} value={item.value} />
+            ))}
+          </SectionCard>
+        )}
+        {details?.["billing Details"] && (
+          <SectionCard title="Billing Details" icon="💳">
+            {details["billing Details"].map((item, i) => (
+              <DetailRow key={i} property={item.property.trim()} value={item.value} />
+            ))}
+          </SectionCard>
+        )}
+      </div>
+
+      {/* IDs Footer */}
+      <div className="mt-4 bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 flex flex-wrap gap-4 text-xs text-slate-400">
+        <span>Group ID: <code className="font-mono text-slate-600">{group.Group_id}</code></span>
+        <span>Profile ID: <code className="font-mono text-slate-600">{group.Profile_id}</code></span>
+        <span>Account: <code className="font-mono text-slate-600">{franchise.accountId}</code></span>
+      </div>
+    </div>
+  );
+};
+
+// ─── Main Plans Page ───────────────────────────────────────────────────────────
+export default function Plans() {
+  const [step, setStep] = useState(1);
+  const [selectedFranchise, setSelectedFranchise] = useState(null);
+  const [selectedGroup, setSelectedGroup] = useState(null);
+
+  const handleSelectFranchise = (franchise) => {
+    setSelectedFranchise(franchise);
+    setStep(2);
+  };
+
+  const handleSelectGroup = (group) => {
+    setSelectedGroup(group);
+    setStep(3);
+  };
+
+  const handleBackToFranchises = () => {
+    setSelectedFranchise(null);
+    setSelectedGroup(null);
+    setStep(1);
+  };
+
+  const handleBackToGroups = () => {
+    setSelectedGroup(null);
+    setStep(2);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        {/* Page Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Plans</h1>
+            <p className="text-sm text-slate-500 mt-0.5">Franchise · Groups · Profile Details</p>
+          </div>
+          <StepProgress current={step} />
+        </div>
+
+        {/* Content Card */}
+        <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-slate-200/80 shadow-sm p-6">
+          {step === 1 && (
+            <FranchiseList onSelect={handleSelectFranchise} />
+          )}
+          {step === 2 && selectedFranchise && (
+            <GroupList
+              franchise={selectedFranchise}
+              onSelect={handleSelectGroup}
+              onBack={handleBackToFranchises}
+            />
+          )}
+          {step === 3 && selectedFranchise && selectedGroup && (
+            <ProfileDetails
+              franchise={selectedFranchise}
+              group={selectedGroup}
+              onBack={handleBackToGroups}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

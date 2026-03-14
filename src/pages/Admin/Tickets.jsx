@@ -84,6 +84,8 @@ const Tickets = () => {
   const [refreshing, setRefreshing] = useState(false);
 const [assignedRoomCount, setAssignedRoomCount] = useState(0);
 const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [ticketPage, setTicketPage] = useState(1);
+  const [ticketPageSize, setTicketPageSize] = useState(12);
 
   const activeTicket = tickets.find(t => t._id === activeTicketId);
   const [staffList, setStaffList] = useState([]);
@@ -289,6 +291,20 @@ const assignStaff = async (roomId, staffId) => {
     return result;
   }, [tickets, filterStatus, search]);
 
+  const ticketTotalPages = useMemo(
+    () => Math.max(1, Math.ceil(filteredTickets.length / ticketPageSize)),
+    [filteredTickets.length, ticketPageSize]
+  );
+
+  const paginatedTickets = useMemo(() => {
+    const start = (ticketPage - 1) * ticketPageSize;
+    return filteredTickets.slice(start, start + ticketPageSize);
+  }, [filteredTickets, ticketPage, ticketPageSize]);
+
+  useEffect(() => {
+    if (ticketPage > ticketTotalPages) setTicketPage(1);
+  }, [ticketPage, ticketTotalPages]);
+
   /* ---------- STATS ---------- */
   const stats = {
     total: tickets.length,
@@ -305,24 +321,6 @@ const assignStaff = async (roomId, staffId) => {
         <div className="text-center">
           <Shield className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-500 font-medium">Unauthorized – Please login again</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="h-[calc(100vh-120px)] flex items-center justify-center">
-        <div className="text-center">
-          <div className="relative inline-block">
-            <div className="w-16 h-16 border-3 border-transparent rounded-full animate-spin border-t-blue-500 border-r-blue-300"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Inbox className="w-7 h-7 text-blue-500" />
-            </div>
-          </div>
-          <p className="mt-5 text-gray-600 dark:text-gray-300 font-medium">
-            Loading support tickets...
-          </p>
         </div>
       </div>
     );
@@ -386,25 +384,41 @@ const assignStaff = async (roomId, staffId) => {
                 isDark ? 'bg-gray-800' : 'bg-gray-50'
               }`}>
                 <p className={`text-base ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Total</p>
-                <p className="font-bold text-lg">{stats.total}</p>
+                {loading ? (
+                  <div className={`h-5 w-8 mx-auto rounded animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                ) : (
+                  <p className="font-bold text-lg">{stats.total}</p>
+                )}
               </div>
               <div className={`text-center p-2 rounded-md ${
                 isDark ? 'bg-amber-500/10' : 'bg-amber-50'
               }`}>
                 <p className={`text-base ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>Open</p>
-                <p className="font-bold text-lg">{stats.open}</p>
+                {loading ? (
+                  <div className={`h-5 w-8 mx-auto rounded animate-pulse ${isDark ? "bg-amber-800/40" : "bg-amber-200"}`} />
+                ) : (
+                  <p className="font-bold text-lg">{stats.open}</p>
+                )}
               </div>
               <div className={`text-center p-2 rounded-md ${
                 isDark ? 'bg-blue-500/10' : 'bg-blue-50'
               }`}>
                 <p className={`text-base ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>Assigned</p>
-                <p className="font-bold text-lg">{stats.assigned}</p>
+                {loading ? (
+                  <div className={`h-5 w-8 mx-auto rounded animate-pulse ${isDark ? "bg-blue-800/40" : "bg-blue-200"}`} />
+                ) : (
+                  <p className="font-bold text-lg">{stats.assigned}</p>
+                )}
               </div>
               <div className={`text-center p-2 rounded-md ${
                 isDark ? 'bg-emerald-500/10' : 'bg-emerald-50'
               }`}>
                 <p className={`text-base ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>Closed</p>
-                <p className="font-bold text-lg">{stats.closed}</p>
+                {loading ? (
+                  <div className={`h-5 w-8 mx-auto rounded animate-pulse ${isDark ? "bg-emerald-800/40" : "bg-emerald-200"}`} />
+                ) : (
+                  <p className="font-bold text-lg">{stats.closed}</p>
+                )}
               </div>
             </div>
 
@@ -415,7 +429,10 @@ const assignStaff = async (roomId, staffId) => {
               }`} />
               <input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setTicketPage(1);
+                }}
                 placeholder="Search tickets..."
                 className={`
                   pl-9 pr-3 py-2 w-full rounded-md border text-lg
@@ -493,6 +510,7 @@ const assignStaff = async (roomId, staffId) => {
         onClick={() => {
           setFilterStatus(status);
           setIsFilterOpen(false);
+          setTicketPage(1);
         }}
         className={`w-full text-left px-3 py-2 text-base flex items-center gap-2 transition
           ${filterStatus === status
@@ -516,7 +534,27 @@ const assignStaff = async (roomId, staffId) => {
 
           {/* Tickets List */}
           <div className="flex-1 overflow-y-auto">
-            {filteredTickets.length === 0 ? (
+            {loading ? (
+              <div className="p-2 space-y-2">
+                {Array.from({ length: ticketPageSize }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-3 rounded-lg animate-pulse ${
+                      isDark ? "bg-gray-800/70" : "bg-gray-100"
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <div className={`w-8 h-8 rounded-lg ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                      <div className="flex-1 space-y-2">
+                        <div className={`h-3 rounded w-1/3 ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                        <div className={`h-2.5 rounded w-1/2 ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                        <div className={`h-2.5 rounded w-2/3 ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredTickets.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full p-4">
                 <div className={`p-3 rounded-lg mb-3 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
                   <Inbox className={`w-8 h-8 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
@@ -535,7 +573,7 @@ const assignStaff = async (roomId, staffId) => {
               </div>
             ) : (
               <div className="p-2">
-                {filteredTickets.map((ticket, index) => (
+                {paginatedTickets.map((ticket, index) => (
                   <div
                     key={ticket._id}
                     onClick={() => {
@@ -637,6 +675,54 @@ const assignStaff = async (roomId, staffId) => {
               </div>
             )}
           </div>
+
+          {!loading && filteredTickets.length > 0 && (
+            <div className={`p-2 border-t ${isDark ? "border-gray-800" : "border-gray-200"}`}>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}>Per page</span>
+                  <select
+                    value={ticketPageSize}
+                    onChange={(e) => {
+                      setTicketPageSize(Number(e.target.value));
+                      setTicketPage(1);
+                    }}
+                    className={`text-xs rounded px-2 py-1 border ${
+                      isDark
+                        ? "bg-gray-800 border-gray-700 text-gray-200"
+                        : "bg-white border-gray-300 text-gray-700"
+                    }`}
+                  >
+                    <option value={12}>12</option>
+                    <option value={20}>20</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setTicketPage((p) => Math.max(1, p - 1))}
+                    disabled={ticketPage === 1}
+                    className={`p-1.5 rounded ${ticketPage === 1 ? "opacity-50 cursor-not-allowed" : ""} ${
+                      isDark ? "hover:bg-gray-800" : "hover:bg-gray-100"
+                    }`}
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <span className={`text-xs px-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+                    {ticketPage}/{ticketTotalPages}
+                  </span>
+                  <button
+                    onClick={() => setTicketPage((p) => Math.min(ticketTotalPages, p + 1))}
+                    disabled={ticketPage === ticketTotalPages}
+                    className={`p-1.5 rounded ${ticketPage === ticketTotalPages ? "opacity-50 cursor-not-allowed" : ""} ${
+                      isDark ? "hover:bg-gray-800" : "hover:bg-gray-100"
+                    }`}
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ---------- CHAT AREA ---------- */}
@@ -675,6 +761,13 @@ const assignStaff = async (roomId, staffId) => {
 
 
 
+            </div>
+          ) : loading ? (
+            <div className="flex-1 p-4 space-y-3 animate-pulse">
+              <div className={`h-12 rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-100"}`} />
+              <div className={`h-24 rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-100"}`} />
+              <div className={`h-24 rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-100"}`} />
+              <div className={`h-24 rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-100"}`} />
             </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-4 animate-fade-in">

@@ -1,9 +1,16 @@
 import api from "./axios"; // your axios instance
 
 // ✅ Get paginated customers
-export const getCustomers = (page = 1, limit = 10) => {
-  return api.get(`/api/customer/customers?page=${page}&limit=${limit}`);
+export const getCustomers = (page, limit, filters = {}) => {
+  const params = new URLSearchParams({
+    page,
+    limit,
+    ...filters,
+  });
+
+  return api.get(`/api/customer?${params.toString()}`);
 };
+
 
 // ✅ Get single customer
 export const getSingleCustomer = (customerId) => {

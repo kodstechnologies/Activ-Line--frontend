@@ -19,6 +19,15 @@ const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
 const DashboardPage = lazy(() =>
   import("../pages/Admin/DashboardPage/DashboardPage")
 );
+const StaffDashboardPage = lazy(() =>
+  import("../pages/Staff/Dashboard/Staffdashboard")
+);
+const StaffCustomersPage = lazy(() =>
+  import("../pages/Staff/Customers/StaffCustomers")
+);
+const StaffCustomerDetailsPage = lazy(() =>
+  import("../pages/Staff/Customers/Staffcustomerdetails")
+);
 const Customers = lazy(() => import("../pages/Admin/Customers"));
 const CustomerDetails = lazy(() => import("../pages/Admin/CustomerDetails"));
 const FieldStaffPage = lazy(() => import("../pages/Admin/FieldStaffPage"));
@@ -47,11 +56,15 @@ const FranchisePage = lazy(() => import("../pages/Admin/Franchise"));
 const FranchiseDashboard = lazy(() =>
   import("../pages/Franchise/Dashboard/Dashboard")
 );
-// const Mysubscribers = lazy(() => import('../pages/Franchise/Customers'));
+const FranchiseCustomers = lazy(() => import('../pages/Franchise/Customers'));
 const LocalStaff = lazy(() => import("../pages/Franchise/LocalStaff"));
 const Collections = lazy(() => import("../pages/Franchise/Collections"));
+const FranchisePlans = lazy(() => import("../pages/Franchise/Frenchiseplans"));
+const PaymentHistory = lazy(() => import("../pages/Franchise/Paymenthistory"));
 // const ZoneSupport = lazy(() => import('../pages/Franchise/ZoneSupport'));
-const Profile = lazy(() => import("../pages/Franchise/Profile"));
+const ZoneTickets = lazy(() => import("../pages/Franchise/ZoneTickets"));
+const FranchiseProfile = lazy(() => import("../pages/Franchise/Frenchiseprofile"));
+const FranchiseReport = lazy(() => import("../pages/Franchise/FrenchiseReport"));
 
 //staff
 const AssignedTickets = lazy(() => import("../pages/Staff/AssignedTickets"));
@@ -76,10 +89,29 @@ const PublicRoute = ({ children }) => {
 
 const ProfileSwitcher = ({ franchiseUser, onUpdate }) => {
   const { user } = useAuth();
-  if (user?.role === 'franchise') {
-    return <Profile franchiseUser={franchiseUser} onUpdate={onUpdate} />;
+  const role = user?.role?.toLowerCase();
+  if (["franchise", "franchise_admin"].includes(role)) {
+    return <FranchiseProfile franchiseUser={franchiseUser} onUpdate={onUpdate} />;
   }
   return <ProfilePage />;
+};
+
+const DashboardSwitcher = () => {
+  const { user } = useAuth();
+  const role = user?.role?.toLowerCase();
+  if (["staff", "admin_staff"].includes(role)) {
+    return <StaffDashboardPage />;
+  }
+  return <DashboardPage />;
+};
+
+const CustomersSwitcher = () => {
+  const { user } = useAuth();
+  const role = user?.role?.toLowerCase();
+  if (["staff", "admin_staff"].includes(role)) {
+    return <StaffCustomersPage />;
+  }
+  return <Customers />;
 };
 
 const Router = () => {
@@ -134,7 +166,7 @@ const Router = () => {
           <Route
             path="franchise-notifications"
             element={
-              <ProtectedRoute allowedRoles={["franchise"]}>
+              <ProtectedRoute allowedRoles={["franchise", "franchise_admin"]}>
                 
                   <FranchiseNotifications />
                 
@@ -157,9 +189,7 @@ const Router = () => {
             path="dashboard"
             element={
               <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}>
-                
-                  <DashboardPage />
-                
+                <DashboardSwitcher />
               </ProtectedRoute>
             }
           />
@@ -176,7 +206,7 @@ const Router = () => {
           <Route
             path="franchise-dashboard"
             element={
-              <ProtectedRoute allowedRoles={["franchise"]}>
+              <ProtectedRoute allowedRoles={["franchise", "franchise_admin"]}>
                 
                   <FranchiseDashboard />
                 
@@ -187,17 +217,15 @@ const Router = () => {
           <Route
             path="my-customers"
             element={
-              <ProtectedRoute allowedRoles={["franchise"]}>
-                
-                  <Customers />
-                
+              <ProtectedRoute allowedRoles={["franchise", "franchise_admin"]}>
+                  <FranchiseCustomers onUpdateCash={() => {}} />
               </ProtectedRoute>
             }
           />
           <Route
             path="my-customers-details/:id"
             element={
-              <ProtectedRoute allowedRoles={["franchise"]}>
+              <ProtectedRoute allowedRoles={["franchise", "franchise_admin"]}>
                 
                   <CustomerDetails />
                 
@@ -208,9 +236,9 @@ const Router = () => {
           <Route
             path="customers"
             element={
-              
-                <Customers />
-              
+              <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}>
+                <CustomersSwitcher />
+              </ProtectedRoute>
             }
           />
           <Route
@@ -219,6 +247,14 @@ const Router = () => {
               
                 <CustomerDetails />
               
+            }
+          />
+          <Route
+            path="staff-customer/:id"
+            element={
+              <ProtectedRoute allowedRoles={["staff", "admin_staff"]}>
+                <StaffCustomerDetailsPage />
+              </ProtectedRoute>
             }
           />
 
@@ -232,24 +268,48 @@ const Router = () => {
               </ProtectedRoute>
             }
           />
-          <Route
+          {/* <Route
             path="local-staff"
             element={
-              <ProtectedRoute allowedRoles={["franchise"]}>
+              <ProtectedRoute allowedRoles={["franchise", "franchise_admin"]}>
                 
                   <LocalStaff />
                 
               </ProtectedRoute>
             }
-          />
+          /> */}
 
           <Route
             path="collections"
             element={
-              <ProtectedRoute allowedRoles={["franchise"]}>
+              <ProtectedRoute allowedRoles={["franchise", "franchise_admin"]}>
                 
                   <Collections cashInHand={12450} setCashInHand={() => {}} />
                 
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="franchise-plans"
+            element={
+              <ProtectedRoute allowedRoles={["franchise", "franchise_admin"]}>
+                <FranchisePlans />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="payment-history"
+            element={
+              <ProtectedRoute allowedRoles={["franchise", "franchise_admin"]}>
+                <PaymentHistory />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="franchise-reports"
+            element={
+              <ProtectedRoute allowedRoles={["franchise", "franchise_admin"]}>
+                <FranchiseReport />
               </ProtectedRoute>
             }
           />
@@ -344,10 +404,8 @@ const Router = () => {
           <Route
             path="Zone-tickets"
             element={
-              <ProtectedRoute allowedRoles={["franchise"]}>
-                
-                  <Tickets />
-                
+              <ProtectedRoute allowedRoles={["franchise", "franchise_admin"]}>
+                  <ZoneTickets />
               </ProtectedRoute>
             }
           />
@@ -395,7 +453,7 @@ const Router = () => {
           <Route
             path="profile"
             element={
-              <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "franchise", "staff", "admin_staff"]}>
+              <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "franchise", "franchise_admin", "staff", "admin_staff"]}>
                 <ProfileSwitcher
                   franchiseUser={franchiseUser}
                   onUpdate={setFranchiseUser}

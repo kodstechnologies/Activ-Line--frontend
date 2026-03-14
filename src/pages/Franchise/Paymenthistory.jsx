@@ -10,9 +10,9 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import {
-  getPaymentHistoryByGroup,
-  getPaymentHistoryDetails,
-} from '../../api/paymnethistoyapi';
+  getFranchisePaymentHistoryByAccount,
+  getFranchisePaymentHistoryDetails,
+} from '../../api/frenchise/paymanehistypapi';
 
 const statusFilterToApi = {
   All: '',
@@ -60,6 +60,12 @@ const BillingPage = () => {
   const { user } = useAuth();
 
   const [filter, setFilter] = useState('All');
+  const [planName, setPlanName] = useState('');
+  const [date, setDate] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [accountIdFilter, setAccountIdFilter] = useState('');
+  const [profileIdFilter, setProfileIdFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [loading, setLoading] = useState(false);
@@ -73,19 +79,14 @@ const BillingPage = () => {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
-  const resolvedGroupId = useMemo(() => {
-    if (!user) return '';
-    return (
-      user.groupId ||
-      user.userGroupId ||
-      user.accountId ||
-      user.userName ||
-      user.username ||
-      user.profileId ||
-      user._id ||
-      ''
-    );
-  }, [user]);
+  const resolvedAccountId = useMemo(
+    () => user?.accountId || user?.AccountId || '',
+    [user]
+  );
+  const resolvedProfileId = useMemo(
+    () => user?.profileId || user?.ProfileId || '',
+    [user]
+  );
 
   const statusParam = useMemo(() => statusFilterToApi[filter] || '', [filter]);
 
@@ -94,11 +95,21 @@ const BillingPage = () => {
       setLoading(true);
       setError('');
 
-      const res = await getPaymentHistoryByGroup({
-        groupId: resolvedGroupId || undefined,
+      const effectiveAccountId = accountIdFilter.trim() || resolvedAccountId;
+      if (!effectiveAccountId) {
+        throw new Error('Account ID is required for franchise payment history');
+      }
+
+      const res = await getFranchisePaymentHistoryByAccount({
+        accountId: effectiveAccountId,
         page: currentPage,
         limit: itemsPerPage,
         status: statusParam,
+        planName: planName.trim() || undefined,
+        date: date || undefined,
+        fromDate: fromDate || undefined,
+        toDate: toDate || undefined,
+        profileId: profileIdFilter.trim() || resolvedProfileId || undefined,
       });
 
       const rows = Array.isArray(res?.data) ? res.data : [];
@@ -113,7 +124,19 @@ const BillingPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [resolvedGroupId, currentPage, itemsPerPage, statusParam]);
+  }, [
+    resolvedAccountId,
+    resolvedProfileId,
+    currentPage,
+    itemsPerPage,
+    statusParam,
+    planName,
+    date,
+    fromDate,
+    toDate,
+    accountIdFilter,
+    profileIdFilter,
+  ]);
 
   useEffect(() => {
     loadTransactions();
@@ -121,7 +144,7 @@ const BillingPage = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filter]);
+  }, [filter, planName, date, fromDate, toDate, accountIdFilter, profileIdFilter]);
 
   const paginationData = useMemo(() => {
     const safeTotalItems = totalItems;
@@ -173,7 +196,7 @@ const BillingPage = () => {
 
     try {
       setViewLoadingId(paymentId);
-      const res = await getPaymentHistoryDetails(paymentId);
+      const res = await getFranchisePaymentHistoryDetails(paymentId);
       const details = res?.data || res?.payment || res;
       setSelectedPayment(details || null);
       setIsViewModalOpen(true);
@@ -195,20 +218,60 @@ const BillingPage = () => {
   return (
     <div className="space-y-6">
       <div className={`rounded-xl shadow-sm border flex flex-col h-full ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'}`}>
-        <div className={`p-6 border-b flex justify-between items-center flex-shrink-0 ${isDark ? 'border-slate-800' : 'border-gray-200'}`}>
-          <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Transactions</h1>
-
-          <div className="relative">
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className={`border text-sm rounded-lg px-3 py-2 outline-none focus:border-blue-500 appearance-none pr-8 cursor-pointer transition-colors ${isDark ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700' : 'bg-white border-gray-300 text-gray-900 hover:bg-gray-50'}`}
-            >
-              <option value="All">All Transactions</option>
-              <option value="Paid">Paid</option>
-              <option value="Pending Dues">Pending Dues</option>
-            </select>
-            <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDark ? 'text-slate-400' : 'text-gray-500'}`} />
+        <div className={`p-6 border-b flex flex-col gap-4 ${isDark ? 'border-slate-800' : 'border-gray-200'}`}>
+          <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Payment History</h1>
+          <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-3">
+            <div className="relative">
+              <select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:border-blue-500 appearance-none pr-8 cursor-pointer transition-colors ${isDark ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700' : 'bg-white border-gray-300 text-gray-900 hover:bg-gray-50'}`}
+              >
+                <option value="All">All Transactions</option>
+                <option value="Paid">Paid</option>
+                <option value="Pending Dues">Pending Dues</option>
+              </select>
+              <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDark ? 'text-slate-400' : 'text-gray-500'}`} />
+            </div>
+            <input
+              value={planName}
+              onChange={(e) => setPlanName(e.target.value)}
+              placeholder="Filter by Plan Name"
+              className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+            />
+            <input
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              type="date"
+              title="Exact Date"
+              className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+            />
+            <input
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              type="date"
+              title="From Date"
+              className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+            />
+            <input
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              type="date"
+              title="To Date"
+              className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+            />
+            <input
+              value={accountIdFilter}
+              onChange={(e) => setAccountIdFilter(e.target.value)}
+              placeholder={resolvedAccountId ? `Account ID (${resolvedAccountId})` : 'Filter by Account ID'}
+              className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+            />
+            <input
+              value={profileIdFilter}
+              onChange={(e) => setProfileIdFilter(e.target.value)}
+              placeholder={resolvedProfileId ? `Profile ID (${resolvedProfileId})` : 'Filter by Profile ID'}
+              className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+            />
           </div>
         </div>
 

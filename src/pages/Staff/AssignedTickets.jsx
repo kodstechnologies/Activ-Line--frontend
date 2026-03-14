@@ -1,710 +1,3 @@
-// import React, { useEffect, useMemo, useState } from "react";
-// import { useTheme } from "../../context/ThemeContext";
-// import { useAuth } from "../../context/AuthContext";
-// import Chat from "../../components/chat/Chat";
-// import api from "../../api/axios";
-// import { socket } from "../../socket/socket";
-// import {
-//   Search,
-//   User,
-//   MessageSquare,
-//   Clock,
-//   CheckCircle,
-//   AlertCircle,
-//   ChevronLeft,
-//   ChevronRight,
-//   Phone,
-//   Mail,
-//   Calendar,
-//   Filter,
-//   X,
-// } from "lucide-react";
-// import {
-//   getOpenTickets,
-//   getInProgressTickets,
-//   getResolvedTickets,
-// } from "../../api/staffticket.api";
-// import { ChevronDown } from "lucide-react";
-
-// const AssignedTickets = () => {
-//   const { isDark } = useTheme();
-//   const { token } = useAuth();
-
-//   const [rooms, setRooms] = useState([]);
-//   const [activeRoomId, setActiveRoomId] = useState(null);
-//   const [messages, setMessages] = useState([]);
-//   const [search, setSearch] = useState("");
-//   const [loadingRooms, setLoadingRooms] = useState(true);
-//   const [loadingMessages, setLoadingMessages] = useState(false);
-//   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-//   const [statusFilter, setStatusFilter] = useState("all");
-//   const [openCount, setOpenCount] = useState(0);
-//   const [inProgressCount, setInProgressCount] = useState(0);
-//   const [resolvedCount, setResolvedCount] = useState(0);
-//   const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-//   const activeRoom = rooms.find((r) => r._id === activeRoomId);
-
-//   const ALLOWED_STATUS_TRANSITIONS = {
-//     OPEN: ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"],
-//     ASSIGNED: ["IN_PROGRESS", "RESOLVED", "CLOSED", "OPEN"],
-//     IN_PROGRESS: ["IN_PROGRESS", "RESOLVED", "CLOSED"],
-//     RESOLVED: ["RESOLVED", "OPEN", "IN_PROGRESS", "CLOSED"],
-//     CLOSED: ["CLOSED"],
-//   };
-
-//   const updateTicketStatus = async (roomId, status) => {
-//     const res = await api.patch("/api/chat/admin/status", {
-//       roomId,
-//       status,
-//     });
-//     // Assuming the API returns the updated room object in res.data.data
-//     // based on the provided successful response.
-//     return res.data.data;
-//   };
-
-//   const handleStatusChange = async (newStatus) => {
-//     if (!activeRoom) return;
-
-//     try {
-//       const updatedRoom = await updateTicketStatus(activeRoom._id, newStatus);
-
-//       // ✅ Update rooms list
-//       setRooms((prev) =>
-//         prev.map((r) =>
-//           r._id === updatedRoom._id ? { ...r, status: updatedRoom.status } : r,
-//         ),
-//       );
-//     } catch (err) {
-//       console.error("Status update failed", err);
-//     }
-//   };
-
-//   /* ================= LOAD ASSIGNED ROOMS ================= */
-//   useEffect(() => {
-//     if (!token) return;
-
-//     setLoadingRooms(true);
-
-//     api
-//       .get("/api/chat/staff/rooms")
-//       .then((res) => {
-//         const data = res.data.data || [];
-//         setRooms(data);
-//         if (!activeRoomId && data.length) {
-//           setActiveRoomId(data[0]._id);
-//         }
-//       })
-//       .catch(() => setRooms([]))
-//       .finally(() => setLoadingRooms(false));
-//   }, [token]);
-
-//   useEffect(() => {
-//     if (!token) return;
-
-//     Promise.all([
-//       getOpenTickets(),
-//       getInProgressTickets(),
-//       getResolvedTickets(),
-//     ])
-//       .then(([openRes, inProgressRes, resolvedRes]) => {
-//         setOpenCount(openRes.count);
-//         setInProgressCount(inProgressRes.count);
-//         setResolvedCount(resolvedRes.count);
-
-//         // OPTIONAL: if you want rooms also
-//         // console.log("Open rooms:", openRes.rooms);
-//         // console.log("In-progress rooms:", inProgressRes.rooms);
-//         // console.log("Resolved rooms:", resolvedRes.rooms);
-//       })
-//       .catch((err) => {
-//         console.error("Staff stats error:", err);
-//         setOpenCount(0);
-//         setInProgressCount(0);
-//         setResolvedCount(0);
-//       });
-//   }, [token]);
-
-//   /* ================= LOAD MESSAGES + SOCKET ================= */
-//   useEffect(() => {
-//     if (!activeRoomId || !token) return;
-
-//     setMessages([]);
-//     setLoadingMessages(true);
-
-//     // 1️⃣ Load history
-//     api
-//       .get(`/api/chat/staff/messages/${activeRoomId}`)
-//       .then((res) => setMessages(res.data.data || []))
-//       .catch(() => setMessages([]))
-//       .finally(() => setLoadingMessages(false));
-
-//     // 2️⃣ Socket join
-//     socket.auth = { token };
-//     if (!socket.connected) socket.connect();
-//     socket.emit("join-room", activeRoomId);
-
-//     const onNewMessage = (msg) => {
-//       setMessages((prev) => {
-//         if (prev.some((m) => m._id === msg._id)) return prev;
-//         return [...prev, msg];
-//       });
-//     };
-
-//     socket.on("new-message", onNewMessage);
-
-//     return () => {
-//       socket.off("new-message", onNewMessage);
-//       socket.disconnect();
-//     };
-//   }, [activeRoomId, token]);
-
-//   /* ================= SEND MESSAGE ================= */
-//   const sendMessage = (text) => {
-//     if (!text.trim() || !activeRoomId) return;
-
-//     socket.emit("send-message", {
-//       roomId: activeRoomId,
-//       message: text,
-//     });
-//   };
-
-//   /* ================= FILTERED ROOMS ================= */
-//   const filteredRooms = useMemo(() => {
-//     let result = rooms.filter(
-//       (r) =>
-//         r.customer?.fullName?.toLowerCase().includes(search.toLowerCase()) ||
-//         r._id?.toLowerCase().includes(search.toLowerCase()),
-//     );
-
-//     if (statusFilter !== "all") {
-//       result = result.filter((r) => r.status === statusFilter);
-//     }
-
-//     return result;
-//   }, [rooms, search, statusFilter]);
-
-//   /* ================= STATUS STYLING ================= */
-//   const getStatusStyles = (status) => {
-//     const base =
-//       "text-[11px] px-3 py-1 rounded-full font-semibold inline-flex items-center gap-1.5 border";
-
-//     if (isDark) {
-//       switch (status) {
-//         case "OPEN":
-//           return `${base} bg-blue-500/20 text-blue-300 border-blue-500/30`;
-//         case "IN_PROGRESS":
-//           return `${base} bg-amber-500/20 text-amber-300 border-amber-500/30`;
-//         case "RESOLVED":
-//           return `${base} bg-emerald-500/20 text-emerald-300 border-emerald-500/30`;
-//         case "CLOSED":
-//           return `${base} bg-gray-500/20 text-gray-300 border-gray-500/30`;
-//         default:
-//           return `${base} bg-gray-500/20 text-gray-300 border-gray-500/30`;
-//       }
-//     }
-
-//     // 🌞 LIGHT MODE
-//     switch (status) {
-//       case "OPEN":
-//         return `${base} bg-blue-50 text-blue-700 border-blue-200`;
-//       case "IN_PROGRESS":
-//         return `${base} bg-amber-100 text-amber-800 border-amber-300`;
-//       case "RESOLVED":
-//         return `${base} bg-emerald-100 text-emerald-800 border-emerald-300`;
-//       case "CLOSED":
-//         return `${base} bg-gray-100 text-gray-700 border-gray-300`;
-//       default:
-//         return `${base} bg-gray-100 text-gray-700 border-gray-300`;
-//     }
-//   };
-
-//   const getStatusIcon = (status) => {
-//     switch (status) {
-//       case "OPEN":
-//         return <AlertCircle className="w-3 h-3" />;
-//       case "IN_PROGRESS":
-//         return <Clock className="w-3 h-3" />;
-//       case "RESOLVED":
-//         return <CheckCircle className="w-3 h-3" />;
-//       default:
-//         return <MessageSquare className="w-3 h-3" />;
-//     }
-//   };
-
-//   /* ================= STATUS FILTER BUTTONS ================= */
-//   const statusFilters = [
-//     { key: "all", label: "All", count: rooms.length },
-//     { key: "OPEN", label: "Open", count: openCount },
-//     { key: "IN_PROGRESS", label: "In-Progress", count: inProgressCount },
-//     { key: "RESOLVED", label: "Resolved", count: resolvedCount },
-//   ];
-
-//   /* ================= LOADING COMPONENT ================= */
-//   if (loadingRooms) {
-//     return (
-//       <div className="h-[calc(100vh-120px)] flex items-center justify-center">
-//         <div className="text-center">
-//           <div className="relative inline-block">
-//             <div className="w-14 h-14 border-2 border-transparent rounded-full animate-spin border-t-blue-500"></div>
-//             <div className="absolute inset-0 flex items-center justify-center">
-//               <MessageSquare className="w-6 h-6 text-blue-500" />
-//             </div>
-//           </div>
-//           <p className="mt-4 text-gray-600 dark:text-gray-300 text-sm font-medium">
-//             Loading conversations...
-//           </p>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div
-//       className={`relative h-[calc(100vh-120px)] overflow-hidden ${isDark ? "bg-gray-900" : "bg-white"}`}
-//     >
-//       {/* MOBILE TOGGLE BUTTON */}
-//       <button
-//         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-//         className={`lg:hidden absolute top-3 left-3 z-50 p-2 rounded-md transition-all duration-200 ${
-//           isDark
-//             ? "bg-gray-800 text-gray-200 hover:bg-gray-700"
-//             : "bg-white text-gray-700 hover:bg-gray-50 shadow-sm"
-//         }`}
-//       >
-//         {isSidebarOpen ? (
-//           <ChevronLeft className="w-4 h-4" />
-//         ) : (
-//           <ChevronRight className="w-4 h-4" />
-//         )}
-//       </button>
-
-//       <div className="flex h-full">
-//         {/* ================= SIDEBAR ================= */}
-//         <div
-//           className={`
-//           absolute lg:relative z-40 h-full
-//           transition-all duration-300 ease-in-out
-//           ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-//           w-full lg:w-80
-//           ${isDark ? "bg-gray-900" : "bg-white"}
-//           border-r
-//           flex flex-col
-//           ${isDark ? "border-gray-800" : "border-gray-200"}
-//         `}
-//         >
-//           {/* Sidebar Header */}
-//           <div
-//             className={`p-3 ${isDark ? "border-gray-800" : "border-gray-200"} border-b`}
-//           >
-//             <div className="flex items-center justify-between mb-3">
-//               <h2
-//                 className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
-//               >
-//                 Assigned Chats
-//               </h2>
-//               <span
-//                 className={`px-2 py-1 rounded-full text-sm font-semibold ${
-//                   isDark
-//                     ? "bg-blue-500/20 text-blue-300"
-//                     : "bg-blue-100 text-blue-700"
-//                 }`}
-//               >
-//                 {rooms.length}
-//               </span>
-//             </div>
-
-//             {/* Search Bar */}
-//             <div className="relative mb-2">
-//               <Search
-//                 className={`absolute left-2.5 top-2.5 w-4 h-4 ${
-//                   isDark ? "text-gray-500" : "text-gray-400"
-//                 }`}
-//               />
-//               <input
-//                 value={search}
-//                 onChange={(e) => setSearch(e.target.value)}
-//                 placeholder="Search..."
-//                 className={`
-//                   pl-9 pr-8 py-2.5 w-full rounded-md border text-sm
-//                   transition-all duration-200
-//                   focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none
-//                   ${
-//                     isDark
-//                       ? "bg-gray-800 border-gray-700 text-white placeholder-gray-500"
-//                       : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400"
-//                   }
-//                 `}
-//               />
-//               {search && (
-//                 <button
-//                   onClick={() => setSearch("")}
-//                   className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600"
-//                 >
-//                   <X className="w-3.5 h-3.5" />
-//                 </button>
-//               )}
-//             </div>
-
-//             {/* Status Filters */}
-//             {/* <div className="flex flex-wrap gap-1 mt-2">
-//               {statusFilters.map((filter) => (
-//                 <button
-//                   key={filter.key}
-//                   onClick={() => setStatusFilter(filter.key)}
-//                   className={`
-//                     px-3 py-1.5 rounded text-xs font-medium transition-all duration-200
-//                     flex items-center gap-1
-//                     ${statusFilter === filter.key
-//                       ? isDark
-//                         ? 'bg-blue-500 text-white'
-//                         : 'bg-blue-500 text-white'
-//                       : isDark
-//                         ? 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-//                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-//                     }
-//                   `}
-//                 >
-//                   <span>{filter.label}</span>
-//                   {filter.count > 0 && (
-//                     <span className={`
-//                       px-1.5 rounded text-[10px]
-//                       ${statusFilter === filter.key
-//                         ? 'bg-white/20'
-//                         : isDark
-//                           ? 'bg-gray-700'
-//                           : 'bg-gray-200'
-//                       }
-//                     `}>
-//                       {filter.count}
-//                     </span>
-//                   )}
-//                 </button>
-//               ))}
-//             </div> */}
-
-//             {/* Filter Dropdown */}
-//             <div className="relative mt-2">
-//               <button
-//                 onClick={() => setIsFilterOpen((prev) => !prev)}
-//                 className={`
-//       w-full flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium
-//       transition-all duration-200
-//       ${
-//         isDark
-//           ? "bg-gray-800 text-gray-300 hover:bg-gray-700"
-//           : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-//       }
-//     `}
-//               >
-//                 <div className="flex items-center gap-2">
-//                   <Filter className="w-4 h-4" />
-//                   <span>
-//                     {statusFilter === "all"
-//                       ? "All Tickets"
-//                       : statusFilter.replace("_", " ")}
-//                   </span>
-//                 </div>
-//                 <ChevronDown
-//                   className={`w-4 h-4 transition-transform ${isFilterOpen ? "rotate-180" : ""}`}
-//                 />
-//               </button>
-
-//               {isFilterOpen && (
-//                 <div
-//                   className={`
-//         absolute z-50 mt-1 w-full rounded-md shadow-lg border overflow-hidden
-//         ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}
-//       `}
-//                 >
-//                   {statusFilters.map((filter) => (
-//                     <button
-//                       key={filter.key}
-//                       onClick={() => {
-//                         setStatusFilter(filter.key);
-//                         setIsFilterOpen(false);
-//                       }}
-//                       className={`
-//             w-full px-3 py-2 text-sm flex items-center justify-between
-//             transition-colors
-//             ${
-//               statusFilter === filter.key
-//                 ? isDark
-//                   ? "bg-blue-500 text-white"
-//                   : "bg-blue-500 text-white"
-//                 : isDark
-//                   ? "text-gray-300 hover:bg-gray-700"
-//                   : "text-gray-700 hover:bg-gray-100"
-//             }
-//           `}
-//                     >
-//                       <span>{filter.label}</span>
-//                       <span className="text-xs opacity-80">{filter.count}</span>
-//                     </button>
-//                   ))}
-//                 </div>
-//               )}
-//             </div>
-//           </div>
-
-//           {/* Rooms List */}
-//           <div className="flex-1 overflow-y-auto">
-//             {filteredRooms.length === 0 ? (
-//               <div className="flex flex-col items-center justify-center h-full p-4">
-//                 <div
-//                   className={`p-3 rounded-lg mb-3 ${isDark ? "bg-gray-800" : "bg-gray-100"}`}
-//                 >
-//                   <MessageSquare
-//                     className={`w-8 h-8 ${isDark ? "text-gray-600" : "text-gray-400"}`}
-//                   />
-//                 </div>
-//                 <p
-//                   className={`text-center text-base ${isDark ? "text-gray-400" : "text-gray-500"}`}
-//                 >
-//                   {search ? "No matching chats" : "No chats available"}
-//                 </p>
-//               </div>
-//             ) : (
-//               <div className="p-2">
-//                 {filteredRooms.map((room, index) => (
-//                   <div
-//                     key={room._id}
-//                     onClick={() => {
-//                       setActiveRoomId(room._id);
-//                       if (window.innerWidth < 1024) setIsSidebarOpen(false);
-//                     }}
-//                     className={`
-//                       relative p-3 rounded-lg cursor-pointer mb-2
-//                       transition-all duration-150
-//                       $activeRoomId === room._id
-//   ? isDark
-//     ? 'bg-gray-800'
-//     : 'bg-blue-50 border border-blue-200 shadow-sm'
-
-//                         : isDark
-//                           ? 'hover:bg-gray-800/50'
-//                           : 'hover:bg-gray-50'
-//                       }
-//                     `}
-//                   >
-//                     {/* Active indicator */}
-//                     {activeRoomId === room._id && (
-//                       <div
-//                         className={`absolute left-0 top-0 bottom-0 w-1 rounded-r ${
-//                           isDark ? "bg-blue-500" : "bg-blue-500"
-//                         }`}
-//                       ></div>
-//                     )}
-
-//                     <div className="flex items-start gap-2">
-//                       {/* Avatar */}
-//                       <div
-//                         className={`
-//                         flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center
-//                         ${
-//                           activeRoomId === room._id
-//                             ? isDark
-//                               ? "bg-blue-500"
-//                               : "bg-blue-500"
-//                             : isDark
-//                               ? "bg-gray-700"
-//                               : "bg-gray-200"
-//                         }
-//                       `}
-//                       >
-//                         <User
-//                           className={`w-3.5 h-3.5 ${
-//                             activeRoomId === room._id
-//                               ? "text-white"
-//                               : isDark
-//                                 ? "text-gray-400"
-//                                 : "text-gray-600"
-//                           }`}
-//                         />
-//                       </div>
-
-//                       {/* Content */}
-//                       <div className="flex-1 min-w-0">
-//                         <div className="flex items-center justify-between mb-0.5">
-//                           <h3
-//                             className={`font-bold text-sm truncate ${
-//                               activeRoomId === room._id
-//                                 ? isDark
-//                                   ? "text-white"
-//                                   : "text-gray-900"
-//                                 : isDark
-//                                   ? "text-gray-200"
-//                                   : "text-gray-900"
-//                             }`}
-//                           >
-//                             {+ room.customer?.userName || "Unknown"}
-//                           </h3>
-//                           {+ room.lastMessageAt && (
-//                             <span
-//                               className={`text-xs ${isDark ? "text-gray-500" : "text-gray-400"}`}
-//                             >
-//                               {new Date(
-//                                 + room.lastMessageAt,
-//                               ).toLocaleTimeString([], {
-//                                 hour: "2-digit",
-//                                 minute: "2-digit",
-//                               })}
-//                             </span>
-//                           )}
-//                         </div>
-
-//                         <div className="flex items-center gap-1.5 mb-1">
-//                           <span className={getStatusStyles(room.status)}>
-//                             {getStatusIcon(room.status)}
-//                             <span className="text-xs capitalize">
-//                               {room.status || "open"}
-//                             </span>
-//                           </span>
-//                           <span
-//                             className={`text-xs font-mono ${isDark ? "text-gray-500" : "text-gray-400"}`}
-//                           >
-//                             #{room._id.slice(-4)}
-//                           </span>
-//                         </div>
-
-//                         {/* Last message preview */}
-//                         {room.lastMessage && (
-//                           <p
-//                             className={`text-sm truncate ${isDark ? "text-gray-400" : "text-gray-600"}`}
-//                           >
-//                             {room.lastMessage}
-//                           </p>
-//                         )}
-//                       </div>
-
-//                       {/* Unread badge */}
-//                       {room.unreadCount > 0 && (
-//                         <span
-//                           className={`
-//                           flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center
-//                           text-xs font-bold
-//                           ${
-//                             isDark
-//                               ? "bg-blue-500 text-white"
-//                               : "bg-blue-500 text-white"
-//                           }
-//                         `}
-//                         >
-//                           {room.unreadCount}
-//                         </span>
-//                       )}
-//                     </div>
-//                   </div>
-//                 ))}
-//               </div>
-//             )}
-//           </div>
-//         </div>
-
-//         {/* ================= CHAT AREA ================= */}
-//         <div
-//           className={`
-//           flex-1 h-full flex flex-col
-//           ${isDark ? "bg-gray-900" : "bg-white"}
-//         `}
-//         >
-//           {/* Mobile overlay */}
-//           {isSidebarOpen && (
-//             <div
-//               onClick={() => setIsSidebarOpen(false)}
-//               className="lg:hidden fixed inset-0 bg-black/20 z-30 transition-opacity duration-300"
-//             />
-//           )}
-
-//           {activeRoom ? (
-//             loadingMessages ? (
-//               <div className="flex-1 flex flex-col items-center justify-center">
-//                 <div className="text-center">
-//                   <div className="relative inline-block mb-3">
-//                     <div className="w-12 h-12 border-2 border-transparent rounded-full animate-spin border-t-blue-500"></div>
-//                     <div className="absolute inset-0 flex items-center justify-center">
-//                       <MessageSquare className="w-5 h-5 text-blue-500" />
-//                     </div>
-//                   </div>
-//                   <p
-//                     className={`text-sm ${isDark ? "text-gray-300" : "text-gray-600"}`}
-//                   >
-//                     Loading messages...
-//                   </p>
-//                 </div>
-//               </div>
-//             ) : (
-//               <div className="flex-1 overflow-hidden">
-//                 <Chat
-//                   ticket={{
-//                     ticketId: activeRoom._id.slice(-6),
-//                     issue: activeRoom.issue || "Support",
-//                     customerName: active+ room.customer?.userName,
-//                     customerEmail: activeRoom.customer?.email,
-//                     customerPhone: activeRoom.customer?.phone,
-//                     status: activeRoom.status,
-//                     createdAt: activeRoom.createdAt,
-//                   }}
-//                   messages={messages}
-//                   onSendMessage={sendMessage}
-//                   showAssignment={false}
-//                   showStatus={true}
-//                   isDark={isDark}
-//                   allowedStatuses={
-//                     ALLOWED_STATUS_TRANSITIONS[activeRoom.status] || []
-//                   }
-//                   onStatusChange={handleStatusChange}
-//                 />
-//               </div>
-//             )
-//           ) : (
-//             <div className="flex-1 flex flex-col items-center justify-center p-4">
-//               <div
-//                 className={`max-w-sm p-6 rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
-//               >
-//                 <div
-//                   className={`w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4 ${
-//                     isDark ? "bg-gray-700" : "bg-gray-100"
-//                   }`}
-//                 >
-//                   <MessageSquare
-//                     className={`w-8 h-8 ${isDark ? "text-gray-500" : "text-gray-400"}`}
-//                   />
-//                 </div>
-//                 <h3
-//                   className={`text-lg font-bold mb-2 text-center ${isDark ? "text-white" : "text-gray-900"}`}
-//                 >
-//                   Select a Chat
-//                 </h3>
-//                 <p
-//                   className={`text-sm text-center mb-4 ${isDark ? "text-gray-400" : "text-gray-600"}`}
-//                 >
-//                   Choose a conversation from the sidebar
-//                 </p>
-//                 <div className="flex items-center justify-center gap-3 text-xs">
-//                   <div
-//                     className={`flex items-center gap-1 px-2 py-1 rounded ${isDark ? "bg-gray-700 text-gray-300" : "bg-gray-100 text-gray-700"}`}
-//                   >
-//                     <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-//                     <span>Open: {openCount}</span>
-//                   </div>
-//                   <div
-//                     className={`flex items-center gap-1 px-2 py-1 rounded ${isDark ? "bg-gray-700 text-gray-300" : "bg-gray-100 text-gray-700"}`}
-//                   >
-//                     <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
-//                     <span>In-Progress: {inProgressCount}</span>
-//                   </div>
-//                 </div>
-//               </div>
-//             </div>
-//           )}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default AssignedTickets;
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
@@ -717,7 +10,7 @@ import {
   User,
   MessageSquare,
   Clock,
-  CheckCircle,
+  CheckCircle,  
   AlertCircle,
   ChevronLeft,
   ChevronRight,
@@ -734,6 +27,23 @@ import {
   getResolvedTickets,
 } from "../../api/staffticket.api";
 import { ChevronDown } from "lucide-react";
+
+const getMessageTime = (message) => {
+  const parsed = new Date(message?.createdAt).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const sortMessagesByCreatedAt = (list = []) =>
+  [...list].sort((a, b) => getMessageTime(a) - getMessageTime(b));
+
+const normalizeMessageForChat = (msg) => {
+  const role = String(msg.senderRole || "").toUpperCase();
+  return {
+    ...msg,
+    senderRole: role,
+    sender: role === "CUSTOMER" ? "customer" : "agent"
+  };
+};
 
 const AssignedTickets = () => {
   const { isDark } = useTheme();
@@ -828,12 +138,15 @@ const AssignedTickets = () => {
   useEffect(() => {
     if (!activeRoomId || !token) return;
 
-    setMessages([]);
+    setMessages([]); 
     setLoadingMessages(true);
 
     api
       .get(`/api/chat/staff/messages/${activeRoomId}`)
-      .then((res) => setMessages(res.data.data || []))
+      .then((res) => {
+        const normalized = (res.data.data || []).map(normalizeMessageForChat);
+        setMessages(sortMessagesByCreatedAt(normalized));
+      })
       .catch(() => setMessages([]))
       .finally(() => setLoadingMessages(false));
 
@@ -844,7 +157,7 @@ const AssignedTickets = () => {
     const onNewMessage = (msg) => {
       setMessages((prev) => {
         if (prev.some((m) => m._id === msg._id)) return prev;
-        return [...prev, msg];
+        return sortMessagesByCreatedAt([...prev, normalizeMessageForChat(msg)]);
       });
     };
 
@@ -852,8 +165,6 @@ const AssignedTickets = () => {
 
     return () => {
       socket.off("new-message", onNewMessage);
-      // Do NOT disconnect here – better to keep socket alive across room changes
-      // socket.disconnect();
     };
   }, [activeRoomId, token]);
 
@@ -1166,7 +477,7 @@ const AssignedTickets = () => {
                         ${activeRoomId === room._id ? "bg-blue-600" : isDark ? "bg-gray-700" : "bg-gray-300"}
                       `}
                     >
-                      {(+room.customer?.userName?.[0] || "?").toUpperCase()}
+                      {(room.customer?.userName?.[0] || "?").toUpperCase()}
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -1174,13 +485,13 @@ const AssignedTickets = () => {
                         <h4
                           className={`font-semibold truncate ${isDark ? "text-white" : "text-gray-900"}`}
                         >
-                          {+room.customer?.userName || "Unknown Customer"}
+                          {room.customer?.userName || "Unknown Customer"}
                         </h4>
-                        {+room.lastMessageAt && (
+                        {room.lastMessageAt && (
                           <span
                             className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"}`}
                           >
-                            {new Date(+room.lastMessageAt).toLocaleTimeString(
+                            {new Date(room.lastMessageAt).toLocaleTimeString(
                               [],
                               {
                                 hour: "2-digit",
@@ -1321,24 +632,24 @@ const AssignedTickets = () => {
                     <div className="w-3 h-3 rounded-full bg-amber-500" />
                     <span>In Progress: {inProgressCount}</span>
                   </div>
-                  <div
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                      isDark
-                        ? "bg-gray-800 text-emerald-300"
-                        : "bg-emerald-50 text-emerald-700"
-                    }`}
-                  >
-                    <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                    <span>Resolved: {resolvedCount}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </main>
-      </div>
-    </div>
-  );
-};
-
-export default AssignedTicketsChat;
+                                    <div
+                                      className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                                        isDark
+                                          ? "bg-gray-800 text-emerald-300"
+                                          : "bg-emerald-50 text-emerald-700"
+                                      }`}
+                                    >
+                                      <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                                      <span>Resolved: {resolvedCount}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </main>
+                        </div>
+                      </div>
+                    );
+                  };
+                  
+                  export default AssignedTickets;

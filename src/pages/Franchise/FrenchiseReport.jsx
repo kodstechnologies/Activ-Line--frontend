@@ -37,9 +37,8 @@ const Reports = () => {
         if (!user) return "";
         return (
             user.accountId ||
-            user.userName ||
-            user.username ||
-            user._id ||
+            user.AccountId ||
+            user.account_id ||
             ""
         );
     }, [user]);
