@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Search, Filter, XCircle, ChevronDown, ChevronLeft, ChevronRight, Edit, Eye } from 'lucide-react';
 import { useEffect } from "react";
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from "../../context/AuthContext.jsx";
+import { updateCustomer } from "../../api/customer.api";
 import api from "../../api/axios";
 import Lottie from "lottie-react";
 import fadeSlideAnimation from "../../animations/Profile Avatar of Young Boy.json";
@@ -12,6 +14,8 @@ import fadeSlideAnimation from "../../animations/Profile Avatar of Young Boy.jso
 const SubscribersPage = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
+  const { user } = useAuth();
+  const canEditCustomer = user?.role?.toLowerCase() !== "customer";
   const [subscribers, setSubscribers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalItems, setTotalItems] = useState(0);const [totalPages, setTotalPages] = useState(1);
@@ -181,6 +185,7 @@ const [selectedStatus, setSelectedStatus] = useState('All');
 
   const handleEditClick = (subscriber, e) => {
     e.stopPropagation();
+    if (!canEditCustomer) return;
     setSelectedSubscriber(subscriber);
     setEditFiles({ idFile: null, addressFile: null, cafFile: null, reportFile: null, signFile: null, profilePicFile: null });
     setEditSubscriber({
@@ -231,6 +236,7 @@ const [selectedStatus, setSelectedStatus] = useState('All');
 
   const handleUpdateSubscriber = async () => {
     if (!selectedSubscriber) return;
+    if (!canEditCustomer) return;
 
     try {
       const formData = new FormData();
@@ -252,9 +258,7 @@ const [selectedStatus, setSelectedStatus] = useState('All');
       });
 
       const updateId = selectedSubscriber.activlineUserId || selectedSubscriber.id;
-      const res = await api.post(`/api/customer/update/${updateId}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const res = await updateCustomer(updateId, formData);
       
       if (res.data.success) {
         setIsEditModalOpen(false);
@@ -536,8 +540,17 @@ const handlePageChange = (page) => {
                             </button>
                             <button
                               onClick={(e) => handleEditClick(sub, e)}
-                              className={`p-2 rounded-lg transition-all ${isDark ? 'hover:bg-slate-800 text-slate-400 hover:text-green-400' : 'hover:bg-gray-100 text-gray-400 hover:text-green-600'}`}
-                              title="Edit Customer"
+                              disabled={!canEditCustomer}
+                              className={`p-2 rounded-lg transition-all ${
+                                canEditCustomer
+                                  ? (isDark
+                                      ? 'hover:bg-slate-800 text-slate-400 hover:text-green-400'
+                                      : 'hover:bg-gray-100 text-gray-400 hover:text-green-600')
+                                  : (isDark
+                                      ? 'text-slate-600 cursor-not-allowed'
+                                      : 'text-gray-300 cursor-not-allowed')
+                              }`}
+                              title={canEditCustomer ? "Edit Customer" : "Not allowed"}
                             >
                               <Edit className="w-4 h-4" />
                             </button>

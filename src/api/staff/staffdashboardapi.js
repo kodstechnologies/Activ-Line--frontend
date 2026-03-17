@@ -61,3 +61,16 @@ export const getRecentTickets = async (limit = 5) => {
       "N/A",
   }));
 };
+
+export const getAssignedPaymentHistory = async (params = {}) => {
+  const response = await api.get(
+    "/api/staff/admin-staff/assigned-payment-history",
+    { params }
+  );
+
+  const payload = response?.data?.data || response?.data || {};
+  const payments =
+    payload?.payments || payload?.items || payload?.history || payload || [];
+
+  return Array.isArray(payments) ? payments : [];
+};

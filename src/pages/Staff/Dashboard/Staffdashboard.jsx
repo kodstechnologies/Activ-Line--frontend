@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, memo } from "react";
+﻿import React, { useEffect, useState, useCallback, memo } from "react";
 import {
   MessageSquare,
   Clock,
@@ -15,16 +15,17 @@ import { useTheme } from "../../../context/ThemeContext";
 import Lottie from "lottie-react";
 import telecomAnimation from "../../../animations/Activline-Dashboard.json";
 
-// ── API imports (only the ones actually used) ──
+// â”€â”€ API imports (only the ones actually used) â”€â”€
 import {
   getOpenTickets,
   getInProgressTickets,
   getTodayResolvedTickets,
   getTotalCustomers,
   getRecentTickets,
+  getAssignedPaymentHistory,
 } from "../../../api/staff/staffdashboardapi";
 
-// ── Reusable small components ──
+// â”€â”€ Reusable small components â”€â”€
 const DashboardHeaderAnimation = memo(({ isDark }) => (
   <div
     className={`flex items-center justify-center rounded-xl p-2 transition-colors ${
@@ -41,32 +42,41 @@ const DashboardHeaderAnimation = memo(({ isDark }) => (
 ));
 
 const StatusIcon = ({ status }) => {
-  switch (status) {
+  switch (String(status || "").toUpperCase()) {
     case "OPEN":     return <AlertCircle className="h-4 w-4 text-yellow-500" />;
     case "ASSIGNED": return <Clock className="h-4 w-4 text-blue-500" />;
     case "RESOLVED": return <CheckCircle className="h-4 w-4 text-green-500" />;
+    case "PENDING":  return <Clock className="h-4 w-4 text-amber-500" />;
+    case "SUCCESS":
+    case "PAID":     return <CheckCircle className="h-4 w-4 text-green-500" />;
+    case "FAILED":   return <AlertCircle className="h-4 w-4 text-red-500" />;
     default:         return <AlertCircle className="h-4 w-4 text-gray-500" />;
   }
 };
 
 const StatusBadge = memo(({ status, isDark }) => {
   const base = "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border";
+  const statusKey = String(status || "").toUpperCase();
 
   const styles = {
     OPEN:     isDark ? "bg-yellow-500/20 text-yellow-300 border-yellow-500/30" : "bg-yellow-50 text-yellow-700 border-yellow-200",
     ASSIGNED: isDark ? "bg-blue-500/20 text-blue-300 border-blue-500/30"   : "bg-blue-50 text-blue-700 border-blue-200",
     RESOLVED: isDark ? "bg-green-500/20 text-green-300 border-green-500/30" : "bg-green-50 text-green-700 border-green-200",
-  }[status] || (isDark ? "bg-gray-500/20 text-gray-300 border-gray-500/30" : "bg-gray-50 text-gray-700 border-gray-200");
+    PENDING:  isDark ? "bg-amber-500/20 text-amber-300 border-amber-500/30" : "bg-amber-50 text-amber-700 border-amber-200",
+    SUCCESS:  isDark ? "bg-green-500/20 text-green-300 border-green-500/30" : "bg-green-50 text-green-700 border-green-200",
+    PAID:     isDark ? "bg-green-500/20 text-green-300 border-green-500/30" : "bg-green-50 text-green-700 border-green-200",
+    FAILED:   isDark ? "bg-red-500/20 text-red-300 border-red-500/30"       : "bg-red-50 text-red-700 border-red-200",
+  }[statusKey] || (isDark ? "bg-gray-500/20 text-gray-300 border-gray-500/30" : "bg-gray-50 text-gray-700 border-gray-200");
 
   return (
     <span className={`${base} ${styles}`}>
-      <StatusIcon status={status} />
-      {status}
+      <StatusIcon status={statusKey} />
+      {statusKey || "UNKNOWN"}
     </span>
   );
 });
 
-// ── Card component ──
+// â”€â”€ Card component â”€â”€
 const DashboardCard = memo(({ title, value, icon, color, bgColor, textColor, isDark, index }) => {
   const progress = Math.min(Math.round((value / 100) * 100), 100);
 
@@ -96,7 +106,7 @@ const DashboardCard = memo(({ title, value, icon, color, bgColor, textColor, isD
   );
 });
 
-// ── Section Card Wrapper ──
+// â”€â”€ Section Card Wrapper â”€â”€
 const SectionCard = memo(({ title, subtitle, icon, children, isDark }) => (
   <div className={`rounded-2xl overflow-hidden ${isDark ? "bg-gray-800/70" : "bg-white"} shadow-lg`}>
     <div className={`px-6 py-4 border-b ${isDark ? "border-gray-700" : "border-gray-200"} flex items-center gap-3`}>
@@ -110,7 +120,7 @@ const SectionCard = memo(({ title, subtitle, icon, children, isDark }) => (
   </div>
 ));
 
-// ── Skeleton ──
+// â”€â”€ Skeleton â”€â”€
 const SkeletonCard = () => (
   <div className="rounded-2xl p-6 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse h-40" />
 );
@@ -121,7 +131,31 @@ const SkeletonTableRow = () => (
   </div>
 );
 
-// ── Main Dashboard ──
+// Helpers
+const formatCurrency = (amount, currency = "INR") => {
+  const value = Number(amount || 0);
+  if (isNaN(value)) return "--";
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+};
+
+const formatDateTime = (dateString) => {
+  if (!dateString) return "--";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "--";
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+};
+
+// â”€â”€ Main Dashboard â”€â”€
 const DashboardPage = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
@@ -133,17 +167,19 @@ const DashboardPage = () => {
     totalCustomers: 0,
   });
   const [recentTickets, setRecentTickets] = useState([]);
+  const [recentPayments, setRecentPayments] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     try {
-      const [open, inProg, today, total, recent] = await Promise.all([
+      const [open, inProg, today, total, recent, payments] = await Promise.all([
         getOpenTickets(),
         getInProgressTickets(),
         getTodayResolvedTickets(),
         getTotalCustomers(),
         getRecentTickets(5),
+        getAssignedPaymentHistory({ page: 1, limit: 5 }),
       ]);
 
       setStats({
@@ -154,8 +190,10 @@ const DashboardPage = () => {
       });
 
       setRecentTickets(recent ?? []);
+      setRecentPayments(Array.isArray(payments) ? payments : []);
     } catch (err) {
       console.error("Dashboard data fetch failed:", err);
+      setRecentPayments([]);
     } finally {
       setLoading(false);
     }
@@ -163,7 +201,7 @@ const DashboardPage = () => {
 
   useEffect(() => {
     loadDashboard();
-    // Optional: auto-refresh every 3–5 minutes
+    // Optional: auto-refresh every 3â€“5 minutes
     // const interval = setInterval(loadDashboard, 180_000);
     // return () => clearInterval(interval);
   }, [loadDashboard]);
@@ -252,7 +290,7 @@ const DashboardPage = () => {
                               <div className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
                                 #{ticket.ticketId.slice(-6)}
                               </div>
-                              <div className="text-xs text-gray-500 mt-0.5">{ticket.customer || "—"}</div>
+                              <div className="text-xs text-gray-500 mt-0.5">{ticket.customer || "â€”"}</div>
                             </div>
                           </div>
                         </td>
@@ -291,21 +329,70 @@ const DashboardPage = () => {
           )}
         </SectionCard>
 
-        {/* Recent Payments (placeholder) */}
+        {/* Recent Payments */}
         <SectionCard title="Recent Payments" subtitle="Latest financial transactions" icon={<TrendingUp className="h-5 w-5" />} isDark={isDark}>
-          <div className={`p-10 text-center rounded-xl ${isDark ? "bg-gray-800/50" : "bg-gray-100"}`}>
-            <div className="flex justify-center mb-6">
-              <div className="relative">
-                <div className={`h-20 w-20 rounded-full border-4 ${isDark ? "border-gray-600" : "border-gray-300"}`} />
-                <div className={`absolute inset-0 h-20 w-20 rounded-full border-4 border-t-transparent border-blue-500 animate-spin`} />
-              </div>
+          {loading ? (
+            <div className="space-y-3">
+              {Array(5).fill().map((_, i) => <SkeletonTableRow key={i} />)}
             </div>
-            <h3 className={`text-xl font-semibold mb-2 ${isDark ? "text-white" : "text-gray-900"}`}>Payments Module</h3>
-            <p className={`mb-6 ${isDark ? "text-gray-400" : "text-gray-600"}`}>Coming Soon</p>
-            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-medium animate-pulse">
-              <span>●</span> In Development
+          ) : recentPayments.length === 0 ? (
+            <div className={`p-10 text-center rounded-xl ${isDark ? "bg-gray-800/50" : "bg-gray-100"}`}>
+              <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <p className="text-gray-400">No recent payments</p>
             </div>
-          </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[600px]">
+                <thead>
+                  <tr className={`border-b ${isDark ? "border-gray-700" : "border-gray-200"}`}>
+                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">Payment</th>
+                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">Plan</th>
+                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">Amount</th>
+                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">Status</th>
+                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentPayments.map((payment) => (
+                    <tr
+                      key={payment.paymentId || payment._id}
+                      className={`border-b last:border-none hover:bg-opacity-50 transition-colors ${
+                        isDark ? "hover:bg-gray-700/50 border-gray-700/50" : "hover:bg-gray-50 border-gray-100"
+                      }`}
+                    >
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${isDark ? "bg-gray-700" : "bg-gray-100"}`}>
+                            <TrendingUp className="h-4 w-4 text-gray-500" />
+                          </div>
+                          <div>
+                            <div className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+                              #{String(payment.paymentId || payment._id || "--").slice(-6)}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-0.5">
+                              {payment?.customer?.name || payment?.customer?.fullName || payment?.customer?.email || "Customer"}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 max-w-xs truncate text-sm" title={payment.planName}>
+                        {payment.planName || "--"}
+                      </td>
+                      <td className="py-4 px-4 text-sm text-gray-500">
+                        {formatCurrency(payment.amount, payment.currency)}
+                      </td>
+                      <td className="py-4 px-4">
+                        <StatusBadge status={payment.status} isDark={isDark} />
+                      </td>
+                      <td className="py-4 px-4 text-sm text-gray-500">
+                        {formatDateTime(payment.paidAt || payment.createdAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </SectionCard>
       </div>
 
@@ -317,3 +404,6 @@ const DashboardPage = () => {
 };
 
 export default memo(DashboardPage);
+
+
+

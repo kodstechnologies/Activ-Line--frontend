@@ -10,7 +10,7 @@ import fadeSlideAnimation from "../../animations/Profile Avatar of Young Boy.jso
 import {
   getCustomers,
   editCustomer,
-  deleteCustomer
+  
 } from "../../api/frenchise/customer";
 import api from "../../api/axios";
 
@@ -145,17 +145,7 @@ const MySubscribers = () => {
     }
   };
 
-  // Delete customer
-  const removeCustomer = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this customer?")) return;
-
-    try {
-      await deleteCustomer(id);
-      setSubscribers((prev) => prev.filter((c) => c.id !== id));
-    } catch (err) {
-      console.error("Delete error", err);
-    }
-  };
+ 
 
   // Handle page change
   const handlePageChange = (newPage) => {
@@ -425,17 +415,7 @@ const MySubscribers = () => {
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => removeCustomer(sub.id)}
-                            className={`p-2 rounded-lg transition-all ${
-                              isDark
-                                ? "hover:bg-slate-800 text-slate-400 hover:text-red-400"
-                                : "hover:bg-gray-100 text-gray-400 hover:text-red-600"
-                            }`}
-                            title="Delete Customer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                         
                         </div>
                       </td>
                     </tr>
