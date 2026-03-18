@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Eye,
+  Filter,
   Loader2,
   XCircle,
 } from 'lucide-react';
@@ -75,6 +75,9 @@ const BillingPage = () => {
 
   const [filter, setFilter] = useState('All');
   const [accountIdFilter, setAccountIdFilter] = useState('');
+  const [showFilter, setShowFilter] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [franchiseOptions, setFranchiseOptions] = useState([]);
   const [franchiseError, setFranchiseError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -102,6 +105,7 @@ const BillingPage = () => {
         limit: itemsPerPage,
         status: statusParam,
         accountId: accountIdFilter.trim() || undefined,
+        search: debouncedSearch.trim() || undefined,
       });
 
       const rows = Array.isArray(res?.data) ? res.data : [];
@@ -116,7 +120,7 @@ const BillingPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, itemsPerPage, statusParam, accountIdFilter]);
+  }, [currentPage, itemsPerPage, statusParam, accountIdFilter, debouncedSearch]);
 
   const loadFranchises = useCallback(async () => {
     try {
@@ -141,6 +145,13 @@ const BillingPage = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [filter, accountIdFilter]);
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 400);
+    return () => clearTimeout(id);
+  }, [searchTerm]);
 
   const paginationData = useMemo(() => {
     const safeTotalItems = totalItems;
@@ -187,6 +198,13 @@ const BillingPage = () => {
     setCurrentPage(1);
   };
 
+  const clearFilters = () => {
+    setFilter('All');
+    setAccountIdFilter('');
+    setSearchTerm('');
+    setCurrentPage(1);
+  };
+
   const handleViewDetails = async (paymentId) => {
     if (!paymentId) return;
 
@@ -215,34 +233,91 @@ const BillingPage = () => {
     <div className="space-y-6">
       <div className={`rounded-xl shadow-sm border flex flex-col h-full ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'}`}>
         <div className={`p-6 border-b flex flex-col gap-4 ${isDark ? 'border-slate-800' : 'border-gray-200'}`}>
-          <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Transactions</h1>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div className="relative">
-              <select
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:border-blue-500 appearance-none pr-8 cursor-pointer transition-colors ${isDark ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700' : 'bg-white border-gray-300 text-gray-900 hover:bg-gray-50'}`}
+          <div className="flex items-center justify-between gap-3">
+            <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Transactions</h1>
+            <div className="flex items-center gap-3">
+              <div className="relative w-full sm:w-64">
+                <input
+                  type="text"
+                  placeholder="Search payments..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className={`w-full pl-3 pr-3 py-2 border rounded-lg text-sm outline-none
+                  focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${
+                    isDark
+                      ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500'
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                  }`}
+                />
+              </div>
+              <div className="relative">
+              <button
+                onClick={() => setShowFilter((prev) => !prev)}
+                className={`flex items-center justify-center px-3 py-2 border rounded-lg whitespace-nowrap ${
+                  isDark
+                    ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
               >
-                <option value="All">All Transactions</option>
-                <option value="Paid">Paid</option>
-                <option value="Pending Dues">Pending Dues</option>
-              </select>
-              <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDark ? 'text-slate-400' : 'text-gray-500'}`} />
-            </div>
-            <div className="relative">
-              <select
-                value={accountIdFilter}
-                onChange={(e) => setAccountIdFilter(e.target.value)}
-                className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:border-blue-500 appearance-none pr-8 cursor-pointer transition-colors ${isDark ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700' : 'bg-white border-gray-300 text-gray-900 hover:bg-gray-50'}`}
-              >
-                <option value="">All Franchises</option>
-                {franchiseOptions.map((franchise) => (
-                  <option key={franchise._id || franchise.accountId} value={franchise.accountId || ''}>
-                    {franchise.accountName || franchise.companyName || franchise.accountId || 'Unknown'}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDark ? 'text-slate-400' : 'text-gray-500'}`} />
+                <Filter className="w-4 h-4" />
+              </button>
+
+              {showFilter && (
+                <div className={`absolute right-0 top-12 w-80 p-4 rounded-xl shadow-2xl border z-50 animate-in fade-in zoom-in duration-150 ${
+                  isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'
+                }`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Filters</h4>
+                    <button
+                      onClick={clearFilters}
+                      className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
+                        isDark ? 'bg-slate-800 text-slate-200 hover:bg-slate-700' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                      }`}
+                    >
+                      Clear
+                    </button>
+                  </div>
+
+                  <label className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Status</label>
+                  <select
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                    className={`w-full mt-1 mb-3 p-2 border rounded-lg text-sm ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300'
+                    }`}
+                  >
+                    <option value="All">All Transactions</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Pending Dues">Pending Dues</option>
+                  </select>
+
+                  <label className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Franchise</label>
+                  <select
+                    value={accountIdFilter}
+                    onChange={(e) => setAccountIdFilter(e.target.value)}
+                    className={`w-full mt-1 p-2 border rounded-lg text-sm ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300'
+                    }`}
+                  >
+                    <option value="">All Franchises</option>
+                    {franchiseOptions.map((franchise) => (
+                      <option key={franchise._id || franchise.accountId} value={franchise.accountId || ''}>
+                        {franchise.accountName || franchise.companyName || franchise.accountId || 'Unknown'}
+                      </option>
+                    ))}
+                  </select>
+
+                  {franchiseError && (
+                    <div className={`mt-3 text-xs ${isDark ? 'text-yellow-300' : 'text-yellow-700'}`}>
+                      {franchiseError}
+                    </div>
+                  )}
+                </div>
+              )}
+              </div>
             </div>
           </div>
         </div>
@@ -251,11 +326,6 @@ const BillingPage = () => {
           {error && (
             <div className={`mb-4 rounded-lg px-4 py-2 text-sm border ${isDark ? 'bg-red-500/10 border-red-500/20 text-red-300' : 'bg-red-50 border-red-200 text-red-700'}`}>
               {error}
-            </div>
-          )}
-          {franchiseError && (
-            <div className={`mb-4 rounded-lg px-4 py-2 text-sm border ${isDark ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-200' : 'bg-yellow-50 border-yellow-200 text-yellow-700'}`}>
-              {franchiseError}
             </div>
           )}
 

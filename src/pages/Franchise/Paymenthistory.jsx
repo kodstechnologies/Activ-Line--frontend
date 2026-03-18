@@ -4,6 +4,8 @@ import {
   ChevronRight,
   Eye,
   Loader2,
+  Search,
+  Filter,
   XCircle,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
@@ -53,6 +55,8 @@ const BillingPage = () => {
   const { user } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('All');
+  const [showFilter, setShowFilter] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [loading, setLoading] = useState(false);
@@ -136,25 +140,25 @@ const BillingPage = () => {
 
   const uiRows = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    const filtered = term
-      ? paginationData.paginatedTransactions.filter((tx) => {
-          const haystack = [
-            tx.paymentId,
-            tx._id,
-            tx.orderId,
-            tx.razorpayPaymentId,
-            tx.userName,
-            tx.profileId,
-            tx.accountId,
-            tx.status,
-            tx.amount,
-          ]
-            .filter((value) => value !== undefined && value !== null)
-            .join(' ')
-            .toLowerCase();
-          return haystack.includes(term);
-        })
-      : paginationData.paginatedTransactions;
+    const filtered = paginationData.paginatedTransactions.filter((tx) => {
+      if (selectedStatus !== 'All' && tx.status !== selectedStatus) return false;
+      if (!term) return true;
+      const haystack = [
+        tx.paymentId,
+        tx._id,
+        tx.orderId,
+        tx.razorpayPaymentId,
+        tx.userName,
+        tx.profileId,
+        tx.accountId,
+        tx.status,
+        tx.amount,
+      ]
+        .filter((value) => value !== undefined && value !== null)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(term);
+    });
 
     return filtered.map((tx) => {
       const status = statusToUi[tx.status] || tx.status || 'Pending';
@@ -170,7 +174,7 @@ const BillingPage = () => {
         paymentId: tx.paymentId || tx._id,
       };
     });
-  }, [paginationData.paginatedTransactions, searchTerm]);
+  }, [paginationData.paginatedTransactions, searchTerm, selectedStatus]);
 
   const handlePageChange = (page) => {
     if (page < 1 || (paginationData.totalPages > 0 && page > paginationData.totalPages)) return;
@@ -180,6 +184,12 @@ const BillingPage = () => {
 
   const handleItemsPerPageChange = (value) => {
     setItemsPerPage(Number(value));
+    setCurrentPage(1);
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedStatus('All');
     setCurrentPage(1);
   };
 
@@ -218,27 +228,70 @@ const BillingPage = () => {
                 Search by payment id, customer, order id, or status
               </p>
             </div>
-            <div className={`text-xs px-3 py-1 rounded-full border ${isDark ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-gray-50 border-gray-200 text-gray-600'}`}>
-              Total records: <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{totalItems}</span>
-            </div>
-          </div>
-
-          <div className={`rounded-xl border p-4 ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-gray-50 border-gray-200'}`}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <label className="flex flex-col gap-1 text-xs sm:col-span-2 lg:col-span-3">
-                <span className={`${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Search</span>
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="relative w-full sm:w-64">
+                <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
                 <input
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search payments..."
-                  className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-500' : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-400'}`}
+                  className={`w-full pl-9 pr-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${
+                    isDark ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-500' : 'bg-white border-gray-300 text-gray-900 placeholder:text-gray-400'
+                  }`}
                 />
-              </label>
+              </div>
+              <button
+                onClick={() => setShowFilter(!showFilter)}
+                className={`flex items-center justify-center px-3 py-2 border rounded-lg text-sm transition-all ${
+                  isDark ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Filter className="w-4 h-4" />
+              </button>
             </div>
+          </div>
+
+          <div className={`text-xs px-3 py-1 rounded-full border w-fit ${isDark ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-gray-50 border-gray-200 text-gray-600'}`}>
+            Total records: <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{totalItems}</span>
           </div>
         </div>
 
         <div className="flex-1 flex flex-col min-h-0 p-6">
+          {showFilter && (
+            <div className={`mb-5 rounded-xl border p-4 ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-gray-50 border-gray-200'}`}>
+              <div className="flex items-center justify-between gap-4 mb-3">
+                <h4 className={`text-sm font-semibold ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>Filters</h4>
+                <button
+                  onClick={clearFilters}
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
+                    isDark ? 'bg-slate-800 text-slate-200 hover:bg-slate-700' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                  }`}
+                >
+                  Clear
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <label className="flex flex-col gap-1 text-xs">
+                  <span className={`${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Status</span>
+                  <select
+                    value={selectedStatus}
+                    onChange={(e) => {
+                      setSelectedStatus(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className={`w-full p-2 border rounded-lg text-sm outline-none focus:border-blue-500 ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'
+                    }`}
+                  >
+                    <option value="All">All</option>
+                    <option value="SUCCESS">Paid</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="FAILED">Failed</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          )}
           {error && (
             <div className={`mb-4 rounded-lg px-4 py-2 text-sm border ${isDark ? 'bg-red-500/10 border-red-500/20 text-red-300' : 'bg-red-50 border-red-200 text-red-700'}`}>
               {error}

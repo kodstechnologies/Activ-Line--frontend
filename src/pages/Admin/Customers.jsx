@@ -29,6 +29,7 @@ const SubscribersPage = () => {
   
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 const [selectedPlan, setSelectedPlan] = useState('All');
 const [selectedStatus, setSelectedStatus] = useState('All');
   const [franchiseOptions, setFranchiseOptions] = useState([]);
@@ -282,7 +283,7 @@ const fetchCustomers = useCallback(async (page, limit) => {
     const params = {
       page,
       limit,
-      search: searchTerm?.trim() || undefined,
+      search: debouncedSearch?.trim() || undefined,
       status: selectedStatus !== "All" ? selectedStatus : undefined,
       userType: selectedPlan !== "All" ? selectedPlan : undefined,
       accountId: selectedFranchise !== "All" ? selectedFranchise : undefined,
@@ -320,7 +321,14 @@ const fetchCustomers = useCallback(async (page, limit) => {
   } finally {
     setLoading(false);
   }
-}, [searchTerm, selectedStatus, selectedPlan, selectedFranchise]);
+}, [debouncedSearch, selectedStatus, selectedPlan, selectedFranchise]);
+
+useEffect(() => {
+  const id = setTimeout(() => {
+    setDebouncedSearch(searchTerm);
+  }, 400);
+  return () => clearTimeout(id);
+}, [searchTerm]);
 
   const franchiseLookup = useMemo(() => {
     const pairs = franchiseOptions
