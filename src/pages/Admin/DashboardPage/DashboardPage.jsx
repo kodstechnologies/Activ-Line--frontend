@@ -305,17 +305,20 @@ const DashboardPage = () => {
             <EmptyState icon={CreditCard} message="No recent payments" isDark={isDark} />
           ) : (
             <DataTable
-              headers={["ID", "Plan", "Amount", "Status", "Date"]}
+              headers={["User", "Plan", "Amount", "Status", "Date"]}
               data={recentPayments}
               renderRow={(payment) => (
                 <>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
-                      <div className={`p-2 rounded-lg ${isDark ? "bg-gray-700" : "bg-gray-100"}`}>
-                        <Hash className="h-4 w-4 text-gray-500" />
-                      </div>
-                      <span className={`font-mono text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
-                        #{String(payment.paymentId || payment.razorpayPaymentId || "--").slice(-6)}
+                      <User className="h-4 w-4 text-gray-400" />
+                      <span className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+                        {payment.userName ||
+                          payment.customer?.name ||
+                          payment.customer?.userName ||
+                          payment.customer?.username ||
+                          payment.customer?.email ||
+                          "--"}
                       </span>
                     </div>
                   </td>

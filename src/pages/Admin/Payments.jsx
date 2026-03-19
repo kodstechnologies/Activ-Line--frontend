@@ -230,11 +230,11 @@ const BillingPage = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-[15px]">
       <div className={`rounded-xl shadow-sm border flex flex-col h-full ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'}`}>
         <div className={`p-6 border-b flex flex-col gap-4 ${isDark ? 'border-slate-800' : 'border-gray-200'}`}>
           <div className="flex items-center justify-between gap-3">
-            <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Transactions</h1>
+            <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Transactions</h1>
             <div className="flex items-center gap-3">
               <div className="relative w-full sm:w-64">
                 <input
@@ -245,7 +245,7 @@ const BillingPage = () => {
                     setSearchTerm(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className={`w-full pl-3 pr-3 py-2 border rounded-lg text-sm outline-none
+                  className={`w-full pl-3 pr-3 py-2 border rounded-lg text-base outline-none
                   focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${
                     isDark
                       ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500'
@@ -256,7 +256,7 @@ const BillingPage = () => {
               <div className="relative">
               <button
                 onClick={() => setShowFilter((prev) => !prev)}
-                className={`flex items-center justify-center px-3 py-2 border rounded-lg whitespace-nowrap ${
+                className={`flex items-center justify-center px-3 py-2 border rounded-lg whitespace-nowrap text-base ${
                   isDark
                     ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700'
                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -270,10 +270,10 @@ const BillingPage = () => {
                   isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'
                 }`}>
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Filters</h4>
+                    <h4 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Filters</h4>
                     <button
                       onClick={clearFilters}
-                      className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
+                      className={`text-sm font-semibold px-3 py-1.5 rounded-lg transition-all ${
                         isDark ? 'bg-slate-800 text-slate-200 hover:bg-slate-700' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
                       }`}
                     >
@@ -281,11 +281,11 @@ const BillingPage = () => {
                     </button>
                   </div>
 
-                  <label className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Status</label>
+                  <label className={`text-base font-semibold ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Status</label>
                   <select
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
-                    className={`w-full mt-1 mb-3 p-2 border rounded-lg text-sm ${
+                    className={`w-full mt-1 mb-3 p-2 border rounded-lg text-base ${
                       isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300'
                     }`}
                   >
@@ -294,11 +294,11 @@ const BillingPage = () => {
                     <option value="Pending Dues">Pending Dues</option>
                   </select>
 
-                  <label className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Franchise</label>
+                  <label className={`text-base font-semibold ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Franchise</label>
                   <select
                     value={accountIdFilter}
                     onChange={(e) => setAccountIdFilter(e.target.value)}
-                    className={`w-full mt-1 p-2 border rounded-lg text-sm ${
+                    className={`w-full mt-1 p-2 border rounded-lg text-base ${
                       isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300'
                     }`}
                   >
@@ -311,7 +311,7 @@ const BillingPage = () => {
                   </select>
 
                   {franchiseError && (
-                    <div className={`mt-3 text-xs ${isDark ? 'text-yellow-300' : 'text-yellow-700'}`}>
+                    <div className={`mt-3 text-sm ${isDark ? 'text-yellow-300' : 'text-yellow-700'}`}>
                       {franchiseError}
                     </div>
                   )}
@@ -324,7 +324,7 @@ const BillingPage = () => {
 
         <div className="flex-1 flex flex-col min-h-0 p-6">
           {error && (
-            <div className={`mb-4 rounded-lg px-4 py-2 text-sm border ${isDark ? 'bg-red-500/10 border-red-500/20 text-red-300' : 'bg-red-50 border-red-200 text-red-700'}`}>
+            <div className={`mb-4 rounded-lg px-4 py-2 text-base border ${isDark ? 'bg-red-500/10 border-red-500/20 text-red-300' : 'bg-red-50 border-red-200 text-red-700'}`}>
               {error}
             </div>
           )}
@@ -335,20 +335,20 @@ const BillingPage = () => {
                 <table className="w-full text-left">
                   <thead>
                     <tr className={`${isDark ? 'bg-slate-800/50 border-b border-slate-800' : 'bg-gray-50 border-b border-gray-200'}`}>
-                      <th className={`py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Payment ID</th>
-                      <th className={`py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Customer</th>
-                      <th className={`py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Plan</th>
-                      <th className={`py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Amount</th>
-                      <th className={`py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Status</th>
-                      <th className={`py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Date</th>
-                      <th className={`py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Franchise</th>
-                      <th className={`py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Action</th>
+                      <th className={`py-4 px-6 text-sm font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Payment ID</th>
+                      <th className={`py-4 px-6 text-sm font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Customer</th>
+                      <th className={`py-4 px-6 text-sm font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Plan</th>
+                      <th className={`py-4 px-6 text-sm font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Amount</th>
+                      <th className={`py-4 px-6 text-sm font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Status</th>
+                      <th className={`py-4 px-6 text-sm font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Date</th>
+                      <th className={`py-4 px-6 text-sm font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Franchise</th>
+                      <th className={`py-4 px-6 text-sm font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Action</th>
                     </tr>
                   </thead>
                   <tbody className={`divide-y ${isDark ? 'divide-slate-800' : 'divide-gray-200'}`}>
                     {loading ? (
                       <tr>
-                        <td colSpan="8" className={`py-12 text-center ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                        <td colSpan="8" className={`py-12 text-center text-base ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                           <span className="inline-flex items-center gap-2">
                             <Loader2 className="w-4 h-4 animate-spin" /> Loading transactions...
                           </span>
@@ -357,13 +357,13 @@ const BillingPage = () => {
                     ) : uiRows.length > 0 ? (
                       uiRows.map((tx) => (
                         <tr key={tx.id} className={`transition-colors ${isDark ? 'hover:bg-slate-800/50 bg-slate-900/30' : 'hover:bg-gray-50 bg-white'}`}>
-                          <td className={`py-4 px-6 font-mono text-xs ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>{tx.id}</td>
-                          <td className={`py-4 px-6 font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{tx.user}</td>
-                          <td className={`py-4 px-6 font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{tx.plan}</td>
-                          <td className={`py-4 px-6 font-bold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{tx.amount}</td>
+                          <td className={`py-4 px-6 font-mono text-sm ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>{tx.id}</td>
+                          <td className={`py-4 px-6 font-medium text-base ${isDark ? 'text-white' : 'text-gray-900'}`}>{tx.user}</td>
+                          <td className={`py-4 px-6 font-medium text-base ${isDark ? 'text-white' : 'text-gray-900'}`}>{tx.plan}</td>
+                          <td className={`py-4 px-6 font-bold text-base ${isDark ? 'text-white' : 'text-gray-900'}`}>{tx.amount}</td>
                           <td className="py-4 px-6">
                             <span
-                              className={`text-xs font-semibold px-3 py-1 rounded-full ${tx.status === 'Paid'
+                              className={`text-sm font-semibold px-3 py-1 rounded-full ${tx.status === 'Paid'
                                 ? isDark
                                   ? 'text-green-400 bg-green-500/10 border border-green-500/20'
                                   : 'bg-green-50 text-green-700 border border-green-200'
@@ -380,13 +380,13 @@ const BillingPage = () => {
                               {tx.status}
                             </span>
                           </td>
-                          <td className={`py-4 px-6 text-sm ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>{tx.date}</td>
-                          <td className={`py-4 px-6 text-sm ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>{tx.franchise}</td>
+                          <td className={`py-4 px-6 text-base ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>{tx.date}</td>
+                          <td className={`py-4 px-6 text-base ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>{tx.franchise}</td>
                           <td className="py-4 px-6">
                             <button
                               onClick={() => handleViewDetails(tx.paymentId)}
                               disabled={viewLoadingId === tx.paymentId}
-                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
                                 isDark
                                   ? 'bg-slate-800 text-slate-200 hover:bg-slate-700 disabled:opacity-50'
                                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50'
@@ -404,7 +404,7 @@ const BillingPage = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="8" className={`py-12 text-center ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                        <td colSpan="8" className={`py-12 text-center text-base ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                           No transactions found matching your filter.
                         </td>
                       </tr>
@@ -418,11 +418,11 @@ const BillingPage = () => {
           <div className={`mt-6 flex-shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t ${isDark ? 'border-slate-800' : 'border-gray-200'}`}>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Show</span>
+                <span className={`text-base ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Show</span>
                 <select
                   value={itemsPerPage}
                   onChange={(e) => handleItemsPerPageChange(e.target.value)}
-                  className={`px-3 py-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                  className={`px-3 py-1.5 border rounded-lg text-base outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                 >
                   <option value={5}>5</option>
                   <option value={10}>10</option>
@@ -430,9 +430,9 @@ const BillingPage = () => {
                   <option value={50}>50</option>
                   <option value={100}>100</option>
                 </select>
-                <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>entries</span>
+                <span className={`text-base ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>entries</span>
               </div>
-              <div className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
+              <div className={`text-base ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
                 Showing <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{paginationData.startIndex}</span> to{' '}
                 <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{paginationData.endIndex}</span> of{' '}
                 <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{paginationData.totalItems}</span> entries
@@ -443,7 +443,7 @@ const BillingPage = () => {
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1 || loading}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${currentPage === 1 || loading
+                className={`px-3 py-2 rounded-lg text-base font-medium transition-all ${currentPage === 1 || loading
                   ? isDark
                     ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
@@ -467,12 +467,12 @@ const BillingPage = () => {
                     return (
                       <React.Fragment key={page}>
                         {showEllipsisBefore && (
-                          <span className={`px-2 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>...</span>
+                          <span className={`px-2 text-base ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>...</span>
                         )}
                         <button
                           onClick={() => handlePageChange(page)}
                           disabled={loading}
-                          className={`min-w-[36px] px-3 py-2 rounded-lg text-sm font-medium transition-all ${currentPage === page
+                          className={`min-w-[36px] px-3 py-2 rounded-lg text-base font-medium transition-all ${currentPage === page
                             ? 'bg-blue-600 text-white'
                             : isDark
                               ? 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
@@ -489,7 +489,7 @@ const BillingPage = () => {
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={loading || currentPage === paginationData.totalPages || paginationData.totalPages === 0}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${loading || currentPage === paginationData.totalPages || paginationData.totalPages === 0
+                className={`px-3 py-2 rounded-lg text-base font-medium transition-all ${loading || currentPage === paginationData.totalPages || paginationData.totalPages === 0
                   ? isDark
                     ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
@@ -512,7 +512,7 @@ const BillingPage = () => {
             className={`w-full max-w-2xl rounded-xl border shadow-xl ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}
           >
             <div className={`flex items-center justify-between px-5 py-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
-              <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Payment Details</h3>
+              <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Payment Details</h3>
               <button
                 onClick={closeModal}
                 className={`${isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}
@@ -523,10 +523,10 @@ const BillingPage = () => {
 
             <div className="p-5 space-y-4 max-h-[70vh] overflow-auto">
               {selectedPayment?.error ? (
-                <p className={`${isDark ? 'text-red-300' : 'text-red-700'}`}>{selectedPayment.error}</p>
+                <p className={`text-base ${isDark ? 'text-red-300' : 'text-red-700'}`}>{selectedPayment.error}</p>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-base">
                     <p><span className="font-semibold">Payment ID:</span> {selectedPayment?.paymentId || selectedPayment?._id || '--'}</p>
                     <p><span className="font-semibold">Order ID:</span> {selectedPayment?.orderId || selectedPayment?.razorpayOrderId || '--'}</p>
                     <p><span className="font-semibold">Razorpay Payment ID:</span> {selectedPayment?.razorpayPaymentId || '--'}</p>
@@ -546,12 +546,12 @@ const BillingPage = () => {
 
                   {getDetailPairs(selectedPayment?.plan?.details || selectedPayment?.planDetails).length > 0 && (
                     <div>
-                      <h4 className={`text-sm font-semibold mb-2 ${isDark ? 'text-slate-200' : 'text-gray-900'}`}>Plan Details</h4>
+                      <h4 className={`text-base font-semibold mb-2 ${isDark ? 'text-slate-200' : 'text-gray-900'}`}>Plan Details</h4>
                       <div className={`rounded-lg border ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
                         {getDetailPairs(selectedPayment?.plan?.details || selectedPayment?.planDetails).map((item, idx) => (
                           <div
                             key={`${item?.property}-${idx}`}
-                            className={`flex items-start justify-between gap-3 px-3 py-2 text-sm border-b last:border-b-0 ${isDark ? 'border-slate-700' : 'border-gray-100'}`}
+                            className={`flex items-start justify-between gap-3 px-3 py-2 text-base border-b last:border-b-0 ${isDark ? 'border-slate-700' : 'border-gray-100'}`}
                           >
                             <span className={`${isDark ? 'text-slate-300' : 'text-gray-700'}`}>{item?.property || '--'}</span>
                             <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{String(item?.value ?? '--')}</span>

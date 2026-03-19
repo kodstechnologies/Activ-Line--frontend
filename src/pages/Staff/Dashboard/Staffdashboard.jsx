@@ -250,7 +250,13 @@ const TicketRow = memo(({ item, isDark, navigate }) => {
 
 const PaymentRow = memo(({ item, isDark, navigate }) => {
   const paymentId = (item.paymentId || item._id || "—").slice(-6);
-  const customer = toDisplayText(item.customer || item.customerId);
+  const customer =
+    item?.customer?.name ||
+    item?.customer?.userName ||
+    item?.customer?.username ||
+    item?.customer?.email ||
+    item?.customer?.phoneNumber ||
+    "—";
   const plan = toDisplayText(item.planName || item.plan);
   const status = item.status?.toUpperCase() || "UNKNOWN";
 
