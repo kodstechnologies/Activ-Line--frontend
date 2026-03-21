@@ -4,6 +4,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  Filter,
+  X,
   Loader2,
   XCircle,
 } from 'lucide-react';
@@ -76,12 +78,10 @@ const BillingPage = () => {
   const { user } = useAuth();
 
   const [filter, setFilter] = useState('All');
-  const [planName, setPlanName] = useState('');
-  const [date, setDate] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-  const [customerIdFilter, setCustomerIdFilter] = useState('');
-  const [profileIdFilter, setProfileIdFilter] = useState('');
+  const [showFilter, setShowFilter] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [loading, setLoading] = useState(false);
@@ -107,16 +107,17 @@ const BillingPage = () => {
       setLoading(true);
       setError('');
 
+      const trimmedSearch = searchTerm.trim();
+      const isProfileSearch = /^\d+$/.test(trimmedSearch);
+
       const res = await getAssignedPaymentHistory({
         page: currentPage,
         limit: itemsPerPage,
         status: statusParam,
-        planName: planName.trim() || undefined,
-        date: date || undefined,
+        planName: !isProfileSearch ? trimmedSearch || undefined : undefined,
         fromDate: fromDate || undefined,
         toDate: toDate || undefined,
-        profileId: profileIdFilter.trim() || resolvedProfileId || undefined,
-        customerId: customerIdFilter.trim() || undefined,
+        profileId: isProfileSearch ? trimmedSearch : resolvedProfileId || undefined,
       });
 
       const payload = Array.isArray(res) ? { data: res } : (res || {});
@@ -147,12 +148,9 @@ const BillingPage = () => {
     currentPage,
     itemsPerPage,
     statusParam,
-    planName,
-    date,
+    searchTerm,
     fromDate,
     toDate,
-    customerIdFilter,
-    profileIdFilter,
   ]);
 
   useEffect(() => {
@@ -161,7 +159,7 @@ const BillingPage = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filter, planName, date, fromDate, toDate, customerIdFilter, profileIdFilter]);
+  }, [filter, searchTerm, fromDate, toDate]);
 
   const paginationData = useMemo(() => {
     const safeTotalItems = totalItems;
@@ -235,60 +233,109 @@ const BillingPage = () => {
   return (
     <div className="space-y-6">
       <div className={`rounded-xl shadow-sm border flex flex-col h-full ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'}`}>
-        <div className={`p-6 border-b flex flex-col gap-4 ${isDark ? 'border-slate-800' : 'border-gray-200'}`}>
-          <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Payment History</h1>
-          <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-3">
-            <div className="relative">
-              <select
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:border-blue-500 appearance-none pr-8 cursor-pointer transition-colors ${isDark ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700' : 'bg-white border-gray-300 text-gray-900 hover:bg-gray-50'}`}
-              >
-                <option value="All">All Transactions</option>
-                <option value="Paid">Paid</option>
-                <option value="Pending Dues">Pending Dues</option>
-              </select>
-              <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDark ? 'text-slate-400' : 'text-gray-500'}`} />
+        <div className={`p-6 border-b flex flex-col md:flex-row md:items-center md:justify-between gap-4 relative ${isDark ? 'border-slate-800' : 'border-gray-200'}`}>
+          <div>
+            <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Payment History</h1>
+            <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Track assigned customer payments</p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <div className="relative flex-1 md:flex-none min-w-[260px]">
+              <input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by plan name or profile ID"
+                className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/40 ${isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
+              />
             </div>
-            <input
-              value={planName}
-              onChange={(e) => setPlanName(e.target.value)}
-              placeholder="Filter by Plan Name"
-              className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-            />
-            <input
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              type="date"
-              title="Exact Date"
-              className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-            />
-            <input
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              type="date"
-              title="From Date"
-              className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-            />
-            <input
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              type="date"
-              title="To Date"
-              className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-            />
-            <input
-              value={customerIdFilter}
-              onChange={(e) => setCustomerIdFilter(e.target.value)}
-              placeholder="Filter by Customer ID"
-              className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-            />
-            <input
-              value={profileIdFilter}
-              onChange={(e) => setProfileIdFilter(e.target.value)}
-              placeholder={resolvedProfileId ? `Profile ID (${resolvedProfileId})` : 'Filter by Profile ID'}
-              className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-            />
+            <button
+              onClick={() => setShowFilter((v) => !v)}
+              className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-sm ${
+                isDark
+                  ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700'
+                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <Filter size={16} />
+              Filters
+            </button>
+
+            {showFilter && (
+              <div
+                className={`absolute right-6 top-20 w-[360px] max-w-full p-5 rounded-xl shadow-2xl border z-50 ${
+                  isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className={`font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Filters</h4>
+                  <button
+                    onClick={() => setShowFilter(false)}
+                    className={`p-1.5 rounded-md ${isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                      Status
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value)}
+                        className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/40 appearance-none pr-8 cursor-pointer transition-colors ${isDark ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700' : 'bg-white border-gray-300 text-gray-900 hover:bg-gray-50'}`}
+                      >
+                        <option value="All">All Transactions</option>
+                        <option value="Paid">Paid</option>
+                        <option value="Pending Dues">Pending Dues</option>
+                      </select>
+                      <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDark ? 'text-slate-400' : 'text-gray-500'}`} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                        From Date
+                      </label>
+                      <input
+                        value={fromDate}
+                        onChange={(e) => setFromDate(e.target.value)}
+                        type="date"
+                        className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/40 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                        To Date
+                      </label>
+                      <input
+                        value={toDate}
+                        onChange={(e) => setToDate(e.target.value)}
+                        type="date"
+                        className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/40 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setFilter('All');
+                      setSearchTerm('');
+                      setFromDate('');
+                      setToDate('');
+                      setCurrentPage(1);
+                      setShowFilter(false);
+                    }}
+                    className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    Clear Filters
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
