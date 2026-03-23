@@ -15,6 +15,7 @@ const CustomerPlans = () => {
   const { isDark } = useTheme();
 
   const accountId = location?.state?.accountId || "";
+  const userType = location?.state?.userType || "";
   const userName = location?.state?.userName || "";
   const customerId = location?.state?.customerId || "";
   const selectedGroupId = location?.state?.groupId || "";
@@ -258,7 +259,7 @@ const CustomerPlans = () => {
           try {
             const verifyUrl =
               import.meta.env.VITE_PAYMENT_VERIFY_URL ||
-              "http://192.168.88.27:8000/api/payment/plan/verify-payment";
+              "http://localhost:8000/api/payment/plan/verify-payment";
 
             await verifyPlanPayment(
               {
@@ -330,7 +331,7 @@ const CustomerPlans = () => {
     if (!accountId) return;
     setProfilesLoading(true);
     setProfilesError("");
-    getFranchiseProfiles(accountId, true)
+    getFranchiseProfiles(accountId, true, userType)
       .then((res) => {
         if (!isActive) return;
         const rows = res?.data?.data ?? res?.data ?? [];
@@ -348,7 +349,7 @@ const CustomerPlans = () => {
     return () => {
       isActive = false;
     };
-  }, [accountId]);
+  }, [accountId, userType]);
 
   useEffect(() => {
     const targetProfileId = location?.state?.profileId;

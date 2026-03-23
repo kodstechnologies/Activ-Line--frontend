@@ -8,7 +8,7 @@ import {
   createCustomer,
   getAdminCustomers,
   getFranchises,
-  getFranchiseGroupDetails
+  getFranchiseProfiles
 } from "../../api/customer.api";
 import Lottie from "lottie-react";
 import fadeSlideAnimation from "../../animations/Profile Avatar of Young Boy.json";
@@ -121,6 +121,42 @@ const [selectedStatus, setSelectedStatus] = useState('All');
     profilePicFile: null
   });
   const draftStorageKey = "adminCustomerDraft";
+  const resetAddCustomerForm = (options = {}) => {
+    const { closeModal = true } = options;
+    if (closeModal) setIsModalOpen(false);
+    setNewSubscriber({
+      userGroupId: '',
+      accountId: '',
+      userName: '',
+      password: '',
+      firstName: '',
+      lastName: '',
+      phoneNumber: '',
+      emailId: '',
+      userType: 'business',
+      activationDate: 'now',
+      customActivationDate: '',
+      customExpirationDate: '',
+      installation_address_line2: '',
+      installation_address_city: '',
+      installation_address_pin: '',
+      installation_address_state: '',
+      installation_address_country: 'IN',
+      caf_num: '',
+      createBilling: true,
+      notifyUserSms: true
+    });
+    setFiles({ idFile: null, addressFile: null, cafFile: null, reportFile: null, signFile: null, profilePicFile: null });
+    setPaymentForm({ groupId: '', profileId: '', amount: '' });
+    setPaymentStatus(null);
+    setPaymentVerified(false);
+    setHasAutoNavigated(false);
+    setCreatedCustomer(null);
+    setGroupOptions([]);
+    setGroupError('');
+    setSelectedGroup(null);
+    sessionStorage.removeItem(draftStorageKey);
+  };
 
   const formatDateForInput = (dateStr) => {
     if (!dateStr) return '';
@@ -263,6 +299,7 @@ const [selectedStatus, setSelectedStatus] = useState('All');
         userName: createdUserName,
         password: createdPassword,
         customerId: createdCustomerId,
+        userType: newSubscriber.userType,
         groupId: paymentForm.groupId,
         profileId: paymentForm.profileId
       }
@@ -304,36 +341,7 @@ const [selectedStatus, setSelectedStatus] = useState('All');
   };
 
   const handleCancelAddSubscriber = () => {
-    setIsModalOpen(false);
-    setNewSubscriber({
-      userGroupId: '',
-      accountId: '',
-      userName: '',
-      password: '',
-      firstName: '',
-      lastName: '',
-      phoneNumber: '',
-      emailId: '',
-      userType: 'business',
-      activationDate: 'now',
-      customActivationDate: '',
-      customExpirationDate: '',
-      installation_address_line2: '',
-      installation_address_city: '',
-      installation_address_pin: '',
-      installation_address_state: '',
-      installation_address_country: 'IN',
-      caf_num: '',
-      createBilling: true,
-      notifyUserSms: true
-    });
-    setFiles({ idFile: null, addressFile: null, cafFile: null, reportFile: null, signFile: null, profilePicFile: null });
-    setPaymentForm({ groupId: '', profileId: '', amount: '' });
-    setPaymentStatus(null);
-    setPaymentVerified(false);
-    setHasAutoNavigated(false);
-    setCreatedCustomer(null);
-    sessionStorage.removeItem(draftStorageKey);
+    resetAddCustomerForm({ closeModal: true });
   };
 
   const handleViewDetail = (subscriber) => {
@@ -463,6 +471,7 @@ const fetchCustomers = useCallback(async (page, limit) => {
       location: c.address?.city || "N/A",
       plan: c.userType || "Plan N/A",
       accountId: c.accountId || "",
+      userName: c.userName || "",
       tech: "Fiber",
       status: c.status || "ACTIVE",
     }));
@@ -536,6 +545,7 @@ useEffect(() => {
 
   useEffect(() => {
     const accountId = newSubscriber.accountId?.trim();
+    const type = newSubscriber.userType?.trim();
     if (!accountId) {
       setGroupOptions([]);
       setGroupError('');
@@ -544,10 +554,25 @@ useEffect(() => {
     }
     setGroupLoading(true);
     setGroupError('');
-    getFranchiseGroupDetails(accountId)
+    getFranchiseProfiles(accountId, true, type)
       .then((res) => {
-        const rows = res?.data?.data?.data || res?.data?.data || [];
-        const list = Array.isArray(rows) ? rows : [];
+        const rows = res?.data?.data ?? res?.data ?? [];
+        const profiles = Array.isArray(rows) ? rows : [];
+        const groupMap = new Map();
+        profiles.forEach((profile) => {
+          const groupId =
+            profile?.Profile?.groupId ||
+            profile?.groupId ||
+            profile?.group_id ||
+            profile?.userGroupId ||
+            '';
+          if (!groupId || groupMap.has(groupId)) return;
+          groupMap.set(groupId, {
+            Group_id: groupId,
+            Group_name: profile?.Profile?.name || groupId
+          });
+        });
+        const list = Array.from(groupMap.values());
         setGroupOptions(list);
         if (paymentForm.groupId) {
           const match = list.find((g) => g.Group_id === paymentForm.groupId);
@@ -559,7 +584,7 @@ useEffect(() => {
         setGroupError(err?.response?.data?.message || err?.message || 'Failed to load groups');
       })
       .finally(() => setGroupLoading(false));
-  }, [newSubscriber.accountId]);
+  }, [newSubscriber.accountId, newSubscriber.userType]);
 
   useEffect(() => {
     if (paymentForm.groupId && newSubscriber.userGroupId !== paymentForm.groupId) {
@@ -588,6 +613,12 @@ useEffect(() => {
       phoneNumber: payload.phoneNumber ?? draftSubscriber.phoneNumber,
       emailId: payload.emailId ?? draftSubscriber.emailId
     };
+    const verified = Boolean(payload.paymentVerified);
+    if (verified) {
+      resetAddCustomerForm({ closeModal: true });
+      navigate(location.pathname, { replace: true, state: {} });
+      return;
+    }
     setIsModalOpen(true);
     setNewSubscriber(mergedSubscriber);
     const mergedPayment = {
@@ -596,18 +627,13 @@ useEffect(() => {
       amount: payload.amount || ''
     };
     setPaymentForm(mergedPayment);
-    const verified = Boolean(payload.paymentVerified);
-    setPaymentVerified(verified);
-    setPaymentStatus(
-      payload.paymentVerified
-        ? { type: 'success', message: 'Payment verified. You can create the customer now.' }
-        : null
-    );
+    setPaymentVerified(false);
+    setPaymentStatus(null);
     if (payload.groupId) {
       setNewSubscriber(prev => ({ ...prev, userGroupId: payload.groupId }));
     }
     setHasAutoNavigated(true);
-    saveDraft(mergedSubscriber, files, mergedPayment, verified);
+    saveDraft(mergedSubscriber, files, mergedPayment, false);
     navigate(location.pathname, { replace: true, state: {} });
   }, [location, navigate, newSubscriber, files]);
 
@@ -928,7 +954,7 @@ const handlePageChange = (page) => {
                             <div className="min-w-0">
 
                               <div className={`font-semibold text-base truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{sub.name}</div>
-                              <div className={`text-sm mt-0.5 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>{sub.id}</div>
+                              <div className={`text-sm mt-0.5 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>{sub.userName || 'N/A'}</div>
                             </div>
                           </div>
                         </td>
@@ -1154,24 +1180,11 @@ const handlePageChange = (page) => {
                   </select>
                 </div>
                 <div>
-                  <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Activation Date</label>
-                  <select name="activationDate" value={newSubscriber.activationDate} onChange={handleInputChange} className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`}>
+                   <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Activation Date</label>
+                   <select name="activationDate" value={newSubscriber.activationDate} onChange={handleInputChange} className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`}>
                     <option value="now">Now</option>
-                    <option value="custom">Custom</option>
                   </select>
                 </div>
-                {newSubscriber.activationDate === 'custom' && (
-                  <>
-                    <div>
-                      <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Custom Activation</label>
-                      <input type="datetime-local" name="customActivationDate" value={newSubscriber.customActivationDate} onChange={handleInputChange} className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`} />
-                    </div>
-                    <div>
-                      <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Custom Expiration</label>
-                      <input type="datetime-local" name="customExpirationDate" value={newSubscriber.customExpirationDate} onChange={handleInputChange} className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`} />
-                    </div>
-                  </>
-                )}
               </div>
 
               {/* Address */}
@@ -1287,17 +1300,7 @@ const handlePageChange = (page) => {
                     <div className={`text-xs mt-1 ${isDark ? 'text-red-300' : 'text-red-600'}`}>{groupError}</div>
                   )}
                 </div>
-                <div>
-                  <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Profile ID</label>
-                  <input
-                    type="text"
-                    value={paymentForm.profileId}
-                    readOnly
-                    disabled
-                    className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`}
-                    placeholder="Auto-filled from selected plan"
-                  />
-                </div>
+               
               
                 <div>
                   <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>User Group ID</label>
@@ -1447,21 +1450,8 @@ const handlePageChange = (page) => {
                    <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Activation Date</label>
                    <select name="activationDate" value={editSubscriber.activationDate} onChange={handleEditInputChange} className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`}>
                     <option value="now">Now</option>
-                    <option value="custom">Custom</option>
                   </select>
                 </div>
-                {editSubscriber.activationDate === 'custom' && (
-                  <>
-                    <div>
-                       <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Custom Activation</label>
-                       <input type="datetime-local" name="customActivationDate" value={editSubscriber.customActivationDate} onChange={handleEditInputChange} className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`} />
-                    </div>
-                    <div>
-                       <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Custom Expiration</label>
-                       <input type="datetime-local" name="customExpirationDate" value={editSubscriber.customExpirationDate} onChange={handleEditInputChange} className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`} />
-                    </div>
-                  </>
-                )}
                 <div>
                    <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Status</label>
                    <select name="status" value={editSubscriber.status} onChange={handleEditInputChange} className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`}>
@@ -1511,6 +1501,37 @@ const handlePageChange = (page) => {
 
               {/* Documents */}
                <h4 className={`text-base font-bold uppercase mt-4 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>Update Documents</h4>
+              {selectedSubscriber?.documents && (
+                <div className="mb-4 space-y-3">
+                  {[
+                    ['ID Proof', selectedSubscriber.documents.idFile],
+                    ['Address Proof', selectedSubscriber.documents.addressFile],
+                    ['CAF', selectedSubscriber.documents.cafFile],
+                    ['Report', selectedSubscriber.documents.reportFile],
+                    ['Signature', selectedSubscriber.documents.signFile],
+                    ['Profile Photo', selectedSubscriber.documents.profilePicFile],
+                  ]
+                    .filter(([, url]) => Boolean(url))
+                    .map(([label, url]) => (
+                      <div key={label} className="flex items-start gap-4">
+                        <div className={`w-16 h-16 rounded-lg overflow-hidden border ${isDark ? 'border-slate-800' : 'border-gray-200'}`}>
+                          <img src={url} alt={label} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1">
+                          <div className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{label}</div>
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`text-xs ${isDark ? 'text-violet-400' : 'text-violet-600'} hover:underline`}
+                          >
+                            View document
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {['idFile', 'addressFile', 'cafFile', 'reportFile', 'signFile', 'profilePicFile'].map((fileKey) => (
                   <div key={fileKey}>

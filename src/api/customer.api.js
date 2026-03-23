@@ -34,10 +34,10 @@ export const getFranchises = () => {
 };
 
 // ✅ Get franchise profiles with details
-export const getFranchiseProfiles = (accountId, includeDetails = true) => {
+export const getFranchiseProfiles = (accountId, includeDetails = true, type) => {
   if (!accountId) throw new Error("accountId is required");
   return api.get(`/api/franchise/${encodeURIComponent(accountId)}/profiles`, {
-    params: { includeDetails }
+    params: { includeDetails, ...(type ? { type } : {}) }
   });
 };
 
@@ -60,6 +60,34 @@ export const verifyPlanPayment = (payload, verifyUrl) => {
     return api.post(verifyUrl, payload);
   }
   return api.post("/api/payment/plan/verify-payment", payload);
+};
+
+// ✅ Customer chat rooms (ticket status)
+export const getCustomerChatRooms = () => {
+  return api.get("/api/chat/user/my-rooms");
+};
+
+// ✅ Customer payment history (logged-in)
+export const getMyPaymentHistory = () => {
+  return api.get("/api/customer/plans/my/payment-history");
+};
+
+// ✅ Admin: payment history for a particular customer
+export const getAdminCustomerPaymentHistory = (customerId, userName) => {
+  if (!customerId) throw new Error("customerId is required");
+  const params = userName ? { userName } : undefined;
+  return api.get(`/api/admin/customers/${encodeURIComponent(customerId)}/payment-history`, { params });
+};
+
+// ✅ Admin: ticket status/details for a particular customer
+export const getAdminCustomerTickets = (customerId) => {
+  if (!customerId) throw new Error("customerId is required");
+  return api.get(`/api/admin/customers/${encodeURIComponent(customerId)}/tickets`);
+};
+
+// ✅ Admin: payment history across all customers (paginated + filters)
+export const getAdminAllCustomersPaymentHistory = (params = {}) => {
+  return api.get("/api/payment/history/all-customers", { params });
 };
 
 // ✅ Update customer (supports multipart FormData)
