@@ -32,6 +32,7 @@ import {
 } from "../config/Sidebar.config";
 import { getStaffUnreadCount } from "../api/staffnotification.api";
 import { getUnreadCountApi } from "../api/notification.api";
+import { getFranchiseUnreadCount } from "../api/franchisenotification.api";
 
 const MainLayout = () => {
   const navigate = useNavigate();
@@ -91,6 +92,11 @@ const MainLayout = () => {
         } else if (["admin", "super_admin"].includes(role)) {
           const count = await getUnreadCountApi();
           setNotificationCount(count);
+        } else if (["franchise", "franchise_admin"].includes(role)) {
+          const count = await getFranchiseUnreadCount();
+          setNotificationCount(count);
+        } else {
+          setNotificationCount(0);
         }
       } catch (error) {
         console.error("Failed to fetch notification count", error);

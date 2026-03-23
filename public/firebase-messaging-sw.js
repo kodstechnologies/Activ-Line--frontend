@@ -19,12 +19,11 @@ if (!firebaseConfig.apiKey) {
   const messaging = firebase.messaging();
 
   messaging.onBackgroundMessage((payload) => {
+    if (payload?.notification) return;
     const title =
-      payload?.notification?.title ||
       payload?.data?.title ||
       "New notification";
     const body =
-      payload?.notification?.body ||
       payload?.data?.body ||
       payload?.data?.message ||
       "";
