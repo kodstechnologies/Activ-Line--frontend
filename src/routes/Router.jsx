@@ -29,6 +29,7 @@ const StaffCustomerDetailsPage = lazy(() =>
   import("../pages/Staff/Customers/Staffcustomerdetails")
 );
 const Customers = lazy(() => import("../pages/Admin/Customers"));
+const CustomerPlans = lazy(() => import("../pages/Admin/CustomerPlans"));
 const CustomerDetails = lazy(() => import("../pages/Admin/CustomerDetails"));
 const FieldStaffPage = lazy(() => import("../pages/Admin/FieldStaffPage"));
 const Staff = lazy(() => import("../pages/Admin/Staff"));
@@ -249,6 +250,16 @@ const Router = () => {
             element={
               <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}>
                 <CustomersSwitcher />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="customer-plans"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}>
+                <Suspense fallback={<LoadingFallback />}>
+                  <CustomerPlans />
+                </Suspense>
               </ProtectedRoute>
             }
           />

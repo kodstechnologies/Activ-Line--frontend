@@ -1,11 +1,15 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Search, Filter, XCircle, ChevronDown, ChevronLeft, ChevronRight, Edit, Eye } from 'lucide-react';
-import { useEffect } from "react";
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from "../../context/AuthContext.jsx";
-import { updateCustomer } from "../../api/customer.api";
-import api from "../../api/axios";
+import {
+  updateCustomer,
+  createCustomer,
+  getAdminCustomers,
+  getFranchises,
+  getFranchiseGroupDetails
+} from "../../api/customer.api";
 import Lottie from "lottie-react";
 import fadeSlideAnimation from "../../animations/Profile Avatar of Young Boy.json";
 
@@ -13,6 +17,7 @@ import fadeSlideAnimation from "../../animations/Profile Avatar of Young Boy.jso
 
 const SubscribersPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isDark } = useTheme();
   const { user } = useAuth();
   const canEditCustomer = user?.role?.toLowerCase() !== "customer";
@@ -35,6 +40,20 @@ const [selectedStatus, setSelectedStatus] = useState('All');
   const [franchiseOptions, setFranchiseOptions] = useState([]);
   const [selectedFranchise, setSelectedFranchise] = useState('All');
   const [franchiseError, setFranchiseError] = useState('');
+  const [paymentForm, setPaymentForm] = useState({
+    groupId: '',
+    profileId: '',
+    amount: ''
+  });
+  const [paymentStatus, setPaymentStatus] = useState(null);
+  const [paymentVerified, setPaymentVerified] = useState(false);
+  const [hasAutoNavigated, setHasAutoNavigated] = useState(false);
+  const [groupOptions, setGroupOptions] = useState([]);
+  const [groupLoading, setGroupLoading] = useState(false);
+  const [groupError, setGroupError] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [createdCustomer, setCreatedCustomer] = useState(null);
+  const isFormLocked = Boolean(createdCustomer);
 
   const [newSubscriber, setNewSubscriber] = useState({
     userGroupId: '',
@@ -101,6 +120,7 @@ const [selectedStatus, setSelectedStatus] = useState('All');
     signFile: null,
     profilePicFile: null
   });
+  const draftStorageKey = "adminCustomerDraft";
 
   const formatDateForInput = (dateStr) => {
     if (!dateStr) return '';
@@ -115,19 +135,42 @@ const [selectedStatus, setSelectedStatus] = useState('All');
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setNewSubscriber(prev => ({
-      ...prev,
+    const nextSubscriber = {
+      ...newSubscriber,
       [name]: type === 'checkbox' ? checked : value
-    }));
+    };
+    setNewSubscriber(nextSubscriber);
+    if (name === 'userGroupId') {
+      setPaymentForm(prev => ({
+        ...prev,
+        groupId: value
+      }));
+    }
+    if (name === 'accountId') {
+      setPaymentForm({ groupId: '', profileId: '', amount: '' });
+      setPaymentVerified(false);
+      setPaymentStatus(null);
+      setHasAutoNavigated(false);
+      setSelectedGroup(null);
+      setGroupOptions([]);
+      setGroupError('');
+    }
+    if (['userName', 'firstName', 'lastName', 'phoneNumber', 'emailId', 'password'].includes(name)) {
+      setPaymentVerified(false);
+      setPaymentStatus(null);
+    }
+    saveDraft(nextSubscriber, files, paymentForm, paymentVerified);
   };
 
   const handleFileChange = (e) => {
     const { name, files: fileList } = e.target;
     if (fileList.length > 0) {
-      setFiles(prev => ({
-        ...prev,
+      const nextFiles = {
+        ...files,
         [name]: fileList[0]
-      }));
+      };
+      setFiles(nextFiles);
+      saveDraft(newSubscriber, nextFiles, paymentForm, paymentVerified);
     }
   };
 
@@ -139,6 +182,91 @@ const [selectedStatus, setSelectedStatus] = useState('All');
         [name]: fileList[0]
       }));
     }
+  };
+
+  const fileToDataUrl = (file) =>
+    new Promise((resolve) => {
+      if (!file) {
+        resolve(null);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+
+  const dataUrlToFile = (dataUrl, name, type) => {
+    if (!dataUrl) return null;
+    const arr = dataUrl.split(",");
+    const mimeMatch = arr[0]?.match(/:(.*?);/);
+    const mime = type || (mimeMatch ? mimeMatch[1] : "application/octet-stream");
+    const bstr = atob(arr[1] || "");
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) u8arr[n] = bstr.charCodeAt(n);
+    return new File([u8arr], name || "file", { type: mime });
+  };
+
+  const saveDraft = async (subscriber, draftFiles, payment, verified) => {
+    try {
+      const serializedFiles = {};
+      for (const key of Object.keys(draftFiles || {})) {
+        const file = draftFiles[key];
+        if (file) {
+          const dataUrl = await fileToDataUrl(file);
+          serializedFiles[key] = {
+            name: file.name,
+            type: file.type,
+            dataUrl
+          };
+        }
+      }
+      const payload = {
+        subscriber,
+        payment,
+        files: serializedFiles,
+        paymentVerified: Boolean(verified)
+      };
+      sessionStorage.setItem(draftStorageKey, JSON.stringify(payload));
+    } catch {
+      // ignore draft save errors
+    }
+  };
+
+  const handleGoToPlans = () => {
+    if (!createdCustomer || !newSubscriber.accountId?.trim()) return;
+    saveDraft(newSubscriber, files, paymentForm, paymentVerified);
+    const createdUserName =
+      createdCustomer?.userName ||
+      createdCustomer?.username ||
+      createdCustomer?.data?.userName ||
+      '';
+    const createdCustomerId =
+      createdCustomer?.id ||
+      createdCustomer?._id ||
+      createdCustomer?.customerId ||
+      createdCustomer?.activlineUserId ||
+      createdCustomer?.data?.id ||
+      '';
+    const createdPassword =
+      createdCustomer?.password ||
+      createdCustomer?.data?.password ||
+      '';
+    navigate("/customer-plans", {
+      state: {
+        accountId: newSubscriber.accountId,
+        firstName: newSubscriber.firstName,
+        lastName: newSubscriber.lastName,
+        phoneNumber: newSubscriber.phoneNumber,
+        emailId: newSubscriber.emailId,
+        userName: createdUserName,
+        password: createdPassword,
+        customerId: createdCustomerId,
+        groupId: paymentForm.groupId,
+        profileId: paymentForm.profileId
+      }
+    });
   };
 
   const handleAddSubscriber = async () => {
@@ -161,26 +289,51 @@ const [selectedStatus, setSelectedStatus] = useState('All');
     });
 
     try {
-      const res = await api.post('/api/customer/create', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const res = await createCustomer(formData);
       if (res.data.success) {
-        setIsModalOpen(false);
         fetchCustomers(currentPage, itemsPerPage);
-        // Reset form
-        setNewSubscriber({
-          userGroupId: '', accountId: '', userName: '', password: '', firstName: '', lastName: '',
-          phoneNumber: '', emailId: '', userType: 'business', activationDate: 'now',
-          customActivationDate: '', customExpirationDate: '', installation_address_line2: '',
-          installation_address_city: '', installation_address_pin: '', installation_address_state: '',
-          installation_address_country: 'IN', caf_num: '', createBilling: true, notifyUserSms: true
-        });
-        setFiles({ idFile: null, addressFile: null, cafFile: null, reportFile: null, signFile: null, profilePicFile: null });
+        const createdPayload = res?.data?.data || res?.data?.customer || res?.data || null;
+        setCreatedCustomer(createdPayload);
+        setPaymentStatus({ type: 'success', message: 'Customer created. You can select plans now.' });
+        saveDraft(newSubscriber, files, paymentForm, paymentVerified);
       }
     } catch (err) {
       console.error("Failed to create customer", err);
       alert("Failed to create customer: " + (err.response?.data?.message || err.message));
     }
+  };
+
+  const handleCancelAddSubscriber = () => {
+    setIsModalOpen(false);
+    setNewSubscriber({
+      userGroupId: '',
+      accountId: '',
+      userName: '',
+      password: '',
+      firstName: '',
+      lastName: '',
+      phoneNumber: '',
+      emailId: '',
+      userType: 'business',
+      activationDate: 'now',
+      customActivationDate: '',
+      customExpirationDate: '',
+      installation_address_line2: '',
+      installation_address_city: '',
+      installation_address_pin: '',
+      installation_address_state: '',
+      installation_address_country: 'IN',
+      caf_num: '',
+      createBilling: true,
+      notifyUserSms: true
+    });
+    setFiles({ idFile: null, addressFile: null, cafFile: null, reportFile: null, signFile: null, profilePicFile: null });
+    setPaymentForm({ groupId: '', profileId: '', amount: '' });
+    setPaymentStatus(null);
+    setPaymentVerified(false);
+    setHasAutoNavigated(false);
+    setCreatedCustomer(null);
+    sessionStorage.removeItem(draftStorageKey);
   };
 
   const handleViewDetail = (subscriber) => {
@@ -289,7 +442,7 @@ const fetchCustomers = useCallback(async (page, limit) => {
       accountId: selectedFranchise !== "All" ? selectedFranchise : undefined,
     };
 
-    const res = await api.get('/api/customer/customers', { params });
+    const res = await getAdminCustomers(params);
     const payload = res.data || {};
     const customers = payload.data || [];
     const pagination = payload.pagination || payload.meta?.pagination || payload.meta || {};
@@ -323,12 +476,142 @@ const fetchCustomers = useCallback(async (page, limit) => {
   }
 }, [debouncedSearch, selectedStatus, selectedPlan, selectedFranchise]);
 
+  const isUserDetailsComplete = useMemo(() => {
+    return Boolean(
+      newSubscriber.firstName?.trim() &&
+      newSubscriber.phoneNumber?.trim() &&
+      newSubscriber.emailId?.trim()
+    );
+  }, [
+    newSubscriber.firstName,
+    newSubscriber.phoneNumber,
+    newSubscriber.emailId
+  ]);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(draftStorageKey);
+      if (!raw) return;
+      const payload = JSON.parse(raw);
+      if (payload?.subscriber) {
+        setNewSubscriber((prev) => ({ ...prev, ...payload.subscriber }));
+      }
+      if (payload?.payment) {
+        setPaymentForm((prev) => ({ ...prev, ...payload.payment }));
+      }
+      if (payload?.paymentVerified) {
+        setPaymentVerified(Boolean(payload.paymentVerified));
+      }
+      if (payload?.files) {
+        const rebuilt = {};
+        Object.entries(payload.files).forEach(([key, value]) => {
+          if (value?.dataUrl) {
+            rebuilt[key] = dataUrlToFile(value.dataUrl, value.name, value.type);
+          }
+        });
+        if (Object.keys(rebuilt).length > 0) {
+          setFiles((prev) => ({ ...prev, ...rebuilt }));
+        }
+      }
+    } catch {
+      // ignore draft restore errors
+    }
+  }, []);
+
 useEffect(() => {
   const id = setTimeout(() => {
     setDebouncedSearch(searchTerm);
   }, 400);
   return () => clearTimeout(id);
 }, [searchTerm]);
+
+  useEffect(() => {
+    if (!paymentForm.groupId && newSubscriber.userGroupId) {
+      setPaymentForm(prev => ({
+        ...prev,
+        groupId: newSubscriber.userGroupId
+      }));
+    }
+  }, [newSubscriber.userGroupId, paymentForm.groupId]);
+
+  useEffect(() => {
+    const accountId = newSubscriber.accountId?.trim();
+    if (!accountId) {
+      setGroupOptions([]);
+      setGroupError('');
+      setGroupLoading(false);
+      return;
+    }
+    setGroupLoading(true);
+    setGroupError('');
+    getFranchiseGroupDetails(accountId)
+      .then((res) => {
+        const rows = res?.data?.data?.data || res?.data?.data || [];
+        const list = Array.isArray(rows) ? rows : [];
+        setGroupOptions(list);
+        if (paymentForm.groupId) {
+          const match = list.find((g) => g.Group_id === paymentForm.groupId);
+          if (match) setSelectedGroup(match);
+        }
+      })
+      .catch((err) => {
+        setGroupOptions([]);
+        setGroupError(err?.response?.data?.message || err?.message || 'Failed to load groups');
+      })
+      .finally(() => setGroupLoading(false));
+  }, [newSubscriber.accountId]);
+
+  useEffect(() => {
+    if (paymentForm.groupId && newSubscriber.userGroupId !== paymentForm.groupId) {
+      setNewSubscriber(prev => ({ ...prev, userGroupId: paymentForm.groupId }));
+    }
+  }, [paymentForm.groupId, newSubscriber.userGroupId]);
+
+  useEffect(() => {
+    if (!location?.state?.fromPlans) return;
+    const payload = location.state || {};
+    let draftSubscriber = newSubscriber;
+    try {
+      const raw = sessionStorage.getItem(draftStorageKey);
+      if (raw) {
+        const draft = JSON.parse(raw);
+        if (draft?.subscriber) draftSubscriber = draft.subscriber;
+      }
+    } catch {
+      // ignore draft read errors
+    }
+    const mergedSubscriber = {
+      ...draftSubscriber,
+      accountId: payload.accountId ?? draftSubscriber.accountId,
+      firstName: payload.firstName ?? draftSubscriber.firstName,
+      lastName: payload.lastName ?? draftSubscriber.lastName,
+      phoneNumber: payload.phoneNumber ?? draftSubscriber.phoneNumber,
+      emailId: payload.emailId ?? draftSubscriber.emailId
+    };
+    setIsModalOpen(true);
+    setNewSubscriber(mergedSubscriber);
+    const mergedPayment = {
+      groupId: payload.groupId || '',
+      profileId: payload.profileId || '',
+      amount: payload.amount || ''
+    };
+    setPaymentForm(mergedPayment);
+    const verified = Boolean(payload.paymentVerified);
+    setPaymentVerified(verified);
+    setPaymentStatus(
+      payload.paymentVerified
+        ? { type: 'success', message: 'Payment verified. You can create the customer now.' }
+        : null
+    );
+    if (payload.groupId) {
+      setNewSubscriber(prev => ({ ...prev, userGroupId: payload.groupId }));
+    }
+    setHasAutoNavigated(true);
+    saveDraft(mergedSubscriber, files, mergedPayment, verified);
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location, navigate, newSubscriber, files]);
+
+  
 
   const franchiseLookup = useMemo(() => {
     const pairs = franchiseOptions
@@ -344,7 +627,7 @@ useEffect(() => {
     const loadFranchises = async () => {
       try {
         setFranchiseError('');
-        const res = await api.get('/api/franchise');
+        const res = await getFranchises();
         const rows = Array.isArray(res?.data?.data) ? res.data.data : [];
         setFranchiseOptions(rows);
       } catch (err) {
@@ -384,6 +667,7 @@ const handlePageChange = (page) => {
     setItemsPerPage(Number(value));
     setCurrentPage(1);
   };
+
 
   const clearFilters = () => {
     setSelectedStatus("All");
@@ -427,7 +711,12 @@ const handlePageChange = (page) => {
 <div className="flex items-center gap-3 w-full lg:w-auto">
   {canEditCustomer && (
     <button
-      onClick={() => setIsModalOpen(true)}
+      onClick={() => {
+        setIsModalOpen(true);
+        setPaymentStatus(null);
+        setPaymentVerified(false);
+        setCreatedCustomer(null);
+      }}
       className="flex items-center justify-center px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-sm whitespace-nowrap"
     >
       Add Customer
@@ -827,37 +1116,10 @@ const handlePageChange = (page) => {
               <button onClick={() => setIsModalOpen(false)} className={`transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-gray-400 hover:text-gray-600'}`}><XCircle className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-4">
+              <div className={`${isFormLocked ? 'opacity-90 pointer-events-none' : ''}`}>
               {/* Account Info */}
-              <h4 className={`text-base font-bold uppercase ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>Account Information</h4>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>User Group ID</label>
-                  <input type="number" name="userGroupId" value={newSubscriber.userGroupId} onChange={handleInputChange} className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`} />
-                </div>
-                <div>
-                   <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Account ID</label>
-                   <select
-                     name="accountId"
-                     value={newSubscriber.accountId}
-                     onChange={handleInputChange}
-                     className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`}
-                   >
-                     <option value="">Select Franchise</option>
-                     {franchiseOptions.map((franchise) => (
-                       <option key={franchise._id || franchise.accountId} value={franchise.accountId || ''}>
-                         {(franchise.accountName || franchise.companyName || franchise.accountId || 'Unknown')}{franchise.accountId ? ` (${franchise.accountId})` : ''}
-                       </option>
-                     ))}
-                   </select>
-                </div>
-                <div>
-                  <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Username</label>
-                  <input type="text" name="userName" value={newSubscriber.userName} onChange={handleInputChange} className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`} />
-                </div>
-                <div>
-                  <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Password</label>
-                  <input type="password" name="password" value={newSubscriber.password} onChange={handleInputChange} className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`} />
-                </div>
               </div>
 
               {/* Personal Info */}
@@ -890,10 +1152,6 @@ const handlePageChange = (page) => {
                     <option value="business">Business</option>
                     <option value="home">Home</option>
                   </select>
-                </div>
-                <div>
-                  <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>CAF Number</label>
-                  <input type="text" name="caf_num" value={newSubscriber.caf_num} onChange={handleInputChange} className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`} />
                 </div>
                 <div>
                   <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Activation Date</label>
@@ -965,10 +1223,152 @@ const handlePageChange = (page) => {
                   </div>
                 ))}
               </div>
+              {Object.values(files).some(Boolean) && (
+                <div className={`mt-3 text-sm ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
+                  <div className="font-semibold mb-1">Selected documents</div>
+                  {Object.entries(files).map(([key, file]) => (
+                    file ? (
+                      <div key={key}>
+                        {key.replace('File', '').replace(/([A-Z])/g, ' $1')}: {file.name}
+                      </div>
+                    ) : null
+                  ))}
+                </div>
+              )}
+
+              {/* Franchise & Payment */}
+              <h4 className={`text-base font-bold uppercase mt-6 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>Franchise & Payment</h4>
+              <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${isUserDetailsComplete ? '' : 'opacity-60 pointer-events-none'}`}>
+               
+                <div>
+                  <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Account ID</label>
+                  <select
+                    name="accountId"
+                    value={newSubscriber.accountId}
+                    onChange={handleInputChange}
+                    className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`}
+                  >
+                    <option value="">Select Franchise</option>
+                    {franchiseOptions.map((franchise) => (
+                      <option key={franchise._id || franchise.accountId} value={franchise.accountId || ''}>
+                        {(franchise.accountName || franchise.companyName || franchise.accountId || 'Unknown')}{franchise.accountId ? ` (${franchise.accountId})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Group / Plan</label>
+                  <select
+                    value={selectedGroup?.Group_id || ''}
+                    onChange={(e) => {
+                      const group = groupOptions.find((g) => g.Group_id === e.target.value) || null;
+                      setSelectedGroup(group);
+                      setPaymentForm({
+                        groupId: group?.Group_id || '',
+                        profileId: group?.Profile_id || '',
+                        amount: paymentForm.amount
+                      });
+                      setPaymentVerified(false);
+                      setPaymentStatus(null);
+                    }}
+                    className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`}
+                  >
+                    <option value="">Select Group</option>
+                    {groupOptions.map((group) => (
+                      <option key={group.Group_id} value={group.Group_id}>
+                        {group.Group_name} ({group.Group_id})
+                      </option>
+                    ))}
+                  </select>
+                  {groupLoading && (
+                    <div className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Loading groups...</div>
+                  )}
+                  {groupError && (
+                    <div className={`text-xs mt-1 ${isDark ? 'text-red-300' : 'text-red-600'}`}>{groupError}</div>
+                  )}
+                </div>
+                <div>
+                  <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Profile ID</label>
+                  <input
+                    type="text"
+                    value={paymentForm.profileId}
+                    readOnly
+                    disabled
+                    className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`}
+                    placeholder="Auto-filled from selected plan"
+                  />
+                </div>
+              
+                <div>
+                  <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>User Group ID</label>
+                  <input
+                    type="number"
+                    name="userGroupId"
+                    value={newSubscriber.userGroupId}
+                    readOnly
+                    disabled
+                    className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                {!isUserDetailsComplete && (
+                  <div className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
+                    Fill user details above to unlock payment setup.
+                  </div>
+                )}
+
+                {isUserDetailsComplete && !newSubscriber.accountId && (
+                  <div className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
+                    Select an Account ID to view plans on the next page.
+                  </div>
+                )}
+                {isUserDetailsComplete && newSubscriber.accountId && !createdCustomer && (
+                  <div className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
+                    Create the customer first. After creation, you can select plans and pay.
+                  </div>
+                )}
+              </div>
+
+              </div>
+
+              {paymentStatus && (
+                <div className={`mt-4 text-sm ${paymentStatus.type === 'success'
+                  ? isDark ? 'text-green-300' : 'text-green-700'
+                  : isDark ? 'text-red-300' : 'text-red-600'
+                  }`}>
+                  {paymentStatus.message}
+                </div>
+              )}
+
+              <div className="mt-4 flex items-center gap-3">
+                {createdCustomer && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleGoToPlans}
+                      disabled={!newSubscriber.accountId?.trim()}
+                      className="px-4 py-2 text-base font-bold text-white bg-purple-600 rounded-lg hover:bg-purple-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    >
+                      Select Plans & Pay
+                    </button>
+                    <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
+                      Opens plan selection page in the same tab.
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
             <div className={`p-4 border-t flex gap-3 justify-end rounded-b-xl ${isDark ? 'border-slate-800 bg-slate-900' : 'border-gray-200 bg-white'}`}>
-              <button onClick={() => setIsModalOpen(false)} className={`px-4 py-2 text-base font-medium rounded-lg transition-colors ${isDark ? 'text-slate-300 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'}`}>Cancel</button>
-              <button onClick={handleAddSubscriber} disabled={!newSubscriber.firstName || !newSubscriber.phoneNumber} className="px-4 py-2 text-base font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all">Create Account</button>
+              <button onClick={handleCancelAddSubscriber} className={`px-4 py-2 text-base font-medium rounded-lg transition-colors ${isDark ? 'text-slate-300 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'}`}>Cancel</button>
+              <button
+                onClick={handleAddSubscriber}
+                disabled={!newSubscriber.firstName || !newSubscriber.phoneNumber || Boolean(createdCustomer)}
+                className="px-4 py-2 text-base font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                Create Account
+              </button>
             </div>
           </div>
         </div>
@@ -1042,10 +1442,6 @@ const handlePageChange = (page) => {
                     <option value="business">Business</option>
                     <option value="home">Home</option>
                   </select>
-                </div>
-                <div>
-                   <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>CAF Number</label>
-                   <input type="text" name="caf_num" value={editSubscriber.caf_num} onChange={handleEditInputChange} className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`} />
                 </div>
                 <div>
                    <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Activation Date</label>
@@ -1213,3 +1609,4 @@ const handlePageChange = (page) => {
 };
 
 export default SubscribersPage;
+

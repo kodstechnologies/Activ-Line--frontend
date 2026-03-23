@@ -19,7 +19,47 @@ export const getSingleCustomer = (customerId) => {
 
 // ✅ Create customer
 export const createCustomer = (formData) => {
-  return api.post(`/api/customer/create`, formData);
+  const config = { headers: { "Content-Type": "multipart/form-data" } };
+  return api.post(`/api/customer/create`, formData, config);
+};
+
+// ✅ Get admin customer list (paginated)
+export const getAdminCustomers = (params = {}) => {
+  return api.get("/api/customer/customers", { params });
+};
+
+// ✅ Get franchise list
+export const getFranchises = () => {
+  return api.get("/api/franchise");
+};
+
+// ✅ Get franchise profiles with details
+export const getFranchiseProfiles = (accountId, includeDetails = true) => {
+  if (!accountId) throw new Error("accountId is required");
+  return api.get(`/api/franchise/${encodeURIComponent(accountId)}/profiles`, {
+    params: { includeDetails }
+  });
+};
+
+// ✅ Get franchise group details
+export const getFranchiseGroupDetails = (accountId) => {
+  if (!accountId) throw new Error("accountId is required");
+  return api.get("/api/franchise/group-details", {
+    params: { accountId }
+  });
+};
+
+// ✅ Create Razorpay order for customer plan
+export const createPlanOrder = (payload) => {
+  return api.post("/api/payment/plan/create-order", payload);
+};
+
+// ✅ Verify Razorpay plan payment
+export const verifyPlanPayment = (payload, verifyUrl) => {
+  if (verifyUrl) {
+    return api.post(verifyUrl, payload);
+  }
+  return api.post("/api/payment/plan/verify-payment", payload);
 };
 
 // ✅ Update customer (supports multipart FormData)

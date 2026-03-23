@@ -38,6 +38,16 @@ const fetchCustomer = async () => {
     { id: '#7890', date: '3h ago', subject: 'Internet connection dropping', status: 'In Progress' },
   ];
 
+  const documents = customer?.documents || {};
+  const documentEntries = [
+    ['ID Proof', documents.idFile],
+    ['Address Proof', documents.addressFile],
+    ['CAF', documents.cafFile],
+    ['Report', documents.reportFile],
+    ['Signature', documents.signFile],
+    ['Profile Photo', documents.profilePicFile],
+  ].filter(([, url]) => Boolean(url));
+
   if (!customer) {
     return (
       <div className="space-y-6">
@@ -118,6 +128,39 @@ const fetchCustomer = async () => {
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* Documents */}
+          <div className={`p-6 rounded-2xl shadow-sm border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100'}`}>
+            <h3 className={`text-lg font-semibold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>Documents</h3>
+            {documentEntries.length === 0 ? (
+              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>No documents uploaded.</p>
+            ) : (
+              <div className="space-y-4">
+                {documentEntries.map(([label, url]) => (
+                  <div key={label} className="flex items-start gap-4">
+                    <div className={`w-16 h-16 rounded-lg overflow-hidden border ${isDark ? 'border-slate-800' : 'border-gray-200'}`}>
+                      <img
+                        src={url}
+                        alt={label}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <div className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{label}</div>
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={`text-xs ${isDark ? 'text-violet-400' : 'text-violet-600'} hover:underline`}
+                      >
+                        View document
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Current Plan */}
