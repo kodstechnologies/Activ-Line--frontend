@@ -508,43 +508,7 @@ const CustomerDetails = () => {
           </div>
         </div>
 
-        {/* Quick Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { label: 'Total Tickets', value: supportTickets.length, icon: Ticket, color: 'violet' },
-            { label: 'Open Tickets', value: ticketStats.openTickets, icon: AlertCircle, color: 'amber' },
-            { label: 'In Progress', value: ticketStats.inProgressTickets, icon: Clock, color: 'blue' },
-            { label: 'Resolved', value: ticketStats.resolvedTickets, icon: CheckCircle, color: 'green' }
-          ].map((stat, idx) => {
-            const Icon = stat.icon;
-            const colorClasses = isDark
-              ? {
-                  violet: 'bg-violet-500/20 text-violet-300',
-                  amber: 'bg-amber-500/20 text-amber-300',
-                  blue: 'bg-blue-500/20 text-blue-300',
-                  green: 'bg-green-500/20 text-green-300'
-                }
-              : {
-                  violet: 'bg-violet-100 text-violet-600',
-                  amber: 'bg-amber-100 text-amber-600',
-                  blue: 'bg-blue-100 text-blue-600',
-                  green: 'bg-green-100 text-green-600'
-                };
-            return (
-              <div key={idx} className={`${glassCardClass} p-5`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className={`text-sm ${isDark ? 'text-white/50' : 'text-gray-500'}`}>{stat.label}</p>
-                    <p className={`text-3xl font-bold mt-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>{stat.value}</p>
-                  </div>
-                  <div className={`p-3 rounded-xl ${colorClasses[stat.color]}`}>
-                    <Icon className="w-6 h-6" />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+    
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Details */}

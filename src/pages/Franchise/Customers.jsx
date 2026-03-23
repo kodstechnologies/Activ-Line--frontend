@@ -87,6 +87,7 @@ const MySubscribers = () => {
   });
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [paymentVerified, setPaymentVerified] = useState(false);
+  const [formError, setFormError] = useState("");
 
   // Fetch customers with filters
   useEffect(() => {
@@ -175,6 +176,7 @@ const MySubscribers = () => {
       [name]: type === "checkbox" ? checked : value
     };
     setNewSubscriber(nextSubscriber);
+    setFormError("");
 
     if (name === "userGroupId") {
       setPaymentForm((prev) => ({
@@ -223,6 +225,23 @@ const MySubscribers = () => {
   }, [newSubscriber.accountId, newSubscriber.userType]);
 
   const handleCreateCustomer = async () => {
+    const requiredFields = [
+      { key: "firstName", label: "First Name" },
+      { key: "phoneNumber", label: "Phone Number" },
+      { key: "emailId", label: "Email ID" },
+      { key: "installation_address_line2", label: "Address Line 2" },
+      { key: "installation_address_city", label: "City" },
+      { key: "installation_address_pin", label: "Pin Code" },
+      { key: "installation_address_state", label: "State" }
+    ];
+    const missing = requiredFields
+      .filter((f) => !newSubscriber[f.key]?.toString().trim())
+      .map((f) => f.label);
+    if (missing.length > 0) {
+      setFormError(`Please fill: ${missing.join(", ")}`);
+      return;
+    }
+
     const formData = new FormData();
     Object.keys(newSubscriber).forEach((key) => {
       if (key === "createBilling" || key === "notifyUserSms") {
@@ -239,6 +258,7 @@ const MySubscribers = () => {
         const createdPayload = res?.data?.data || res?.data?.customer || res?.data || null;
         setCreatedCustomer(createdPayload);
         setPaymentStatus({ type: "success", message: "Customer created. You can select plans now." });
+        setFormError("");
       }
     } catch (err) {
       console.error("Failed to create customer", err);
@@ -1309,7 +1329,87 @@ const MySubscribers = () => {
                     }`}
                   />
                 </div>
+                <div className="md:col-span-2">
+                  <label className={`block text-sm font-medium mb-1 ${
+                    isDark ? "text-slate-400" : "text-gray-600"
+                  }`}>
+                    Address Line 2
+                  </label>
+                  <input
+                    type="text"
+                    name="installation_address_line2"
+                    value={newSubscriber.installation_address_line2}
+                    onChange={handleAddInputChange}
+                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white"
+                        : "bg-gray-50 border-gray-300 text-gray-900"
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${
+                    isDark ? "text-slate-400" : "text-gray-600"
+                  }`}>
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    name="installation_address_city"
+                    value={newSubscriber.installation_address_city}
+                    onChange={handleAddInputChange}
+                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white"
+                        : "bg-gray-50 border-gray-300 text-gray-900"
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${
+                    isDark ? "text-slate-400" : "text-gray-600"
+                  }`}>
+                    State
+                  </label>
+                  <input
+                    type="text"
+                    name="installation_address_state"
+                    value={newSubscriber.installation_address_state}
+                    onChange={handleAddInputChange}
+                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white"
+                        : "bg-gray-50 border-gray-300 text-gray-900"
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${
+                    isDark ? "text-slate-400" : "text-gray-600"
+                  }`}>
+                    Pin Code
+                  </label>
+                  <input
+                    type="text"
+                    name="installation_address_pin"
+                    value={newSubscriber.installation_address_pin}
+                    onChange={handleAddInputChange}
+                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white"
+                        : "bg-gray-50 border-gray-300 text-gray-900"
+                    }`}
+                  />
+                </div>
               </div>
+
+              {formError && (
+                <div className={`text-sm ${
+                  isDark ? "text-red-300" : "text-red-600"
+                }`}>
+                  {formError}
+                </div>
+              )}
 
               {paymentStatus && (
                 <div className={`text-sm ${
