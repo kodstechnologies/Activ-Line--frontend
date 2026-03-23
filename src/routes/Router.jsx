@@ -31,6 +31,7 @@ const StaffCustomerDetailsPage = lazy(() =>
 const Customers = lazy(() => import("../pages/Admin/Customers"));
 const CustomerPlans = lazy(() => import("../pages/Admin/CustomerPlans"));
 const CustomerDetails = lazy(() => import("../pages/Admin/CustomerDetails"));
+const FranchiseCustomerDetails = lazy(() => import("../pages/Franchise/CustomerDetails"));
 const FieldStaffPage = lazy(() => import("../pages/Admin/FieldStaffPage"));
 const Staff = lazy(() => import("../pages/Admin/Staff"));
 const Reports = lazy(() => import("../pages/Admin/Reports"));
@@ -238,9 +239,9 @@ const Router = () => {
             path="my-customers-details/:id"
             element={
               <ProtectedRoute allowedRoles={["franchise", "franchise_admin"]}>
-                
-                  <CustomerDetails />
-                
+                <Suspense fallback={<LoadingFallback />}>
+                  <FranchiseCustomerDetails />
+                </Suspense>
               </ProtectedRoute>
             }
           />
@@ -256,7 +257,7 @@ const Router = () => {
           <Route
             path="customer-plans"
             element={
-              <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}>
+              <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff", "franchise", "franchise_admin"]}>
                 <Suspense fallback={<LoadingFallback />}>
                   <CustomerPlans />
                 </Suspense>

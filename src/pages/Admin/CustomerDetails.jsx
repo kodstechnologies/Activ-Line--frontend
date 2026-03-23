@@ -49,7 +49,6 @@ const CustomerDetails = () => {
   const filteredTickets = useMemo(() => {
     let filtered = [...supportTickets];
     
-    // Search by subject or ID
     if (ticketSearchTerm) {
       filtered = filtered.filter(ticket => 
         ticket.subject.toLowerCase().includes(ticketSearchTerm.toLowerCase()) ||
@@ -57,14 +56,12 @@ const CustomerDetails = () => {
       );
     }
     
-    // Filter by status
     if (ticketStatusFilter !== 'all') {
       filtered = filtered.filter(ticket => 
         ticket.status.toLowerCase() === ticketStatusFilter.toLowerCase()
       );
     }
     
-    // Filter by date range
     if (ticketDateFilter !== 'all') {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -148,7 +145,6 @@ const CustomerDetails = () => {
     customer?.account?.id ||
     '';
 
-  // Statistics
   const ticketStats = useMemo(() => {
     const openTickets = supportTickets.filter(t => t.status === 'Open').length;
     const inProgressTickets = supportTickets.filter(t => t.status === 'In Progress').length;
@@ -428,32 +424,38 @@ const CustomerDetails = () => {
 
   if (!customer) {
     return (
-      <div className="space-y-6 p-6">
+      <div className="space-y-6 p-6 min-h-screen">
         <button
           onClick={() => navigate('/customers')}
-          className="group flex items-center text-sm font-medium text-violet-400 hover:text-violet-300 transition-all"
+          className={`group flex items-center text-sm font-medium transition-colors ${isDark ? 'text-violet-400 hover:text-violet-300' : 'text-violet-600 hover:text-violet-700'}`}
         >
           <ArrowLeft className="w-4 h-4 mr-1 transition-transform group-hover:-translate-x-1" />
           Back to Customers
         </button>
-        <div className="backdrop-blur-xl bg-white/10 rounded-2xl border border-white/20 p-8 text-center">
-          <p className="text-white/80">Customer not found</p>
+        <div className={`rounded-xl shadow-sm border p-8 text-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'}`}>
+          <p className={isDark ? 'text-white' : 'text-gray-900'}>Customer not found</p>
         </div>
       </div>
     );
   }
 
-  // Glassmorphic styles
-  const glassCardClass = `backdrop-blur-xl bg-white/10 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-2xl shadow-2xl transition-all duration-300 hover:shadow-violet-500/10`;
+  // Dynamic glass styles based on theme
+  const glassCardClass = isDark 
+    ? 'backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl shadow-2xl transition-all duration-300 hover:shadow-violet-500/10'
+    : 'bg-white/80 backdrop-blur-md border border-gray-200/80 rounded-2xl shadow-lg transition-all duration-300 hover:shadow-violet-500/10';
+
+  const bgGradient = isDark
+    ? 'bg-gradient-to-br from-indigo-900/40 via-purple-900/40 to-pink-900/40'
+    : 'bg-gradient-to-br from-violet-50 via-white to-indigo-50';
 
   return (
-    <div className="min-h-screen p-6 bg-gradient-to-br from-indigo-900/40 via-purple-900/40 to-pink-900/40 dark:from-slate-950 dark:via-purple-950/30 dark:to-indigo-950/40">
+    <div className={`min-h-screen p-6 ${bgGradient}`}>
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header Section with Stats */}
+        {/* Header Section */}
         <div className="flex flex-col gap-4">
           <button
             onClick={() => navigate('/customers')}
-            className="w-fit group flex items-center text-sm font-medium text-white/80 hover:text-white transition-all backdrop-blur-sm bg-black/20 px-3 py-1.5 rounded-full"
+            className={`w-fit group flex items-center text-sm font-medium transition-colors ${isDark ? 'text-violet-400 hover:text-violet-300' : 'text-violet-600 hover:text-violet-700'}`}
           >
             <ArrowLeft className="w-4 h-4 mr-1 transition-transform group-hover:-translate-x-1" />
             Back to Customers
@@ -461,68 +463,62 @@ const CustomerDetails = () => {
 
           <div className="flex justify-between items-center flex-wrap gap-4">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-violet-200 to-white bg-clip-text text-transparent">
+              <h1 className={`text-4xl font-bold ${isDark ? 'bg-gradient-to-r from-white via-violet-200 to-white bg-clip-text text-transparent' : 'text-gray-900'}`}>
                 {customer.firstName} {customer.lastName}
               </h1>
-              <p className="text-sm mt-1 text-white/60">
+              <p className={`text-sm mt-1 ${isDark ? 'text-white/60' : 'text-gray-500'}`}>
                 Customer ID: {customer.userName || 'N/A'}
               </p>
             </div>
             <span className={`px-5 py-2 rounded-full text-sm font-medium backdrop-blur-md border ${customer.status?.toUpperCase() === 'ACTIVE'
-              ? 'bg-green-500/20 text-green-300 border-green-500/30 shadow-lg shadow-green-500/10'
-              : 'bg-red-500/20 text-red-300 border-red-500/30 shadow-lg shadow-red-500/10'
+              ? isDark 
+                ? 'bg-green-500/20 text-green-300 border-green-500/30 shadow-lg shadow-green-500/10'
+                : 'bg-green-100 text-green-700 border-green-200 shadow-sm'
+              : isDark
+                ? 'bg-red-500/20 text-red-300 border-red-500/30 shadow-lg shadow-red-500/10'
+                : 'bg-red-100 text-red-700 border-red-200 shadow-sm'
               }`}>
               {customer.status || 'Active'}
             </span>
           </div>
         </div>
 
-        {/* Quick Stats Cards - Glassmorphic with Icons */}
+        {/* Quick Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className={`${glassCardClass} p-5`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white/50 text-sm">Total Tickets</p>
-                <p className="text-3xl font-bold text-white mt-1">{supportTickets.length}</p>
+          {[
+            { label: 'Total Tickets', value: supportTickets.length, icon: Ticket, color: 'violet' },
+            { label: 'Open Tickets', value: ticketStats.openTickets, icon: AlertCircle, color: 'amber' },
+            { label: 'In Progress', value: ticketStats.inProgressTickets, icon: Clock, color: 'blue' },
+            { label: 'Resolved', value: ticketStats.resolvedTickets, icon: CheckCircle, color: 'green' }
+          ].map((stat, idx) => {
+            const Icon = stat.icon;
+            const colorClasses = isDark
+              ? {
+                  violet: 'bg-violet-500/20 text-violet-300',
+                  amber: 'bg-amber-500/20 text-amber-300',
+                  blue: 'bg-blue-500/20 text-blue-300',
+                  green: 'bg-green-500/20 text-green-300'
+                }
+              : {
+                  violet: 'bg-violet-100 text-violet-600',
+                  amber: 'bg-amber-100 text-amber-600',
+                  blue: 'bg-blue-100 text-blue-600',
+                  green: 'bg-green-100 text-green-600'
+                };
+            return (
+              <div key={idx} className={`${glassCardClass} p-5`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-sm ${isDark ? 'text-white/50' : 'text-gray-500'}`}>{stat.label}</p>
+                    <p className={`text-3xl font-bold mt-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>{stat.value}</p>
+                  </div>
+                  <div className={`p-3 rounded-xl ${colorClasses[stat.color]}`}>
+                    <Icon className="w-6 h-6" />
+                  </div>
+                </div>
               </div>
-              <div className="bg-violet-500/20 p-3 rounded-xl backdrop-blur-sm">
-                <Ticket className="w-6 h-6 text-violet-300" />
-              </div>
-            </div>
-          </div>
-          <div className={`${glassCardClass} p-5`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white/50 text-sm">Open Tickets</p>
-                <p className="text-3xl font-bold text-white mt-1">{ticketStats.openTickets}</p>
-              </div>
-              <div className="bg-amber-500/20 p-3 rounded-xl backdrop-blur-sm">
-                <AlertCircle className="w-6 h-6 text-amber-300" />
-              </div>
-            </div>
-          </div>
-          <div className={`${glassCardClass} p-5`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white/50 text-sm">In Progress</p>
-                <p className="text-3xl font-bold text-white mt-1">{ticketStats.inProgressTickets}</p>
-              </div>
-              <div className="bg-blue-500/20 p-3 rounded-xl backdrop-blur-sm">
-                <Clock className="w-6 h-6 text-blue-300" />
-              </div>
-            </div>
-          </div>
-          <div className={`${glassCardClass} p-5`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white/50 text-sm">Resolved</p>
-                <p className="text-3xl font-bold text-white mt-1">{ticketStats.resolvedTickets}</p>
-              </div>
-              <div className="bg-green-500/20 p-3 rounded-xl backdrop-blur-sm">
-                <CheckCircle className="w-6 h-6 text-green-300" />
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -530,32 +526,32 @@ const CustomerDetails = () => {
           <div className="space-y-6 lg:col-span-1">
             {/* Contact Information */}
             <div className={`${glassCardClass} p-6`}>
-              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2 text-white/90">
-                <User className="w-5 h-5 text-violet-300" />
+              <h3 className={`text-lg font-semibold mb-6 flex items-center gap-2 ${isDark ? 'text-white/90' : 'text-gray-900'}`}>
+                <User className={`w-5 h-5 ${isDark ? 'text-violet-300' : 'text-violet-500'}`} />
                 Contact Information
               </h3>
               <div className="space-y-4">
                 <div className="flex items-start gap-3 group">
-                  <div className="bg-violet-500/20 p-2 rounded-lg group-hover:bg-violet-500/30 transition-all">
-                    <Mail className="w-4 h-4 text-violet-300" />
+                  <div className={`p-2 rounded-lg transition-all ${isDark ? 'bg-violet-500/20 group-hover:bg-violet-500/30' : 'bg-violet-100 group-hover:bg-violet-200'}`}>
+                    <Mail className={`w-4 h-4 ${isDark ? 'text-violet-300' : 'text-violet-500'}`} />
                   </div>
-                  <span className="text-sm text-white/80 break-all">
+                  <span className={`text-sm ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
                     {customer.emailId || 'N/A'}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 group">
-                  <div className="bg-violet-500/20 p-2 rounded-lg group-hover:bg-violet-500/30 transition-all">
-                    <Phone className="w-4 h-4 text-violet-300" />
+                  <div className={`p-2 rounded-lg transition-all ${isDark ? 'bg-violet-500/20 group-hover:bg-violet-500/30' : 'bg-violet-100 group-hover:bg-violet-200'}`}>
+                    <Phone className={`w-4 h-4 ${isDark ? 'text-violet-300' : 'text-violet-500'}`} />
                   </div>
-                  <span className="text-sm text-white/80">
+                  <span className={`text-sm ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
                     {customer.phoneNumber || 'N/A'}
                   </span>
                 </div>
                 <div className="flex items-start gap-3 group">
-                  <div className="bg-violet-500/20 p-2 rounded-lg group-hover:bg-violet-500/30 transition-all">
-                    <MapPin className="w-4 h-4 text-violet-300" />
+                  <div className={`p-2 rounded-lg transition-all ${isDark ? 'bg-violet-500/20 group-hover:bg-violet-500/30' : 'bg-violet-100 group-hover:bg-violet-200'}`}>
+                    <MapPin className={`w-4 h-4 ${isDark ? 'text-violet-300' : 'text-violet-500'}`} />
                   </div>
-                  <span className="text-sm text-white/80">
+                  <span className={`text-sm ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
                     {customer.installationAddress
                       ? [
                           customer.installationAddress.line2,
@@ -573,17 +569,17 @@ const CustomerDetails = () => {
 
             {/* Documents */}
             <div className={`${glassCardClass} p-6`}>
-              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2 text-white/90">
-                <FileText className="w-5 h-5 text-violet-300" />
+              <h3 className={`text-lg font-semibold mb-6 flex items-center gap-2 ${isDark ? 'text-white/90' : 'text-gray-900'}`}>
+                <FileText className={`w-5 h-5 ${isDark ? 'text-violet-300' : 'text-violet-500'}`} />
                 Documents
               </h3>
               {documentEntries.length === 0 ? (
-                <p className="text-sm text-white/50">No documents uploaded.</p>
+                <p className={`text-sm ${isDark ? 'text-white/50' : 'text-gray-500'}`}>No documents uploaded.</p>
               ) : (
                 <div className="grid grid-cols-2 gap-4">
                   {documentEntries.map(([label, url]) => (
                     <div key={label} className="group relative">
-                      <div className="w-full aspect-square rounded-xl overflow-hidden border border-white/20 bg-white/5 backdrop-blur-sm transition-all group-hover:border-violet-500/50 group-hover:shadow-lg">
+                      <div className={`w-full aspect-square rounded-xl overflow-hidden border transition-all group-hover:border-violet-500/50 group-hover:shadow-lg ${isDark ? 'border-white/20 bg-white/5' : 'border-gray-200 bg-gray-50'}`}>
                         <img
                           src={url}
                           alt={label}
@@ -591,12 +587,12 @@ const CustomerDetails = () => {
                         />
                       </div>
                       <div className="mt-2">
-                        <div className="text-xs font-semibold text-white/80">{label}</div>
+                        <div className={`text-xs font-semibold ${isDark ? 'text-white/80' : 'text-gray-700'}`}>{label}</div>
                         <a
                           href={url}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-xs text-violet-300 hover:text-violet-200 transition-colors"
+                          className={`text-xs ${isDark ? 'text-violet-300 hover:text-violet-200' : 'text-violet-600 hover:text-violet-700'} transition-colors`}
                         >
                           View
                         </a>
@@ -609,19 +605,21 @@ const CustomerDetails = () => {
 
             {/* Current Plan */}
             <div className={`${glassCardClass} p-6 relative overflow-hidden`}>
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-500/20 to-purple-500/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
-              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2 text-white/90 relative z-10">
-                <Zap className="w-5 h-5 text-violet-300" />
+              {!isDark && (
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-100 to-purple-100 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+              )}
+              <h3 className={`text-lg font-semibold mb-6 flex items-center gap-2 relative z-10 ${isDark ? 'text-white/90' : 'text-gray-900'}`}>
+                <Zap className={`w-5 h-5 ${isDark ? 'text-violet-300' : 'text-violet-500'}`} />
                 Current Plan
               </h3>
               <div className="mb-6 relative z-10">
                 <div className="flex items-center gap-2 mb-2">
-                  <Award className="w-5 h-5 text-amber-300" />
-                  <p className="text-xl font-bold text-white">
+                  <Award className={`w-5 h-5 ${isDark ? 'text-amber-300' : 'text-amber-500'}`} />
+                  <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {customer.userType || 'ActivLine Home 200'}
                   </p>
                 </div>
-                <p className="text-sm text-white/60 flex items-center gap-2">
+                <p className={`text-sm ${isDark ? 'text-white/60' : 'text-gray-500'} flex items-center gap-2`}>
                   <User className="w-3 h-3" />
                   Username: {customer.userName || 'N/A'}
                 </p>
@@ -636,54 +634,51 @@ const CustomerDetails = () => {
             </div>
           </div>
 
-          {/* Right Column - History & Logs */}
+          {/* Right Column - Support Tickets */}
           <div className="space-y-6 lg:col-span-2">
-            {/* Support Tickets with Filters and Pagination */}
             <div className={`${glassCardClass} p-6`}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <h3 className="text-lg font-semibold flex items-center gap-2 text-white/90">
-                  <Ticket className="w-5 h-5 text-violet-300" />
+                <h3 className={`text-lg font-semibold flex items-center gap-2 ${isDark ? 'text-white/90' : 'text-gray-900'}`}>
+                  <Ticket className={`w-5 h-5 ${isDark ? 'text-violet-300' : 'text-violet-500'}`} />
                   Support Tickets
                 </h3>
-                <div className="flex gap-2">
-                  <div className="bg-white/5 backdrop-blur-sm rounded-lg px-3 py-1.5 text-sm text-white/60">
-                    Total: {supportTickets.length}
-                  </div>
+                <div className={`rounded-lg px-3 py-1.5 text-sm ${isDark ? 'bg-white/5 text-white/60' : 'bg-gray-100 text-gray-600'}`}>
+                  Total: {supportTickets.length}
                 </div>
               </div>
 
               {/* Filters */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/40" />
+                  <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${isDark ? 'text-white/40' : 'text-gray-400'}`} />
                   <input
                     type="text"
                     placeholder="Search by ID or subject..."
                     value={ticketSearchTerm}
                     onChange={(e) => setTicketSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder:text-white/40 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all"
+                    className={`w-full pl-9 pr-3 py-2 rounded-xl border ${isDark ? 'bg-white/10 border-white/20 text-white placeholder:text-white/40' : 'bg-white border-gray-200 text-gray-900 placeholder:text-gray-400'} focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all`}
                   />
                 </div>
                 <select
                   value={ticketStatusFilter}
                   onChange={(e) => setTicketStatusFilter(e.target.value)}
-                  className="px-3 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white focus:outline-none focus:border-violet-500/50 cursor-pointer"
+                  className={`px-3 py-2 rounded-xl border ${isDark ? 'bg-white/10 border-white/20 text-white' : 'bg-white border-gray-200 text-gray-900'} focus:outline-none focus:border-violet-500/50 cursor-pointer`}
                 >
-                  <option value="all" className="bg-slate-800">All Status</option>
-                  <option value="open" className="bg-slate-800">Open</option>
-                  <option value="in progress" className="bg-slate-800">In Progress</option>
-                  <option value="resolved" className="bg-slate-800">Resolved</option>
+                  <option value="all" className={isDark ? 'bg-slate-800' : 'bg-white'}>All Status</option>
+                  <option value="open" className={isDark ? 'bg-slate-800' : 'bg-white'}>Open</option>
+                  <option value="in progress" className={isDark ? 'bg-slate-800' : 'bg-white'}>In Progress</option>
+                  <option value="resolved" className={isDark ? 'bg-slate-800' : 'bg-white'}>Resolved</option>
                 </select>
                 <select
                   value={ticketDateFilter}
                   onChange={(e) => setTicketDateFilter(e.target.value)}
-                  className="px-3 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white focus:outline-none focus:border-violet-500/50 cursor-pointer"
+                  className={`px-3 py-2 rounded-xl border ${isDark ? 'bg-white/10 border-white/20 text-white' : 'bg-white border-gray-200 text-gray-900'} focus:outline-none focus:border-violet-500/50 cursor-pointer`}
                 >
-                  <option value="all" className="bg-slate-800">All Time</option>
-                  <option value="today" className="bg-slate-800">Today</option>
-                  <option value="week" className="bg-slate-800">Last 7 Days</option>
-                  <option value="month" className="bg-slate-800">Last 30 Days</option>
-                  <option value="year" className="bg-slate-800">Last Year</option>
+                  <option value="all" className={isDark ? 'bg-slate-800' : 'bg-white'}>All Time</option>
+                  <option value="today" className={isDark ? 'bg-slate-800' : 'bg-white'}>Today</option>
+                  <option value="week" className={isDark ? 'bg-slate-800' : 'bg-white'}>Last 7 Days</option>
+                  <option value="month" className={isDark ? 'bg-slate-800' : 'bg-white'}>Last 30 Days</option>
+                  <option value="year" className={isDark ? 'bg-slate-800' : 'bg-white'}>Last Year</option>
                 </select>
               </div>
 
@@ -691,7 +686,7 @@ const CustomerDetails = () => {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
                   <thead>
-                    <tr className="border-b border-white/10 text-white/40 uppercase text-xs">
+                    <tr className={`border-b ${isDark ? 'border-white/10 text-white/40' : 'border-gray-200 text-gray-500'} uppercase text-xs`}>
                       <th className="py-3 font-semibold tracking-wider">Ticket ID</th>
                       <th className="py-3 font-semibold tracking-wider">Date</th>
                       <th className="py-3 font-semibold tracking-wider">Subject</th>
@@ -699,28 +694,28 @@ const CustomerDetails = () => {
                       <th className="py-3 font-semibold tracking-wider">Priority</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/10">
+                  <tbody className={`divide-y ${isDark ? 'divide-white/10' : 'divide-gray-100'}`}>
                     {paginatedTickets.map((ticket) => (
-                      <tr key={ticket.id} className="group hover:bg-white/5 transition-all cursor-pointer">
-                        <td className="py-4 font-mono text-xs text-white/50">
+                      <tr key={ticket.id} className={`group transition-all cursor-pointer ${isDark ? 'hover:bg-white/5' : 'hover:bg-violet-50'}`}>
+                        <td className={`py-4 font-mono text-xs ${isDark ? 'text-white/50' : 'text-gray-500'}`}>
                           #{ticket.id}
                         </td>
-                        <td className="py-4 text-white/70">
+                        <td className={`py-4 ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
                           <div className="flex items-center gap-2">
-                            <Calendar className="w-3 h-3 text-white/40" />
+                            <Calendar className={`w-3 h-3 ${isDark ? 'text-white/40' : 'text-gray-400'}`} />
                             {ticket.date}
                           </div>
                         </td>
-                        <td className="py-4 font-medium text-violet-300">
+                        <td className={`py-4 font-medium ${isDark ? 'text-violet-300' : 'text-violet-600'}`}>
                           {ticket.subject}
                         </td>
                         <td className="py-4">
-                          <span className={`px-3 py-1 text-xs font-bold rounded-full inline-flex items-center gap-1 backdrop-blur-sm ${
+                          <span className={`px-3 py-1 text-xs font-bold rounded-full inline-flex items-center gap-1 ${
                             ticket.status === 'Open' 
-                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
+                              ? isDark ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-amber-100 text-amber-700 border border-amber-200'
                               : ticket.status === 'In Progress'
-                              ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                              : 'bg-green-500/20 text-green-300 border border-green-500/30'
+                              ? isDark ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-blue-100 text-blue-700 border border-blue-200'
+                              : isDark ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-green-100 text-green-700 border border-green-200'
                           }`}>
                             {ticket.status === 'Open' && <AlertCircle className="w-3 h-3" />}
                             {ticket.status === 'In Progress' && <Clock className="w-3 h-3" />}
@@ -731,10 +726,10 @@ const CustomerDetails = () => {
                         <td className="py-4">
                           <span className={`px-2 py-1 text-xs font-medium rounded-lg ${
                             ticket.priority === 'High' 
-                              ? 'bg-red-500/20 text-red-300 border border-red-500/30' 
+                              ? isDark ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-red-100 text-red-700 border border-red-200'
                               : ticket.priority === 'Medium'
-                              ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
-                              : 'bg-green-500/20 text-green-300 border border-green-500/30'
+                              ? isDark ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+                              : isDark ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-green-100 text-green-700 border border-green-200'
                           }`}>
                             {ticket.priority}
                           </span>
@@ -745,17 +740,17 @@ const CustomerDetails = () => {
                 </table>
               </div>
 
-              {/* Pagination Controls */}
+              {/* Pagination */}
               {filteredTickets.length > 0 && (
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
-                  <div className="text-sm text-white/50">
+                <div className="flex items-center justify-between mt-4 pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}">
+                  <div className={`text-sm ${isDark ? 'text-white/50' : 'text-gray-500'}`}>
                     Showing {((ticketCurrentPage - 1) * ticketsPerPage) + 1} to {Math.min(ticketCurrentPage * ticketsPerPage, filteredTickets.length)} of {filteredTickets.length} tickets
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setTicketCurrentPage(prev => Math.max(1, prev - 1))}
                       disabled={ticketCurrentPage === 1}
-                      className="p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white/60 hover:bg-white/10"
+                      className={`p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isDark ? 'text-white/60 hover:bg-white/10' : 'text-gray-600 hover:bg-gray-100'}`}
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
@@ -778,7 +773,7 @@ const CustomerDetails = () => {
                             className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${
                               ticketCurrentPage === pageNum
                                 ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg'
-                                : 'text-white/60 hover:bg-white/10'
+                                : isDark ? 'text-white/60 hover:bg-white/10' : 'text-gray-600 hover:bg-gray-100'
                             }`}
                           >
                             {pageNum}
@@ -789,7 +784,7 @@ const CustomerDetails = () => {
                     <button
                       onClick={() => setTicketCurrentPage(prev => Math.min(totalTicketPages, prev + 1))}
                       disabled={ticketCurrentPage === totalTicketPages}
-                      className="p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white/60 hover:bg-white/10"
+                      className={`p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isDark ? 'text-white/60 hover:bg-white/10' : 'text-gray-600 hover:bg-gray-100'}`}
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
@@ -800,14 +795,14 @@ const CustomerDetails = () => {
           </div>
         </div>
 
-        {/* Plan Modal - Glassmorphic */}
+        {/* Plan Modal - Glassmorphic with theme support */}
         {isPlanModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 animate-fade-in">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
             <div className={`w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl border ${isDark ? 'bg-slate-900/95 border-white/10' : 'bg-white/95 border-gray-200'} backdrop-blur-xl`}>
-              <div className={`flex items-center justify-between px-6 py-4 border-b ${isDark ? 'border-white/10' : 'border-gray-100'}`}>
+              <div className={`flex items-center justify-between px-6 py-4 border-b ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
                 <div>
                   <h3 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Change Plan</h3>
-                  <p className={`text-sm ${isDark ? 'text-white/60' : 'text-gray-600'}`}>
+                  <p className={`text-sm ${isDark ? 'text-white/60' : 'text-gray-500'}`}>
                     Account ID: {accountId || '—'}
                   </p>
                 </div>
@@ -822,14 +817,15 @@ const CustomerDetails = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
                 <div className="lg:col-span-2 space-y-4">
+                  {/* Groups section */}
                   <div className={`rounded-xl border p-4 ${isDark ? 'border-white/10 bg-black/20' : 'border-gray-200 bg-gray-50'}`}>
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-lg font-semibold flex items-center gap-2">
+                      <h4 className={`text-lg font-semibold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         <Layers className="w-4 h-4" />
                         Groups
                       </h4>
                       {groupLoading && (
-                        <span className={`text-xs ${isDark ? 'text-white/60' : 'text-gray-600'}`}>Loading...</span>
+                        <span className={`text-xs ${isDark ? 'text-white/60' : 'text-gray-500'}`}>Loading...</span>
                       )}
                     </div>
 
@@ -852,7 +848,7 @@ const CustomerDetails = () => {
                         setPaymentStatus(null);
                         setPaymentVerified(false);
                       }}
-                      className={`w-full p-2.5 rounded-lg border text-sm ${isDark ? 'bg-slate-800 border-white/20 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                      className={`w-full p-2.5 rounded-lg border text-sm ${isDark ? 'bg-slate-800 border-white/20 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                     >
                       <option value="">All Groups</option>
                       {groupOptions.map((group) => (
@@ -869,14 +865,15 @@ const CustomerDetails = () => {
                     )}
                   </div>
 
+                  {/* Plans section */}
                   <div className={`rounded-xl border p-4 ${isDark ? 'border-white/10 bg-black/20' : 'border-gray-200 bg-gray-50'}`}>
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-lg font-semibold flex items-center gap-2">
+                      <h4 className={`text-lg font-semibold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         <CreditCard className="w-4 h-4" />
                         Plans
                       </h4>
                       {profilesLoading && (
-                        <span className={`text-xs ${isDark ? 'text-white/60' : 'text-gray-600'}`}>Loading...</span>
+                        <span className={`text-xs ${isDark ? 'text-white/60' : 'text-gray-500'}`}>Loading...</span>
                       )}
                     </div>
 
@@ -908,7 +905,7 @@ const CustomerDetails = () => {
                                 isSelected
                                   ? isDark
                                     ? 'border-violet-500 bg-violet-500/20 shadow-lg shadow-violet-500/20'
-                                    : 'border-violet-500 bg-violet-50'
+                                    : 'border-violet-500 bg-violet-50 shadow-md'
                                   : isDark
                                     ? 'border-white/10 bg-black/20 hover:bg-white/5'
                                     : 'border-gray-200 bg-white hover:bg-gray-50'
@@ -917,14 +914,14 @@ const CustomerDetails = () => {
                               <div className="flex items-center justify-between gap-3">
                                 <div>
                                   <div className={`text-sm font-semibold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                                    <Star className="w-3 h-3 text-amber-400" />
+                                    <Star className={`w-3 h-3 ${isDark ? 'text-amber-300' : 'text-amber-500'}`} />
                                     {info.name || 'Profile'}
                                   </div>
-                                  <div className={`text-xs ${isDark ? 'text-white/60' : 'text-gray-600'}`}>
+                                  <div className={`text-xs ${isDark ? 'text-white/60' : 'text-gray-500'}`}>
                                     Profile ID: {info.profileId || '—'} | Group ID: {info.groupId || '—'}
                                   </div>
                                   {(info.planName || info.amount) && (
-                                    <div className={`text-xs mt-1 ${isDark ? 'text-white/60' : 'text-gray-600'}`}>
+                                    <div className={`text-xs mt-1 ${isDark ? 'text-white/60' : 'text-gray-500'}`}>
                                       {info.planName ? `Plan: ${info.planName}` : ''}
                                       {info.planName && info.amount ? ' • ' : ''}
                                       {info.amount ? `Amount: ₹${info.amount}` : ''}
@@ -940,7 +937,7 @@ const CustomerDetails = () => {
                                       : isDark
                                         ? 'bg-white/10 text-white/80 hover:bg-white/20'
                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }`}
+                                  }`}
                                 >
                                   {isSelected ? 'Selected' : 'Select'}
                                 </button>
@@ -953,24 +950,25 @@ const CustomerDetails = () => {
                   </div>
                 </div>
 
+                {/* Selected Plan Summary */}
                 <div>
                   <div className={`rounded-xl border p-4 ${isDark ? 'border-white/10 bg-black/20' : 'border-gray-200 bg-white'}`}>
-                    <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-violet-400" />
+                    <h4 className={`text-lg font-semibold mb-3 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      <CheckCircle className={`w-4 h-4 ${isDark ? 'text-violet-400' : 'text-violet-600'}`} />
                       Selected Plan
                     </h4>
                     <div className="space-y-3 text-sm">
                       <div>
                         <div className={`${isDark ? 'text-white/60' : 'text-gray-600'}`}>Profile ID</div>
-                        <div className="font-semibold font-mono text-sm">{paymentForm.profileId || '—'}</div>
+                        <div className={`font-semibold font-mono text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{paymentForm.profileId || '—'}</div>
                       </div>
                       <div>
                         <div className={`${isDark ? 'text-white/60' : 'text-gray-600'}`}>Group ID</div>
-                        <div className="font-semibold font-mono text-sm">{paymentForm.groupId || '—'}</div>
+                        <div className={`font-semibold font-mono text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{paymentForm.groupId || '—'}</div>
                       </div>
-                      <div className="pt-2 border-t border-white/10">
+                      <div className="pt-2 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}">
                         <div className={`${isDark ? 'text-white/60' : 'text-gray-600'}`}>Amount</div>
-                        <div className="text-2xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
+                        <div className={`text-2xl font-bold ${isDark ? 'bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent' : 'text-violet-700'}`}>
                           ₹{paymentForm.amount || '0'}
                         </div>
                       </div>

@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Pencil, Trash2, Plus, Eye, Search, Filter, XCircle,
   ChevronLeft, ChevronRight, Mail, Phone, MapPin, Calendar,
   User, CreditCard, FileText, Download, ExternalLink
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { useAuth } from "../../context/AuthContext.jsx";
 import Lottie from "lottie-react";
 import fadeSlideAnimation from "../../animations/Profile Avatar of Young Boy.json";
 import {
@@ -12,10 +14,13 @@ import {
   editCustomer,
   
 } from "../../api/frenchise/customer";
+import { createCustomer, getFranchiseProfiles } from "../../api/customer.api";
 import api from "../../api/axios";
 
 const MySubscribers = () => {
+  const navigate = useNavigate();
   const { isDark } = useTheme();
+  const { user } = useAuth();
 
   // State management
   const [subscribers, setSubscribers] = useState([]);
@@ -33,9 +38,11 @@ const MySubscribers = () => {
   // Modal states
   const [editModal, setEditModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
+  const [addModal, setAddModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [viewCustomerDetails, setViewCustomerDetails] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [createdCustomer, setCreatedCustomer] = useState(null);
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -45,10 +52,51 @@ const MySubscribers = () => {
     emailId: ""
   });
 
+  const resolvedAccountId =
+    user?.accountId || user?.AccountId || user?.account_id || user?.userName || "";
+
+  const [newSubscriber, setNewSubscriber] = useState({
+    userGroupId: "",
+    accountId: resolvedAccountId || "",
+    userName: "",
+    password: "",
+    firstName: "",
+    lastName: "",
+    phoneNumber: "",
+    emailId: "",
+    userType: "business",
+    activationDate: "now",
+    customActivationDate: "",
+    customExpirationDate: "",
+    installation_address_line2: "",
+    installation_address_city: "",
+    installation_address_pin: "",
+    installation_address_state: "",
+    installation_address_country: "IN",
+    caf_num: "",
+    createBilling: true,
+    notifyUserSms: true
+  });
+  const [groupOptions, setGroupOptions] = useState([]);
+  const [groupLoading, setGroupLoading] = useState(false);
+  const [groupError, setGroupError] = useState("");
+  const [paymentForm, setPaymentForm] = useState({
+    groupId: "",
+    profileId: "",
+    amount: ""
+  });
+  const [paymentStatus, setPaymentStatus] = useState(null);
+  const [paymentVerified, setPaymentVerified] = useState(false);
+
   // Fetch customers with filters
   useEffect(() => {
     fetchCustomers(page);
   }, [page, searchTerm, selectedPlan, selectedStatus]);
+
+  useEffect(() => {
+    if (!resolvedAccountId) return;
+    setNewSubscriber((prev) => ({ ...prev, accountId: resolvedAccountId }));
+  }, [resolvedAccountId]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -115,11 +163,118 @@ const MySubscribers = () => {
     }
   };
 
-  // Open view modal
+  // Navigate to customer details page
   const openViewModal = (customer) => {
-    setSelectedCustomer(customer);
-    fetchCustomerDetails(customer.id);
-    setViewModal(true);
+    navigate(`/my-customers-details/${customer.id}`);
+  };
+
+  const handleAddInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    const nextSubscriber = {
+      ...newSubscriber,
+      [name]: type === "checkbox" ? checked : value
+    };
+    setNewSubscriber(nextSubscriber);
+
+    if (name === "userGroupId") {
+      setPaymentForm((prev) => ({
+        ...prev,
+        groupId: value
+      }));
+    }
+  };
+
+  useEffect(() => {
+    const accountId = newSubscriber.accountId?.trim();
+    const type = newSubscriber.userType?.trim();
+    if (!accountId) {
+      setGroupOptions([]);
+      setGroupError("");
+      setGroupLoading(false);
+      return;
+    }
+    setGroupLoading(true);
+    setGroupError("");
+    getFranchiseProfiles(accountId, true, type)
+      .then((res) => {
+        const rows = res?.data?.data ?? res?.data ?? [];
+        const profiles = Array.isArray(rows) ? rows : [];
+        const groupMap = new Map();
+        profiles.forEach((profile) => {
+          const groupId =
+            profile?.Profile?.groupId ||
+            profile?.groupId ||
+            profile?.group_id ||
+            profile?.userGroupId ||
+            "";
+          if (!groupId || groupMap.has(groupId)) return;
+          groupMap.set(groupId, {
+            Group_id: groupId,
+            Group_name: profile?.Profile?.name || groupId
+          });
+        });
+        setGroupOptions(Array.from(groupMap.values()));
+      })
+      .catch((err) => {
+        setGroupOptions([]);
+        setGroupError(err?.response?.data?.message || err?.message || "Failed to load groups");
+      })
+      .finally(() => setGroupLoading(false));
+  }, [newSubscriber.accountId, newSubscriber.userType]);
+
+  const handleCreateCustomer = async () => {
+    const formData = new FormData();
+    Object.keys(newSubscriber).forEach((key) => {
+      if (key === "createBilling" || key === "notifyUserSms") {
+        formData.append(key, newSubscriber[key] ? "on" : "off");
+      } else {
+        formData.append(key, newSubscriber[key]);
+      }
+    });
+
+    try {
+      const res = await createCustomer(formData);
+      if (res.data.success) {
+        fetchCustomers(page);
+        const createdPayload = res?.data?.data || res?.data?.customer || res?.data || null;
+        setCreatedCustomer(createdPayload);
+        setPaymentStatus({ type: "success", message: "Customer created. You can select plans now." });
+      }
+    } catch (err) {
+      console.error("Failed to create customer", err);
+      alert("Failed to create customer: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleGoToPlans = () => {
+    if (!createdCustomer || !newSubscriber.accountId?.trim()) return;
+    const createdUserName =
+      createdCustomer?.userName ||
+      createdCustomer?.username ||
+      createdCustomer?.data?.userName ||
+      "";
+    const createdCustomerId =
+      createdCustomer?.id ||
+      createdCustomer?._id ||
+      createdCustomer?.customerId ||
+      createdCustomer?.activlineUserId ||
+      createdCustomer?.data?.id ||
+      "";
+
+    navigate("/customer-plans", {
+      state: {
+        accountId: newSubscriber.accountId,
+        firstName: newSubscriber.firstName,
+        lastName: newSubscriber.lastName,
+        phoneNumber: newSubscriber.phoneNumber,
+        emailId: newSubscriber.emailId,
+        userName: createdUserName,
+        customerId: createdCustomerId,
+        userType: newSubscriber.userType,
+        groupId: paymentForm.groupId,
+        profileId: paymentForm.profileId
+      }
+    });
   };
 
   // Open edit modal
@@ -206,7 +361,21 @@ const MySubscribers = () => {
         </div>
 
         {/* Search and Filter */}
-        <div ref={filterRef} className="flex gap-3 relative items-center w-full md:w-auto">
+        <div className="flex gap-3 items-center w-full md:w-auto">
+          <button
+            onClick={() => {
+              setAddModal(true);
+              setCreatedCustomer(null);
+              setPaymentStatus(null);
+              setPaymentVerified(false);
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-sm whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4" />
+            Add Customer
+          </button>
+
+          <div ref={filterRef} className="flex gap-3 relative items-center w-full md:w-auto">
           <div className="relative flex-1 md:flex-none">
             <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${
               isDark ? "text-slate-400" : "text-gray-400"
@@ -296,6 +465,7 @@ const MySubscribers = () => {
               </button>
             </div>
           )}
+          </div>
         </div>
       </div>
 
@@ -933,6 +1103,253 @@ const MySubscribers = () => {
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {addModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200 border ${
+            isDark ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"
+          }`}>
+            <div className={`p-4 border-b flex justify-between items-center rounded-t-xl ${
+              isDark ? "border-slate-800 bg-slate-900" : "border-gray-200 bg-white"
+            }`}>
+              <h3 className={`text-xl font-bold ${
+                isDark ? "text-white" : "text-gray-900"
+              }`}>
+                Add Customer
+              </h3>
+              <button
+                onClick={() => setAddModal(false)}
+                className={`transition-colors ${
+                  isDark ? "text-slate-400 hover:text-white" : "text-gray-400 hover:text-gray-600"
+                }`}
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${
+                    isDark ? "text-slate-400" : "text-gray-600"
+                  }`}>
+                    Account ID
+                  </label>
+                  <input
+                    type="text"
+                    name="accountId"
+                    value={newSubscriber.accountId}
+                    readOnly
+                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white"
+                        : "bg-gray-50 border-gray-300 text-gray-900"
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${
+                    isDark ? "text-slate-400" : "text-gray-600"
+                  }`}>
+                    User Type
+                  </label>
+                  <select
+                    name="userType"
+                    value={newSubscriber.userType}
+                    onChange={handleAddInputChange}
+                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white"
+                        : "bg-gray-50 border-gray-300 text-gray-900"
+                    }`}
+                  >
+                    <option value="business">Business</option>
+                    <option value="home">Home</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${
+                    isDark ? "text-slate-400" : "text-gray-600"
+                  }`}>
+                    Group ID
+                  </label>
+                  <select
+                    name="userGroupId"
+                    value={newSubscriber.userGroupId}
+                    onChange={handleAddInputChange}
+                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white"
+                        : "bg-gray-50 border-gray-300 text-gray-900"
+                    }`}
+                  >
+                    <option value="">Select Group</option>
+                    {groupOptions.map((group) => (
+                      <option key={group.Group_id || group.Group_name} value={group.Group_id || ""}>
+                        {group.Group_name || group.Group_id}
+                      </option>
+                    ))}
+                  </select>
+                  {groupLoading && (
+                    <p className={`text-xs mt-1 ${isDark ? "text-slate-500" : "text-gray-500"}`}>Loading groups...</p>
+                  )}
+                  {groupError && (
+                    <p className={`text-xs mt-1 ${isDark ? "text-red-300" : "text-red-600"}`}>{groupError}</p>
+                  )}
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${
+                    isDark ? "text-slate-400" : "text-gray-600"
+                  }`}>
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    name="userName"
+                    value={newSubscriber.userName}
+                    onChange={handleAddInputChange}
+                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white"
+                        : "bg-gray-50 border-gray-300 text-gray-900"
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${
+                    isDark ? "text-slate-400" : "text-gray-600"
+                  }`}>
+                    Password
+                  </label>
+                  <input
+                    type="text"
+                    name="password"
+                    value={newSubscriber.password}
+                    onChange={handleAddInputChange}
+                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white"
+                        : "bg-gray-50 border-gray-300 text-gray-900"
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${
+                    isDark ? "text-slate-400" : "text-gray-600"
+                  }`}>
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={newSubscriber.firstName}
+                    onChange={handleAddInputChange}
+                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white"
+                        : "bg-gray-50 border-gray-300 text-gray-900"
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${
+                    isDark ? "text-slate-400" : "text-gray-600"
+                  }`}>
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={newSubscriber.lastName}
+                    onChange={handleAddInputChange}
+                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white"
+                        : "bg-gray-50 border-gray-300 text-gray-900"
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${
+                    isDark ? "text-slate-400" : "text-gray-600"
+                  }`}>
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    name="phoneNumber"
+                    value={newSubscriber.phoneNumber}
+                    onChange={handleAddInputChange}
+                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white"
+                        : "bg-gray-50 border-gray-300 text-gray-900"
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${
+                    isDark ? "text-slate-400" : "text-gray-600"
+                  }`}>
+                    Email ID
+                  </label>
+                  <input
+                    type="email"
+                    name="emailId"
+                    value={newSubscriber.emailId}
+                    onChange={handleAddInputChange}
+                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white"
+                        : "bg-gray-50 border-gray-300 text-gray-900"
+                    }`}
+                  />
+                </div>
+              </div>
+
+              {paymentStatus && (
+                <div className={`text-sm ${
+                  paymentStatus.type === "success"
+                    ? isDark ? "text-green-300" : "text-green-700"
+                    : isDark ? "text-red-300" : "text-red-600"
+                }`}>
+                  {paymentStatus.message}
+                </div>
+              )}
+            </div>
+
+            <div className={`p-4 border-t flex gap-3 justify-end rounded-b-xl ${
+              isDark ? "border-slate-800 bg-slate-900" : "border-gray-200 bg-white"
+            }`}>
+              <button
+                onClick={() => setAddModal(false)}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  isDark
+                    ? "text-slate-300 hover:bg-slate-800"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                Cancel
+              </button>
+              {createdCustomer ? (
+                <button
+                  onClick={handleGoToPlans}
+                  className="px-4 py-2 text-sm font-bold text-white bg-purple-600 rounded-lg hover:bg-purple-500 shadow-sm transition-all"
+                >
+                  Select Plans & Pay
+                </button>
+              ) : (
+                <button
+                  onClick={handleCreateCustomer}
+                  className="px-4 py-2 text-sm font-bold text-white bg-green-600 rounded-lg hover:bg-green-500 shadow-sm transition-all"
+                >
+                  Create Customer
+                </button>
+              )}
             </div>
           </div>
         </div>
