@@ -206,7 +206,7 @@ const FranchiseList = ({ onSelect }) => {
           Choose an account to view its group plans
         </p>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {franchises.map((f) => (
           <button
             key={f._id}
@@ -261,8 +261,6 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
   useEffect(() => {
     fetchGroupDetails(franchise.accountId)
       .then((res) => {
-        // Safely handle multiple possible response shapes:
-        // { success, data: { data: [...] } }  OR  { success, data: [...] }
         const list =
           Array.isArray(res?.data?.data)  ? res.data.data  :
           Array.isArray(res?.data)        ? res.data       :
@@ -303,7 +301,7 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
         </div>
         <BackButton onClick={onBack} isDark={isDark} />
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {groups.map((g) => (
           <button
             key={g.Group_id}
@@ -374,7 +372,6 @@ const ProfileDetails = ({ franchise, group, onBack }) => {
   useEffect(() => {
     fetchProfileDetails(franchise.accountId, group.Profile_id)
       .then((res) => {
-        // Safely handle: { success, data: { data: { message: {...} } } }
         const message =
           res?.data?.data?.message ||
           res?.data?.message ||
@@ -411,22 +408,22 @@ const ProfileDetails = ({ franchise, group, onBack }) => {
         <BackButton onClick={onBack} isDark={isDark} />
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      {/* Stats Row - Full width cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {[
           { label: "Total Users", val: group.Total_Users, icon: "👥", grad: "from-slate-500 to-slate-700" },
           { label: "Active Users", val: group.Active_Users, icon: "✅", grad: "from-emerald-500 to-teal-600" },
           { label: "Online Now", val: group.Online_Users, icon: "🟢", grad: "from-blue-500 to-indigo-600" },
         ].map(({ label, val, icon, grad }) => (
-          <div key={label} className={`bg-gradient-to-br ${grad} rounded-2xl p-4 text-white shadow-sm`}>
-            <p className="text-2xl font-black">{val}</p>
-            <p className="text-xs font-medium opacity-80 mt-1">{icon} {label}</p>
+          <div key={label} className={`bg-gradient-to-br ${grad} rounded-2xl p-5 text-white shadow-sm`}>
+            <p className="text-3xl font-black">{val}</p>
+            <p className="text-sm font-medium opacity-80 mt-2">{icon} {label}</p>
           </div>
         ))}
       </div>
 
-      {/* Detail Sections */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/* Detail Sections - Full width grid */}
+      <div className="grid gap-6 lg:grid-cols-2">
         {details?.["profile Details"] && (
           <SectionCard title="Profile Details" icon="⚙️">
             {details["profile Details"].map((item, i) => (
@@ -443,29 +440,29 @@ const ProfileDetails = ({ franchise, group, onBack }) => {
         )}
       </div>
 
-      {/* IDs Footer */}
+      {/* IDs Footer - Full width */}
       <div
-        className={`mt-4 border rounded-xl px-5 py-3 flex flex-wrap gap-4 text-xs ${
+        className={`mt-6 border rounded-xl px-6 py-4 flex flex-wrap gap-6 text-xs ${
           isDark
             ? "bg-slate-900 border-slate-800 text-slate-500"
             : "bg-slate-50 border-slate-200 text-slate-400"
         }`}
       >
-        <span>
-          Group ID:{" "}
-          <code className={`font-mono ${isDark ? "text-slate-200" : "text-slate-600"}`}>
+        <span className="flex items-center gap-2">
+          <span className="font-medium">Group ID:</span>
+          <code className={`font-mono px-2 py-1 rounded ${isDark ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-slate-600"}`}>
             {group.Group_id}
           </code>
         </span>
-        <span>
-          Profile ID:{" "}
-          <code className={`font-mono ${isDark ? "text-slate-200" : "text-slate-600"}`}>
+        <span className="flex items-center gap-2">
+          <span className="font-medium">Profile ID:</span>
+          <code className={`font-mono px-2 py-1 rounded ${isDark ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-slate-600"}`}>
             {group.Profile_id}
           </code>
         </span>
-        <span>
-          Account:{" "}
-          <code className={`font-mono ${isDark ? "text-slate-200" : "text-slate-600"}`}>
+        <span className="flex items-center gap-2">
+          <span className="font-medium">Account:</span>
+          <code className={`font-mono px-2 py-1 rounded ${isDark ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-slate-600"}`}>
             {franchise.accountId}
           </code>
         </span>
@@ -504,49 +501,51 @@ export default function Plans() {
 
   return (
     <div
-      className={`min-h-screen ${
+      className={`min-h-screen w-full ${
         isDark
           ? "bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950"
           : "bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20"
       }`}
     >
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         {/* Page Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className={`text-2xl font-black tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+            <h1 className={`text-3xl lg:text-4xl font-black tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
               Plans
             </h1>
-            <p className={`text-sm mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            <p className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
               Franchise · Groups · Profile Details
             </p>
           </div>
           <StepProgress current={step} isDark={isDark} />
         </div>
 
-        {/* Content Card */}
+        {/* Content Card - Full width with no side margins */}
         <div
-          className={`backdrop-blur-sm rounded-3xl border shadow-sm p-6 ${
+          className={`w-full rounded-3xl border shadow-sm ${
             isDark ? "bg-slate-900/60 border-slate-800" : "bg-white/60 border-slate-200/80"
           }`}
         >
-          {step === 1 && (
-            <FranchiseList onSelect={handleSelectFranchise} />
-          )}
-          {step === 2 && selectedFranchise && (
-            <GroupList
-              franchise={selectedFranchise}
-              onSelect={handleSelectGroup}
-              onBack={handleBackToFranchises}
-            />
-          )}
-          {step === 3 && selectedFranchise && selectedGroup && (
-            <ProfileDetails
-              franchise={selectedFranchise}
-              group={selectedGroup}
-              onBack={handleBackToGroups}
-            />
-          )}
+          <div className="p-6 lg:p-8">
+            {step === 1 && (
+              <FranchiseList onSelect={handleSelectFranchise} />
+            )}
+            {step === 2 && selectedFranchise && (
+              <GroupList
+                franchise={selectedFranchise}
+                onSelect={handleSelectGroup}
+                onBack={handleBackToFranchises}
+              />
+            )}
+            {step === 3 && selectedFranchise && selectedGroup && (
+              <ProfileDetails
+                franchise={selectedFranchise}
+                group={selectedGroup}
+                onBack={handleBackToGroups}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -425,6 +425,14 @@ const handlePageChange = (page) => {
 </div>
 
 <div className="flex items-center gap-3 w-full lg:w-auto">
+  {canEditCustomer && (
+    <button
+      onClick={() => setIsModalOpen(true)}
+      className="flex items-center justify-center px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-sm whitespace-nowrap"
+    >
+      Add Customer
+    </button>
+  )}
 
   {/* Search */}
   <div className="relative w-full lg:w-72">
@@ -827,8 +835,20 @@ const handlePageChange = (page) => {
                   <input type="number" name="userGroupId" value={newSubscriber.userGroupId} onChange={handleInputChange} className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`} />
                 </div>
                 <div>
-                  <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Account ID</label>
-                  <input type="text" name="accountId" value={newSubscriber.accountId} onChange={handleInputChange} className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`} />
+                   <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Account ID</label>
+                   <select
+                     name="accountId"
+                     value={newSubscriber.accountId}
+                     onChange={handleInputChange}
+                     className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`}
+                   >
+                     <option value="">Select Franchise</option>
+                     {franchiseOptions.map((franchise) => (
+                       <option key={franchise._id || franchise.accountId} value={franchise.accountId || ''}>
+                         {(franchise.accountName || franchise.companyName || franchise.accountId || 'Unknown')}{franchise.accountId ? ` (${franchise.accountId})` : ''}
+                       </option>
+                     ))}
+                   </select>
                 </div>
                 <div>
                   <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Username</label>
@@ -972,7 +992,19 @@ const handlePageChange = (page) => {
                 </div>
                 <div>
                    <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Account ID</label>
-                   <input type="text" name="accountId" value={editSubscriber.accountId} onChange={handleEditInputChange} className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`} />
+                   <select
+                     name="accountId"
+                     value={editSubscriber.accountId}
+                     onChange={handleEditInputChange}
+                     className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`}
+                   >
+                     <option value="">Select Franchise</option>
+                     {franchiseOptions.map((franchise) => (
+                       <option key={franchise._id || franchise.accountId} value={franchise.accountId || ''}>
+                         {(franchise.accountName || franchise.companyName || franchise.accountId || 'Unknown')}{franchise.accountId ? ` (${franchise.accountId})` : ''}
+                       </option>
+                     ))}
+                   </select>
                 </div>
                 <div>
                    <label className={`block text-base font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Username</label>
