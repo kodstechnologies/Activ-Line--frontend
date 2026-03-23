@@ -223,17 +223,17 @@ const TicketRow = memo(({ item, isDark, navigate }) => {
           </div>
           <div>
             <div className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>#{ticketId}</div>
-            <div className="text-xs text-gray-500 mt-0.5">{customer}</div>
+            <div className={`text-xs mt-0.5 ${isDark ? "text-gray-400" : "text-gray-900"}`}>{customer}</div>
           </div>
         </div>
       </td>
-      <td className="py-4 px-4 text-sm text-gray-600 dark:text-gray-300 truncate max-w-xs" title={customer}>
+      <td className={`py-4 px-4 text-sm truncate max-w-xs ${isDark ? "text-gray-300" : "text-gray-900"}`} title={customer}>
         {customer}
       </td>
       <td className="py-4 px-4">
         <StatusBadge status={item.status} isDark={isDark} />
       </td>
-      <td className="py-4 px-4 text-sm text-gray-500 dark:text-gray-400">
+      <td className={`py-4 px-4 text-sm ${isDark ? "text-gray-400" : "text-gray-900"}`}>
         {formatDateWithTime(item.createdAt)}
       </td>
       <td className="py-4 px-4">
@@ -271,11 +271,11 @@ const PaymentRow = memo(({ item, isDark, navigate }) => {
           </div>
           <div>
             <div className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>#{paymentId}</div>
-            <div className="text-xs text-gray-500 mt-0.5">{customer}</div>
+            <div className={`text-xs mt-0.5 ${isDark ? "text-gray-400" : "text-gray-900"}`}>{customer}</div>
           </div>
         </div>
       </td>
-      <td className="py-4 px-4 text-sm text-gray-600 dark:text-gray-300 truncate max-w-xs" title={plan}>
+      <td className={`py-4 px-4 text-sm truncate max-w-xs ${isDark ? "text-gray-300" : "text-gray-900"}`} title={plan}>
         {plan}
       </td>
       <td className="py-4 px-4 text-sm font-medium">
@@ -284,7 +284,7 @@ const PaymentRow = memo(({ item, isDark, navigate }) => {
       <td className="py-4 px-4">
         <StatusBadge status={status} isDark={isDark} />
       </td>
-      <td className="py-4 px-4 text-sm text-gray-500 dark:text-gray-400">
+      <td className={`py-4 px-4 text-sm ${isDark ? "text-gray-400" : "text-gray-900"}`}>
         {formatDateWithTime(item.paidAt || item.createdAt)}
       </td>
       <td className="py-4 px-4">

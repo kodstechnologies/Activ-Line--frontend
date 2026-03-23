@@ -511,9 +511,12 @@ export default function Plans() {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className={`text-3xl lg:text-4xl font-black tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
-              Plans
-            </h1>
+           <h1
+  className={`text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight leading-tight
+  ${isDark ? "text-white" : "text-slate-900"}`}
+>
+  Plans
+</h1>
             <p className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
               Franchise · Groups · Profile Details
             </p>

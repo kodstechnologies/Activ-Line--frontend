@@ -500,7 +500,7 @@ export default function AdminNotifications() {
                                 <h3 className={`font-semibold text-lg ${
                                   notification.unread 
                                     ? isDark ? "text-white" : "text-gray-900"
-                                    : isDark ? "text-white/80" : "text-gray-700"
+                                    : isDark ? "text-white/80" : "text-gray-900"
                                 }`}>
                                   {notification.title}
                                 </h3>
@@ -513,12 +513,12 @@ export default function AdminNotifications() {
                                 </span>
                               </div>
                               <p className={`mt-1.5 font-medium ${
-                                isDark ? "text-white/80" : "text-gray-800"
+                                isDark ? "text-white/80" : "text-gray-900"
                               }`}>
                                 {notification.message}
                               </p>
                               <p className={`mt-1 text-sm ${
-                                isDark ? "text-white/50" : "text-gray-500"
+                                isDark ? "text-white/50" : "text-gray-700"
                               }`}>
                                 {notification.description}
                               </p>
@@ -653,10 +653,10 @@ export default function AdminNotifications() {
 
                 {/* Modal Body */}
                 <div className="mt-6 space-y-4">
-                  <p className={`text-lg font-medium ${isDark ? "text-white/90" : "text-gray-800"}`}>
+                  <p className={`text-lg font-medium ${isDark ? "text-white/90" : "text-gray-900"}`}>
                     {selectedNotification.message}
                   </p>
-                  <p className={`${isDark ? "text-white/60" : "text-gray-600"}`}>
+                  <p className={`${isDark ? "text-white/60" : "text-gray-700"}`}>
                     {selectedNotification.description}
                   </p>
 

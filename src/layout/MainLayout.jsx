@@ -12,7 +12,6 @@ import {
   Sun,
   Moon,
 } from "lucide-react";
-import toast from "react-hot-toast";
 
 import ActivlineLogo from "./logo.jsx";
 import SidebarItem from "../components/SidebarItem";
@@ -127,35 +126,6 @@ const MainLayout = () => {
     }
   };
 
-  const handleTestNotification = async () => {
-    const title = "Test notification";
-    const body = "This is a local popup test.";
-
-    try {
-      if ("Notification" in window) {
-        if (Notification.permission === "default") {
-          await Notification.requestPermission();
-        }
-
-        if (Notification.permission === "granted") {
-          new Notification(title, { body });
-        }
-      }
-    } catch {
-      // Ignore native notification errors
-    }
-
-    toast(
-      <div className="flex items-start gap-3">
-        <div className="text-lg">🔔</div>
-        <div>
-          <p className="text-sm font-semibold text-slate-900">{title}</p>
-          <p className="text-xs text-slate-600 mt-0.5">{body}</p>
-        </div>
-      </div>,
-      { duration: 4000 }
-    );
-  };
 
   const sidebarItemsMap = {
     admin: adminSidebarItems,
@@ -426,17 +396,6 @@ const MainLayout = () => {
               ) : (
                 <Moon size={20} className="text-indigo-600" />
               )}
-            </button>
-
-            <button
-              onClick={handleTestNotification}
-              className={`relative p-2.5 rounded-xl transition-all duration-300 transform hover:scale-110 shadow-lg
-                ${isDark 
-                  ? "hover:bg-slate-800/80 shadow-slate-900/50" 
-                  : "hover:bg-gray-100 shadow-gray-200/50"}`}
-              title="Test notification popup"
-            >
-              <Sparkles size={20} className={isDark ? "text-slate-300" : "text-gray-700"} />
             </button>
 
             <button

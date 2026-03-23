@@ -516,13 +516,13 @@ export default function StaffNotifications() {
                               <div className="flex items-start justify-between gap-4 flex-wrap">
                                 <div className="flex-1">
                                   <h3 className={`text-lg font-semibold ${
-                                    n.unread 
-                                      ? isDark ? "text-white" : "text-gray-900"
-                                      : isDark ? "text-white/80" : "text-gray-700"
+                                  n.unread 
+                                    ? isDark ? "text-white" : "text-gray-900"
+                                    : isDark ? "text-white/80" : "text-gray-900"
                                   }`}>
                                     {n.title}
                                   </h3>
-                                  <p className={`mt-1 text-sm ${isDark ? "text-white/60" : "text-gray-600"}`}>
+                                  <p className={`mt-1 text-sm ${isDark ? "text-white/60" : "text-gray-900"}`}>
                                     {n.message}
                                   </p>
                                 </div>
@@ -571,7 +571,7 @@ export default function StaffNotifications() {
                               </div>
 
                               {n.description && (
-                                <p className={`mt-2 text-sm line-clamp-2 ${isDark ? "text-white/50" : "text-gray-500"}`}>
+                                <p className={`mt-2 text-sm line-clamp-2 ${isDark ? "text-white/50" : "text-gray-700"}`}>
                                   {n.description}
                                 </p>
                               )}
