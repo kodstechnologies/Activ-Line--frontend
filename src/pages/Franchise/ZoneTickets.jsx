@@ -36,14 +36,14 @@ const getStatusColor = (status, isDark) => {
       ? "bg-amber-500/15 text-amber-300 border border-amber-500/30" 
       : "bg-amber-100 text-amber-700 border border-amber-200",
     IN_PROGRESS: isDark 
-      ? "bg-purple-500/15 text-purple-300 border border-purple-500/30" 
-      : "bg-purple-100 text-purple-700 border border-purple-200",
+      ? "bg-blue-500/15 text-blue-300 border border-blue-500/30" 
+      : "bg-blue-100 text-blue-700 border border-blue-200",
     RESOLVED: isDark
       ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
       : "bg-emerald-100 text-emerald-700 border border-emerald-200",
     CLOSED: isDark 
-      ? "bg-gray-500/15 text-gray-300 border border-gray-500/30" 
-      : "bg-gray-100 text-gray-700 border border-gray-200",
+      ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30" 
+      : "bg-emerald-100 text-emerald-700 border border-emerald-200",
   };
   return map[status] || (isDark ? "bg-gray-800 text-gray-300" : "bg-gray-100 text-gray-700");
 };
@@ -76,6 +76,20 @@ const toMessageType = (file) => {
   return file.type.startsWith("image/") ? "IMAGE" : "FILE";
 };
 
+const downloadFile = (file) => {
+  if (!file?.url) return;
+  const downloadUrl = file.url.includes("/upload/")
+    ? file.url.replace("/upload/", "/upload/fl_attachment/")
+    : file.url;
+  const a = document.createElement("a");
+  a.href = downloadUrl;
+  a.download = file.name || "attachment";
+  a.rel = "noopener noreferrer";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+};
+
 const getMessageTime = (message) => {
   const parsed = new Date(message?.createdAt).getTime();
   return Number.isFinite(parsed) ? parsed : 0;
@@ -85,15 +99,23 @@ const sortMessagesByCreatedAt = (list = []) =>
   [...list].sort((a, b) => getMessageTime(a) - getMessageTime(b));
 
 const normalizeMessage = (m) => {
-
   const attachments = Array.isArray(m?.attachments)
     ? m.attachments.map((a) => ({
-        url: a.url,
-        name: a.name,
-        type: a.mimeType,
-        messageType: a.type
+        url: a.url || a.file || a.fileUrl,
+        name: a.name || a.fileName || "Attachment",
+        type: a.mimeType || a.type || "",
+        messageType: a.type || a.messageType
       }))
     : [];
+
+  if (attachments.length === 0 && (m?.file || m?.fileUrl)) {
+    attachments.push({
+      url: m.file || m.fileUrl,
+      name: m.fileName || "Attachment",
+      type: m.mimeType || m.type || "",
+      messageType: m.messageType || m.type || "FILE"
+    });
+  }
 
   const role = String(m.senderRole || "").toUpperCase();
   const isCustomer = role === "CUSTOMER";
@@ -368,8 +390,8 @@ const loadMessages = async (roomId) => {
           <div className={`p-4 border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className={`p-1.5 rounded-lg ${isDark ? 'bg-orange-500/20' : 'bg-orange-100'}`}>
-                  <Inbox className={`w-4 h-4 ${isDark ? 'text-orange-400' : 'text-orange-600'}`} />
+                <div className={`p-1.5 rounded-lg ${isDark ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
+                  <Inbox className={`w-4 h-4 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
                 </div>
                 <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   Support Tickets
@@ -403,9 +425,9 @@ const loadMessages = async (roomId) => {
                 <p className="font-bold text-base">{stats.open}</p>
               </div>
               <div className={`text-center p-2 rounded-md ${
-                isDark ? 'bg-purple-500/10' : 'bg-purple-50'
+                isDark ? 'bg-blue-500/10' : 'bg-blue-50'
               }`}>
-                <p className={`text-xs ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>In Prog.</p>
+                <p className={`text-xs ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>In Prog.</p>
                 <p className="font-bold text-base">{stats.inProgress}</p>
               </div>
               <div className={`text-center p-2 rounded-md ${
@@ -427,7 +449,7 @@ const loadMessages = async (roomId) => {
                 placeholder="Search by name or ID..."
                 className={`
                   w-full pl-9 pr-3 py-2 rounded-md border text-sm
-                  transition-all focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none
+                  transition-all focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none
                   ${isDark 
                     ? "bg-gray-800 border-gray-700 text-white placeholder-gray-500" 
                     : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400"
@@ -475,8 +497,8 @@ const loadMessages = async (roomId) => {
                       className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition
                         ${filterStatus === status
                           ? isDark
-                            ? "bg-orange-500/20 text-orange-400"
-                            : "bg-orange-100 text-orange-600"
+                            ? "bg-blue-500/20 text-blue-400"
+                            : "bg-blue-100 text-blue-600"
                           : isDark
                             ? "text-gray-300 hover:bg-gray-700"
                             : "text-gray-700 hover:bg-gray-100"}
@@ -521,8 +543,8 @@ const loadMessages = async (roomId) => {
                       transition-all duration-150 animate-fade-in-up
                       ${activeChatId === chat.id
                         ? isDark
-                          ? 'bg-gray-800 border-orange-500/50 border'
-                          : 'bg-orange-50 border-orange-300 border'
+                          ? 'bg-gray-800 border-blue-500/50 border'
+                          : 'bg-blue-50 border-blue-300 border'
                         : isDark
                           ? 'hover:bg-gray-800/50 border border-transparent hover:border-gray-700'
                           : 'hover:bg-gray-50 border border-transparent hover:border-gray-200'
@@ -532,7 +554,7 @@ const loadMessages = async (roomId) => {
                   >
                     {activeChatId === chat.id && (
                       <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-r ${
-                        isDark ? 'bg-orange-500' : 'bg-orange-500'
+                        isDark ? 'bg-blue-500' : 'bg-blue-500'
                       }`}></div>
                     )}
 
@@ -540,7 +562,7 @@ const loadMessages = async (roomId) => {
                       <div className={`
                         flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center
                         ${activeChatId === chat.id
-                          ? isDark ? 'bg-orange-500' : 'bg-orange-500'
+                          ? isDark ? 'bg-blue-500' : 'bg-blue-500'
                           : isDark ? 'bg-gray-700' : 'bg-gray-200'
                         }
                       `}>
@@ -591,7 +613,7 @@ const loadMessages = async (roomId) => {
                         <span className={`
                           flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center
                           text-[10px] font-bold animate-pulse
-                          ${isDark ? 'bg-orange-500 text-white' : 'bg-orange-500 text-white'}
+                          ${isDark ? 'bg-blue-500 text-white' : 'bg-blue-500 text-white'}
                         `}>
                           {chat.unreadCount}
                         </span>
@@ -634,7 +656,7 @@ const loadMessages = async (roomId) => {
                   onChange={(e) => handleStatusChange(e.target.value)}
                   className={`
                     text-xs px-3 py-1.5 rounded-md border outline-none
-                    transition-all focus:ring-1 focus:ring-orange-500
+                    transition-all focus:ring-1 focus:ring-blue-500
                     ${isDark
                       ? 'bg-gray-800 border-gray-700 text-gray-300'
                       : 'bg-white border-gray-300 text-gray-700'
@@ -669,39 +691,75 @@ const loadMessages = async (roomId) => {
                         max-w-xs md:max-w-md rounded-lg p-3 shadow-sm
                         ${msg.sender === "agent"
                           ? isDark
-                            ? 'bg-orange-600 text-white'
-                            : 'bg-orange-500 text-white'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-blue-500 text-white'
                           : isDark
                             ? 'bg-gray-800 text-gray-200'
                             : 'bg-white text-gray-900 border border-gray-200'
                         }
                       `}>
-                        {msg.file && isImageAttachment(msg.type, msg.mimeType, msg.file) && (
-                          <img 
-                            src={msg.file} 
-                            alt="attachment" 
-                            className="rounded mb-2 max-w-[200px] cursor-pointer hover:opacity-90 transition"
-                            onClick={() => window.open(msg.file, '_blank')}
-                          />
-                        )}
-                        
-                        {msg.file && !isImageAttachment(msg.type, msg.mimeType, msg.file) && (
-                          <a
-                            href={msg.file}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`
-                              flex items-center gap-2 p-2 rounded mb-2 text-xs
-                              ${msg.sender === "agent"
-                                ? 'bg-orange-700 text-white'
-                                : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
-                              }
-                            `}
-                          >
-                            <FileText className="w-4 h-4" />
-                            <span className="flex-1 truncate">{msg.fileName || "Download attachment"}</span>
-                            <Download className="w-3 h-3" />
-                          </a>
+                        {msg.attachments?.length > 0 && (
+                          <div className="space-y-2 mb-2">
+                            {msg.attachments.map((file, idx) => {
+                              const fileUrl = file?.url;
+                              const fileName = file?.name || "Attachment";
+                              const fileType = file?.type || "";
+                              const isImage = isImageAttachment(file?.messageType, fileType, fileUrl);
+
+                              if (!fileUrl) return null;
+
+                              return isImage ? (
+                                <div key={`${msg.id}-img-${idx}`} className="relative group">
+                                  <img
+                                    src={fileUrl}
+                                    alt={fileName}
+                                    className="rounded max-w-[200px] cursor-pointer hover:opacity-90 transition"
+                                    onClick={() => window.open(fileUrl, "_blank")}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      downloadFile({ url: fileUrl, name: fileName });
+                                    }}
+                                    className="absolute bottom-1 right-1 p-1.5 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                    title="Download"
+                                  >
+                                    <Download className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div
+                                  key={`${msg.id}-file-${idx}`}
+                                  className={`
+                                    flex items-center gap-2 p-2 rounded text-xs
+                                    ${msg.sender === "agent"
+                                      ? "bg-blue-700 text-white"
+                                      : isDark ? "bg-gray-700 text-gray-300" : "bg-gray-100 text-gray-700"
+                                    }
+                                  `}
+                                >
+                                  <FileText className="w-4 h-4" />
+                                  <button
+                                    type="button"
+                                    onClick={() => window.open(fileUrl, "_blank")}
+                                    className="flex-1 truncate text-left"
+                                    title={fileName}
+                                  >
+                                    {fileName}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => downloadFile({ url: fileUrl, name: fileName })}
+                                    className="p-1.5 rounded-full hover:bg-white/10"
+                                    title="Download"
+                                  >
+                                    <Download className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
                         )}
 
                         {msg.text && (
@@ -711,7 +769,7 @@ const loadMessages = async (roomId) => {
                         <div className={`
                           text-[10px] mt-1 flex justify-end
                           ${msg.sender === "agent"
-                            ? 'text-orange-200'
+                            ? 'text-blue-200'
                             : isDark ? 'text-gray-400' : 'text-gray-500'
                           }
                         `}>
@@ -737,7 +795,7 @@ const loadMessages = async (roomId) => {
                       placeholder="Type your message..."
                       className={`
                         flex-1 px-3 py-2 rounded-md border text-sm
-                        transition-all focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none
+                        transition-all focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none
                         ${isDark
                           ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500'
                           : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400'
@@ -775,8 +833,8 @@ const loadMessages = async (roomId) => {
                         p-2 rounded-md transition
                         ${input.trim()
                           ? isDark
-                            ? 'bg-orange-600 text-white hover:bg-orange-700'
-                            : 'bg-orange-500 text-white hover:bg-orange-600'
+                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-blue-500 text-white hover:bg-blue-600'
                           : isDark
                             ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
                             : 'bg-gray-200 text-gray-400 cursor-not-allowed'

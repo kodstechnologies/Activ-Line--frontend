@@ -451,7 +451,7 @@ const CustomerDetails = () => {
     return (
       <div className="space-y-6 p-6 min-h-screen">
         <button
-          onClick={() => navigate('/franchise')}
+          onClick={() => navigate('/my-customers')}
           className={`group flex items-center text-sm font-medium transition-colors ${isDark ? 'text-violet-400 hover:text-violet-300' : 'text-violet-600 hover:text-violet-700'}`}
         >
           <ArrowLeft className="w-4 h-4 mr-1 transition-transform group-hover:-translate-x-1" />
@@ -479,7 +479,7 @@ const CustomerDetails = () => {
         {/* Header Section */}
         <div className="flex flex-col gap-4">
           <button
-            onClick={() => navigate('/franchise')}
+            onClick={() => navigate('/my-customers')}
             className={`w-fit group flex items-center text-sm font-medium transition-colors ${isDark ? 'text-violet-400 hover:text-violet-300' : 'text-violet-600 hover:text-violet-700'}`}
           >
             <ArrowLeft className="w-4 h-4 mr-1 transition-transform group-hover:-translate-x-1" />

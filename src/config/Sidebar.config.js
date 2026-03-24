@@ -109,12 +109,6 @@ export const franchiseSidebarItems = [
     paths: ["/local-staff"],
   },
   {
-    icon: CreditCard,
-    label: "Collections",
-    key: "Collections",
-    paths: ["/collections"],
-  },
-  {
     icon: LayoutGrid,
     label: "Plans",
     key: "Plans",

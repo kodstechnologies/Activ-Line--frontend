@@ -197,9 +197,9 @@ const AssignedTickets = () => {
     if (isDark) {
       switch (status?.toUpperCase()) {
         case "OPEN":
-          return `${base} bg-blue-900/30 text-blue-300 border-blue-700/50`;
-        case "IN_PROGRESS":
           return `${base} bg-amber-900/30 text-amber-300 border-amber-700/50`;
+        case "IN_PROGRESS":
+          return `${base} bg-blue-900/30 text-blue-300 border-blue-700/50`;
         case "RESOLVED":
           return `${base} bg-emerald-900/30 text-emerald-300 border-emerald-700/50`;
         case "CLOSED":
@@ -211,9 +211,9 @@ const AssignedTickets = () => {
 
     switch (status?.toUpperCase()) {
       case "OPEN":
-        return `${base} bg-blue-100 text-blue-800 border-blue-300`;
-      case "IN_PROGRESS":
         return `${base} bg-amber-100 text-amber-800 border-amber-300`;
+      case "IN_PROGRESS":
+        return `${base} bg-blue-100 text-blue-800 border-blue-300`;
       case "RESOLVED":
         return `${base} bg-emerald-100 text-emerald-800 border-emerald-300`;
       case "CLOSED":
@@ -275,9 +275,7 @@ const AssignedTickets = () => {
   return (
     <div
       className={`relative h-[calc(100vh-120px)] overflow-hidden ${
-        isDark
-          ? "bg-gradient-to-br from-gray-950 via-gray-900 to-black"
-          : "bg-gradient-to-br from-gray-50 via-white to-gray-100"
+        isDark ? "bg-gray-900" : "bg-white"
       }`}
     >
       {/* Mobile Sidebar Toggle */}
@@ -615,21 +613,21 @@ const AssignedTickets = () => {
                   <div
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
                       isDark
-                        ? "bg-gray-800 text-blue-300"
-                        : "bg-blue-50 text-blue-700"
-                    }`}
-                  >
-                    <div className="w-3 h-3 rounded-full bg-blue-500" />
-                    <span>Open: {openCount}</span>
-                  </div>
-                  <div
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                      isDark
                         ? "bg-gray-800 text-amber-300"
                         : "bg-amber-50 text-amber-700"
                     }`}
                   >
                     <div className="w-3 h-3 rounded-full bg-amber-500" />
+                    <span>Open: {openCount}</span>
+                  </div>
+                  <div
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                      isDark
+                        ? "bg-gray-800 text-blue-300"
+                        : "bg-blue-50 text-blue-700"
+                    }`}
+                  >
+                    <div className="w-3 h-3 rounded-full bg-blue-500" />
                     <span>In Progress: {inProgressCount}</span>
                   </div>
                                     <div

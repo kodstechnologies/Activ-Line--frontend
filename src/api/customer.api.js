@@ -90,6 +90,35 @@ export const getAdminAllCustomersPaymentHistory = (params = {}) => {
   return api.get("/api/payment/history/all-customers", { params });
 };
 
+// ✅ Maintenance dates by accountId
+export const getAccountMaintenance = (accountId) => {
+  if (!accountId) throw new Error("accountId is required");
+  return api.get(`/api/customer/customers/account/${encodeURIComponent(accountId)}/maintenance`);
+};
+
+export const createAccountMaintenance = (accountId, payload) => {
+  if (!accountId) throw new Error("accountId is required");
+  return api.post(
+    `/api/customer/customers/account/${encodeURIComponent(accountId)}/maintenance`,
+    payload
+  );
+};
+
+export const updateAccountMaintenance = (accountId, payload) => {
+  if (!accountId) throw new Error("accountId is required");
+  return api.patch(
+    `/api/customer/customers/account/${encodeURIComponent(accountId)}/maintenance`,
+    payload
+  );
+};
+
+export const deleteAccountMaintenance = (accountId) => {
+  if (!accountId) throw new Error("accountId is required");
+  return api.delete(
+    `/api/customer/customers/account/${encodeURIComponent(accountId)}/maintenance`
+  );
+};
+
 // ✅ Update customer (supports multipart FormData)
 export const updateCustomer = async (customerId, formData) => {
   const config = { headers: { "Content-Type": "multipart/form-data" } };
