@@ -1227,7 +1227,7 @@ const handlePageChange = (page) => {
               {/* Documents */}
               <h4 className={`text-base font-bold uppercase mt-4 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>Documents Upload</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {['idFile', 'addressFile', 'cafFile', 'reportFile', 'signFile', 'profilePicFile'].map((fileKey) => (
+                {['idFile', 'addressFile', 'signFile', 'profilePicFile'].map((fileKey) => (
                   <div key={fileKey}>
                     <label className={`block text-base font-medium mb-1 capitalize ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
                       {fileKey.replace('File', '').replace(/([A-Z])/g, ' $1')}

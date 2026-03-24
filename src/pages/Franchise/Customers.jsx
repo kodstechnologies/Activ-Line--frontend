@@ -88,6 +88,12 @@ const MySubscribers = () => {
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [paymentVerified, setPaymentVerified] = useState(false);
   const [formError, setFormError] = useState("");
+  const [files, setFiles] = useState({
+    idFile: null,
+    addressFile: null,
+    signFile: null,
+    profilePicFile: null
+  });
 
   // Fetch customers with filters
   useEffect(() => {
@@ -186,6 +192,15 @@ const MySubscribers = () => {
     }
   };
 
+  const handleFileChange = (e) => {
+    const { name, files: fileList } = e.target;
+    if (!fileList || fileList.length === 0) return;
+    setFiles((prev) => ({
+      ...prev,
+      [name]: fileList[0]
+    }));
+  };
+
   useEffect(() => {
     const accountId = newSubscriber.accountId?.trim();
     const type = newSubscriber.userType?.trim();
@@ -252,6 +267,12 @@ const MySubscribers = () => {
     });
 
     try {
+      Object.keys(files).forEach((key) => {
+        if (files[key]) {
+          formData.append(key, files[key]);
+        }
+      });
+
       const res = await createCustomer(formData);
       if (res.data.success) {
         fetchCustomers(page);
@@ -259,6 +280,7 @@ const MySubscribers = () => {
         setCreatedCustomer(createdPayload);
         setPaymentStatus({ type: "success", message: "Customer created. You can select plans now." });
         setFormError("");
+        setFiles({ idFile: null, addressFile: null, signFile: null, profilePicFile: null });
       }
     } catch (err) {
       console.error("Failed to create customer", err);
@@ -388,6 +410,7 @@ const MySubscribers = () => {
               setCreatedCustomer(null);
               setPaymentStatus(null);
               setPaymentVerified(false);
+              setFiles({ idFile: null, addressFile: null, signFile: null, profilePicFile: null });
             }}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-sm whitespace-nowrap"
           >
@@ -1402,6 +1425,36 @@ const MySubscribers = () => {
                   />
                 </div>
               </div>
+
+              {/* Documents */}
+              <h4 className={`text-base font-bold uppercase mt-4 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>Documents Upload</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {['idFile', 'addressFile', 'signFile', 'profilePicFile'].map((fileKey) => (
+                  <div key={fileKey}>
+                    <label className={`block text-sm font-medium mb-1 capitalize ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
+                      {fileKey.replace('File', '').replace(/([A-Z])/g, ' $1')}
+                    </label>
+                    <input
+                      type="file"
+                      name={fileKey}
+                      onChange={handleFileChange}
+                      className={`w-full text-sm ${isDark ? 'text-slate-400 file:bg-slate-800 file:text-slate-300' : 'text-gray-600 file:bg-gray-100 file:text-gray-700'} file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold hover:file:bg-blue-100 transition-all`}
+                    />
+                  </div>
+                ))}
+              </div>
+              {Object.values(files).some(Boolean) && (
+                <div className={`mt-3 text-sm ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
+                  <div className="font-semibold mb-1">Selected documents</div>
+                  {Object.entries(files).map(([key, file]) => (
+                    file ? (
+                      <div key={key}>
+                        {key.replace('File', '').replace(/([A-Z])/g, ' $1')}: {file.name}
+                      </div>
+                    ) : null
+                  ))}
+                </div>
+              )}
 
               {formError && (
                 <div className={`text-sm ${

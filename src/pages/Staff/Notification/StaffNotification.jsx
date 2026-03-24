@@ -89,6 +89,9 @@ export default function StaffNotifications() {
           unread: !n.isRead,
           time: new Date(n.createdAt).toLocaleString(),
           icon: n.type === 'ticket' ? Ticket : MessageSquare,
+          title: n.title || "Notification",
+          message: n.message || n.body || "",
+          description: n.description || n.type || "",
         }))
       );
     } catch (err) {
@@ -596,6 +599,120 @@ export default function StaffNotifications() {
           </div>
         </div>
       </div>
+
+      {/* Notification Detail Modal */}
+      <AnimatePresence>
+        {selectedNotification && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              variants={modalVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className={`relative w-full max-w-2xl rounded-2xl backdrop-blur-2xl border shadow-2xl overflow-hidden
+                ${isDark 
+                  ? "bg-white/10 border-white/20" 
+                  : "bg-white/90 border-gray-200"
+                }`}
+            >
+              <div className="p-6">
+                {/* Modal Header */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${getIconGradient(selectedNotification.type)} 
+                      flex items-center justify-center shadow-lg`}>
+                      <selectedNotification.icon className="w-7 h-7 text-white" />
+                    </div>
+                    <div>
+                      <h2 className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
+                        {selectedNotification.title}
+                      </h2>
+                      <div className={`flex items-center gap-2 mt-1 text-sm ${isDark ? "text-white/60" : "text-gray-500"}`}>
+                        <Clock className="w-3 h-3" />
+                        {getTimeAgo(selectedNotification.createdAt)}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedNotification(null)}
+                    className={`p-2 rounded-full transition-colors ${
+                      isDark ? "hover:bg-white/10" : "hover:bg-gray-100"
+                    }`}
+                  >
+                    <X className={`w-5 h-5 ${isDark ? "text-white/60" : "text-gray-600"}`} />
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <div className="mt-6 space-y-4">
+                  <p className={`text-lg font-medium ${isDark ? "text-white/90" : "text-gray-800"}`}>
+                    {selectedNotification.message}
+                  </p>
+                  <p className={`${isDark ? "text-white/60" : "text-gray-600"}`}>
+                    {selectedNotification.description}
+                  </p>
+
+                  {selectedNotification.data && Object.keys(selectedNotification.data).length > 0 && (
+                    <div className={`p-4 rounded-lg backdrop-blur-sm ${isDark ? "bg-white/5" : "bg-gray-50"}`}>
+                      <h4 className={`font-semibold mb-3 ${isDark ? "text-white" : "text-gray-900"}`}>
+                        Additional Data
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                        {Object.entries(selectedNotification.data).map(([key, value]) => (
+                          <div key={key} className="flex flex-col">
+                            <span className={`text-xs uppercase ${isDark ? "text-white/40" : "text-gray-500"}`}>
+                              {key.replace(/_/g, ' ')}
+                            </span>
+                            <span className={`font-medium mt-0.5 ${isDark ? "text-white/80" : "text-gray-700"}`}>
+                              {String(value)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Action Buttons in Modal */}
+                  <div className="flex gap-3 pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}">
+                    {selectedNotification.unread && (
+                      <button
+                        onClick={() => {
+                          markAsRead(selectedNotification._id);
+                          setSelectedNotification(prev => ({
+                            ...prev,
+                            unread: false,
+                            isRead: true
+                          }));
+                        }}
+                        disabled={processingIds.has(selectedNotification._id)}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-emerald-500/25 disabled:opacity-50"
+                      >
+                        <Check className="w-4 h-4" />
+                        Mark as Read
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        deleteOne(selectedNotification._id);
+                        setSelectedNotification(null);
+                      }}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-rose-500/25"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Delete All Confirmation Modal */}
       <AnimatePresence>

@@ -48,6 +48,15 @@ const formatDateTime = (value) => {
   }).format(date);
 };
 
+const addDays = (value, days) => {
+  if (!value || !Number.isFinite(Number(days))) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const next = new Date(date);
+  next.setDate(next.getDate() + Number(days));
+  return next;
+};
+
 const getDetailPairs = (details) => {
   if (!details || typeof details !== 'object') return [];
   const keys = ['profile Details', 'billing Details'];
@@ -173,6 +182,7 @@ const BillingPage = () => {
     return paginationData.paginatedTransactions.map((tx) => {
       const status = statusToUi[tx.status] || tx.status || 'Pending';
       const rawDate = tx.paidAt || tx.createdAt;
+      const planEndDate = tx.planEndDate || tx?.plan?.planEndDate || addDays(rawDate, tx.planPeriodDays || tx?.plan?.planPeriodDays);
 
         return {
           id: tx.paymentId || tx._id || '--',
@@ -181,6 +191,7 @@ const BillingPage = () => {
           amount: formatAmount(tx.amount ?? tx.planAmount, tx.currency || 'INR'),
           status,
           date: formatDateTime(rawDate),
+          endDate: formatDateTime(planEndDate),
           franchise: tx.accountId || tx.groupId || '--',
           paymentId: tx.paymentId || tx._id,
         };
@@ -341,6 +352,7 @@ const BillingPage = () => {
                       <th className={`py-4 px-6 text-sm font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Amount</th>
                       <th className={`py-4 px-6 text-sm font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Status</th>
                       <th className={`py-4 px-6 text-sm font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Date</th>
+                      <th className={`py-4 px-6 text-sm font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>End Date</th>
                       <th className={`py-4 px-6 text-sm font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Franchise</th>
                       <th className={`py-4 px-6 text-sm font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Action</th>
                     </tr>
@@ -348,7 +360,7 @@ const BillingPage = () => {
                   <tbody className={`divide-y ${isDark ? 'divide-slate-800' : 'divide-gray-200'}`}>
                     {loading ? (
                       <tr>
-                        <td colSpan="8" className={`py-12 text-center text-base ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                        <td colSpan="9" className={`py-12 text-center text-base ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                           <span className="inline-flex items-center gap-2">
                             <Loader2 className="w-4 h-4 animate-spin" /> Loading transactions...
                           </span>
@@ -381,6 +393,7 @@ const BillingPage = () => {
                             </span>
                           </td>
                           <td className={`py-4 px-6 text-base ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>{tx.date}</td>
+                          <td className={`py-4 px-6 text-base ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>{tx.endDate}</td>
                           <td className={`py-4 px-6 text-base ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>{tx.franchise}</td>
                           <td className="py-4 px-6">
                             <button
@@ -404,7 +417,7 @@ const BillingPage = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="8" className={`py-12 text-center text-base ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                        <td colSpan="9" className={`py-12 text-center text-base ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                           No transactions found matching your filter.
                         </td>
                       </tr>
@@ -540,6 +553,17 @@ const BillingPage = () => {
                     <p><span className="font-semibold">Group ID:</span> {selectedPayment?.groupId || '--'}</p>
                     <p><span className="font-semibold">Account ID:</span> {selectedPayment?.accountId || '--'}</p>
                     <p><span className="font-semibold">Paid At:</span> {formatDateTime(selectedPayment?.paidAt)}</p>
+                    <p>
+                      <span className="font-semibold">Plan End Date:</span>{' '}
+                      {formatDateTime(
+                        selectedPayment?.planEndDate ||
+                          selectedPayment?.plan?.planEndDate ||
+                          addDays(
+                            selectedPayment?.paidAt || selectedPayment?.createdAt,
+                            selectedPayment?.planPeriodDays || selectedPayment?.plan?.planPeriodDays
+                          )
+                      )}
+                    </p>
                     <p><span className="font-semibold">Created At:</span> {formatDateTime(selectedPayment?.createdAt)}</p>
                     <p><span className="font-semibold">Updated At:</span> {formatDateTime(selectedPayment?.updatedAt)}</p>
                   </div>
