@@ -13,6 +13,7 @@ import {
   updateAccountMaintenance,
   deleteAccountMaintenance
 } from "../../api/customer.api";
+import GeneralSettings from "../Admin/Settings/GeneralSettings";
 import { toast } from "react-hot-toast";
 
 const Profile = () => {
@@ -375,6 +376,7 @@ const Profile = () => {
         <div className="flex gap-2 mb-8 overflow-x-auto">
           {[
             { id: "profile", label: "Profile Information", icon: User },
+            { id: "general", label: "General Settings", icon: Settings },
             { id: "maintenance", label: "Maintenance Schedule", icon: Calendar },
             { id: "security", label: "Security Settings", icon: Shield }
           ].map((tab) => (
@@ -563,6 +565,30 @@ const Profile = () => {
 
                    
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* General Settings Tab */}
+            {activeTab === "general" && (
+              <div className={`rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${
+                isDark 
+                  ? "bg-slate-800/90 border border-slate-700" 
+                  : "bg-white/90 border border-blue-100 shadow-xl"
+              }`}>
+                <div className={`p-6 border-b ${
+                  isDark ? "border-slate-700" : "border-blue-100"
+                }`}>
+                  <h3 className={`text-xl font-semibold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-900"}`}>
+                    <Settings className="w-5 h-5 text-blue-500" />
+                    General Settings
+                  </h3>
+                  <p className={`mt-2 text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                    Manage your company profile details
+                  </p>
+                </div>
+                <div className="p-6 lg:p-8">
+                  <GeneralSettings showHeader={false} primaryActionLabel="Save All Changes" />
                 </div>
               </div>
             )}
@@ -791,7 +817,7 @@ const Profile = () => {
             )}
 
             {/* Action Buttons */}
-            {activeTab !== "maintenance" && (hasChanges || (activeTab === "security" && (password || confirmPassword))) && (
+            {activeTab !== "maintenance" && activeTab !== "general" && (hasChanges || (activeTab === "security" && (password || confirmPassword))) && (
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <button
                   onClick={handleSave}

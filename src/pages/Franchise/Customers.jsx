@@ -1244,42 +1244,8 @@ const MySubscribers = () => {
                     <p className={`text-xs mt-1 ${isDark ? "text-red-300" : "text-red-600"}`}>{groupError}</p>
                   )}
                 </div>
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDark ? "text-slate-400" : "text-gray-600"
-                  }`}>
-                    Username
-                  </label>
-                  <input
-                    type="text"
-                    name="userName"
-                    value={newSubscriber.userName}
-                    onChange={handleAddInputChange}
-                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700 text-white"
-                        : "bg-gray-50 border-gray-300 text-gray-900"
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDark ? "text-slate-400" : "text-gray-600"
-                  }`}>
-                    Password
-                  </label>
-                  <input
-                    type="text"
-                    name="password"
-                    value={newSubscriber.password}
-                    onChange={handleAddInputChange}
-                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700 text-white"
-                        : "bg-gray-50 border-gray-300 text-gray-900"
-                    }`}
-                  />
-                </div>
+               
+                
                 <div>
                   <label className={`block text-sm font-medium mb-1 ${
                     isDark ? "text-slate-400" : "text-gray-600"
@@ -1356,7 +1322,7 @@ const MySubscribers = () => {
                   <label className={`block text-sm font-medium mb-1 ${
                     isDark ? "text-slate-400" : "text-gray-600"
                   }`}>
-                    Address Line 2
+                    Address Line
                   </label>
                   <input
                     type="text"

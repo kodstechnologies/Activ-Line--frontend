@@ -354,8 +354,8 @@ const MainLayout = () => {
         m-0 p-0
         text-2xl md:text-3xl font-bold tracking-tight
         bg-gradient-to-r
-        from-purple-600 to-blue-600
-        dark:from-blue-400 dark:to-purple-400
+        from-blue-700 to-indigo-700
+        dark:from-blue-500 dark:to-cyan-500
         bg-clip-text text-transparent
         leading-tight
       "

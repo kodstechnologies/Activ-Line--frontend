@@ -9,6 +9,7 @@ import {
   Building,
   ChartNoAxesColumnIncreasing,
   UserCog,
+  UserPlus,
   FileClock,
   LayoutGrid,
   User
@@ -68,6 +69,12 @@ export const adminSidebarItems = [
     label: "Staff",
     key: "Staff",
     paths: ["/staff"],
+  },
+  {
+    icon: UserPlus,
+    label: "Franchise",
+    key: "FranchiseAdmins",
+    paths: ["/franchise-admins"],
   },
   {
     icon: ChartNoAxesColumnIncreasing,

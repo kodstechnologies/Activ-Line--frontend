@@ -42,6 +42,9 @@ const Payments = lazy(() => import("../pages/Admin/Payments"));
 const OffersPage = lazy(() => import("../pages/Admin/OffersPage"));
 const Tickets = lazy(() => import("../pages/Admin/Tickets"));
 const SettingsPage = lazy(() => import("../pages/Admin/Settings/SettingsPage"));
+const Frenchiseadmin = lazy(() =>
+  import("../pages/Admin/Frenchiseadmin/Frenchiseadmin")
+);
 const AdminNotifications = lazy(() =>
   import("../pages/Admin/Notification/AdminNotification")
 );
@@ -366,6 +369,14 @@ const Router = () => {
                 
                   <Staff />
                 
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="franchise-admins"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN"]}>
+                <Frenchiseadmin />
               </ProtectedRoute>
             }
           />
