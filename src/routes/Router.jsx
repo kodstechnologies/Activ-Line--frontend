@@ -3,6 +3,11 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ProtectedRoute from "./ProtectedRoute";
 import MainLayout from "../layout/MainLayout";
+import {
+  preloadAssignedTickets,
+  preloadTickets,
+  preloadZoneTickets,
+} from "./routePrefetch";
 // Settings - Canned Responses
 import Main from "../pages/Admin/Settings/CannedResponses/CannedResponses.jsx";
 import CategoryResponses from
@@ -40,7 +45,7 @@ const Logs = lazy(() => import("../pages/Admin/Logs"));
 const Plans = lazy(() => import("../pages/Admin/Plans"));
 const Payments = lazy(() => import("../pages/Admin/Payments"));
 const OffersPage = lazy(() => import("../pages/Admin/OffersPage"));
-const Tickets = lazy(() => import("../pages/Admin/Tickets"));
+const Tickets = lazy(preloadTickets);
 const SettingsPage = lazy(() => import("../pages/Admin/Settings/SettingsPage"));
 const Frenchiseadmin = lazy(() =>
   import("../pages/Admin/Frenchiseadmin/Frenchiseadmin")
@@ -69,12 +74,12 @@ const FranchisePlans = lazy(() => import("../pages/Franchise/Frenchiseplans"));
 const PaymentHistory = lazy(() => import("../pages/Franchise/Paymenthistory"));
 const StaffPaymentHistory = lazy(() => import("../pages/Staff/Payment_History/Paymenthistory"));
 // const ZoneSupport = lazy(() => import('../pages/Franchise/ZoneSupport'));
-const ZoneTickets = lazy(() => import("../pages/Franchise/ZoneTickets"));
+const ZoneTickets = lazy(preloadZoneTickets);
 const FranchiseProfile = lazy(() => import("../pages/Franchise/Frenchiseprofile"));
 const FranchiseReport = lazy(() => import("../pages/Franchise/FrenchiseReport"));
 
 //staff
-const AssignedTickets = lazy(() => import("../pages/Staff/AssignedTickets"));
+const AssignedTickets = lazy(preloadAssignedTickets);
 
 // Loading component
 const LoadingFallback = () => (

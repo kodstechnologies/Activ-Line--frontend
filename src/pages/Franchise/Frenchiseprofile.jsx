@@ -6,6 +6,7 @@ import {
   Trash2, Edit2, X, Globe, Phone, MapPin, Award
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { useAuth } from "../../context/AuthContext";
 import { getMyProfile, updateMyProfile } from "../../api/frenchise/franchiseprofile";
 import {
   getAccountMaintenance,
@@ -18,6 +19,7 @@ import { toast } from "react-hot-toast";
 
 const Profile = () => {
   const { isDark } = useTheme();
+  const { user } = useAuth();
 
   const [form, setForm] = useState({
     name: "",
@@ -63,16 +65,25 @@ const Profile = () => {
     return password === confirmPassword;
   }, [password, confirmPassword]);
 
+  const resolveAccountId = useCallback((source) => {
+    if (!source) return "";
+    return (
+      source.accountId ||
+      source.accountID ||
+      source.account_id ||
+      source.franchiseAccountId ||
+      source.franchiseAccountID ||
+      ""
+    );
+  }, []);
+
   const fetchProfile = useCallback(async () => {
     setLoading(true);
     try {
       const res = await getMyProfile();
       if (res.data.success) {
         const resolvedAccountId =
-          res.data.data.accountId ||
-          res.data.data.accountID ||
-          res.data.data.franchiseAccountId ||
-          "";
+          resolveAccountId(res.data.data) || resolveAccountId(user);
         setForm({
           name: res.data.data.name || "",
           email: res.data.data.email || "",
@@ -127,7 +138,7 @@ const Profile = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [resolveAccountId, user]);
 
   useEffect(() => {
     fetchProfile();
@@ -171,6 +182,17 @@ const Profile = () => {
     }
     setErrors((prev) => ({ ...prev, ...newErrors }));
     return Object.keys(newErrors).length === 0;
+  };
+
+  const formatDisplayDate = (value) => {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   };
 
   const handleFileChange = (e) => {
@@ -274,6 +296,10 @@ const Profile = () => {
         await createAccountMaintenance(accountId, payload);
       }
       setMaintenanceExists(true);
+      setMaintenanceSnapshot({
+        lastDate: payload.lastDate || "",
+        endDate: payload.endDate || ""
+      });
       toast.success("Maintenance dates saved.");
     } catch (err) {
       toast.error(
@@ -618,6 +644,45 @@ const Profile = () => {
                     </div>
                   ) : (
                     <>
+                      {!accountId && (
+                        <div className={`mb-6 p-4 rounded-xl border ${
+                          isDark
+                            ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-300"
+                            : "bg-yellow-50 border-yellow-200 text-yellow-800"
+                        }`}>
+                          Account ID not found, so maintenance data cannot be loaded.
+                        </div>
+                      )}
+
+                      <div className={`mb-6 p-4 rounded-xl border ${
+                        isDark
+                          ? "bg-slate-700/40 border-slate-600"
+                          : "bg-slate-50 border-slate-200"
+                      }`}>
+                        <div className={`text-sm font-medium mb-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                          Current Maintenance Schedule
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-blue-500" />
+                            <span className={isDark ? "text-slate-400" : "text-slate-600"}>
+                              Start: {formatDisplayDate(maintenanceSnapshot.lastDate)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-blue-500" />
+                            <span className={isDark ? "text-slate-400" : "text-slate-600"}>
+                              End: {formatDisplayDate(maintenanceSnapshot.endDate)}
+                            </span>
+                          </div>
+                        </div>
+                        {!maintenanceSnapshot.lastDate && !maintenanceSnapshot.endDate && (
+                          <div className={`mt-3 text-sm ${isDark ? "text-slate-500" : "text-slate-500"}`}>
+                            No maintenance scheduled.
+                          </div>
+                        )}
+                      </div>
+
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div className="space-y-2">
                           <label className={`flex items-center text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>

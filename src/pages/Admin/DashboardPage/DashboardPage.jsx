@@ -27,6 +27,7 @@ import {
 } from "../../../api/admindashboard.api";
 import Lottie from "lottie-react";
 import telecomAnimation from "../../../animations/Activline-Dashboard.json";
+import { preloadTickets } from "../../../routes/routePrefetch";
 
 // ================= CONSTANTS & CONFIG =================
 const STATUS_CONFIG = {
@@ -292,6 +293,8 @@ const DashboardPage = () => {
                 </>
               )}
               onViewAll={() => navigate("/tickets")}
+              onViewAllPrefetch={preloadTickets}
+              onRowAction={() => navigate("/tickets")}
               isDark={isDark}
             />
           )}
@@ -351,6 +354,7 @@ const DashboardPage = () => {
                 </>
               )}
               onViewAll={() => navigate("/payments")}
+              onRowAction={() => navigate("/payments")}
               isDark={isDark}
             />
           )}
@@ -451,7 +455,7 @@ const SectionCard = ({ title, icon, children, isDark }) => (
   </div>
 );
 
-const DataTable = ({ headers, data, renderRow, onViewAll, isDark }) => (
+const DataTable = ({ headers, data, renderRow, onViewAll, onViewAllPrefetch, onRowAction, isDark }) => (
   <div className="overflow-x-auto">
     <table className="w-full">
       <thead>
@@ -473,7 +477,9 @@ const DataTable = ({ headers, data, renderRow, onViewAll, isDark }) => (
           >
             {renderRow(item)}
             <td className="py-3 px-4 text-right">
-              <button className={`p-1.5 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100 ${
+              <button
+                onClick={() => onRowAction?.(item)}
+                className={`p-1.5 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100 ${
                 isDark ? "hover:bg-gray-700 text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-600 hover:text-gray-900"
               }`}>
                 <ChevronRight className="h-4 w-4" />
@@ -487,6 +493,9 @@ const DataTable = ({ headers, data, renderRow, onViewAll, isDark }) => (
     <div className={`mt-4 pt-4 text-center border-t ${isDark ? "border-gray-700" : "border-gray-200"}`}>
       <button
         onClick={onViewAll}
+        onMouseEnter={onViewAllPrefetch}
+        onFocus={onViewAllPrefetch}
+        onTouchStart={onViewAllPrefetch}
         className={`inline-flex items-center gap-1 text-sm font-medium transition-all duration-200 hover:gap-2 ${
           isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-500"
         }`}

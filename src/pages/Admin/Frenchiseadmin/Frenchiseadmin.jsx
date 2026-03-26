@@ -279,7 +279,7 @@ const Frenchiseadmin = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
           <motion.div
             whileHover={{ scale: 1.05, y: -5 }}
             className={`p-4 rounded-xl border ${isDark ? "bg-slate-800/50 border-slate-700" : "bg-white border-gray-200"}`}
@@ -293,23 +293,6 @@ const Frenchiseadmin = () => {
               </div>
               <div className="w-12 h-12">
                 <Lottie animationData={statsUsersAnimation} loop autoplay className="w-full h-full" />
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ scale: 1.05, y: -5 }}
-            className={`p-4 rounded-xl border ${isDark ? "bg-slate-800/50 border-slate-700" : "bg-white border-gray-200"}`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={`text-sm ${isDark ? "text-slate-400" : "text-gray-600"}`}>Active</p>
-                <p className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"} mt-1`}>
-                  {isLoading ? <span className={`inline-block h-7 w-16 rounded animate-pulse ${isDark ? "bg-slate-700" : "bg-gray-200"}`} /> : admins.filter((a) => (a.status || "").toUpperCase() === "ACTIVE").length}
-                </p>
-              </div>
-              <div className="w-12 h-12">
-                <Lottie animationData={statsShieldAnimation} loop autoplay className="w-full h-full" />
               </div>
             </div>
           </motion.div>
@@ -357,7 +340,7 @@ const Frenchiseadmin = () => {
               <table className="w-full min-w-[900px] text-left">
                 <thead className={isDark ? "bg-gradient-to-r from-slate-800 to-slate-900/80" : "bg-gradient-to-r from-gray-50 to-gray-100"}>
                   <tr>
-                    {["Name", "Email", "Role", "Status", "Account ID", "Created", "Actions"].map((label) => (
+                    {["Name", "Email", "Role", "Account ID", "Created", "Actions"].map((label) => (
                       <th key={label} className={`px-6 py-4 text-xs font-semibold uppercase ${isDark ? "text-slate-400" : "text-gray-500"}`}>
                         {label}
                       </th>
@@ -382,15 +365,6 @@ const Frenchiseadmin = () => {
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${isDark ? "bg-blue-500/10 text-blue-400 border-blue-500/20" : "bg-blue-50 text-blue-700 border-blue-200"}`}>
                           {admin.role || "FRANCHISE_ADMIN"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
-                          (admin.status || "").toUpperCase() === "ACTIVE"
-                            ? "bg-green-500/10 text-green-400 border-green-500/20"
-                            : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
-                        }`}>
-                          {admin.status || "ACTIVE"}
                         </span>
                       </td>
                       <td className={`px-6 py-4 text-sm ${isDark ? "text-slate-300" : "text-gray-600"}`}>{admin.accountId || "-"}</td>

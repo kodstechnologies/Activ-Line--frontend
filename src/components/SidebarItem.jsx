@@ -130,7 +130,7 @@
 
 import React from "react";
 
-const SidebarItem = ({ icon: Icon, label, active, onClick, role, collapsed, isDark }) => {
+const SidebarItem = ({ icon: Icon, label, active, onClick, onPrefetch, role, collapsed, isDark }) => {
 
   const getAccentColor = () => {
     if (!isDark) {
@@ -222,6 +222,9 @@ const SidebarItem = ({ icon: Icon, label, active, onClick, role, collapsed, isDa
   return (
     <button
       onClick={onClick}
+      onMouseEnter={onPrefetch}
+      onFocus={onPrefetch}
+      onTouchStart={onPrefetch}
       className={`w-full flex items-center ${collapsed ? 'justify-center' : ''} gap-4
     ${collapsed ? 'px-3' : 'px-5'} py-3.5 text-base font-small rounded-xl mb-1.5
     transition-all duration-300 group relative ${getTextColor()}

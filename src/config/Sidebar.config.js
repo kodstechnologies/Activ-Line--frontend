@@ -14,6 +14,11 @@ import {
   LayoutGrid,
   User
 } from "lucide-react";
+import {
+  preloadAssignedTickets,
+  preloadTickets,
+  preloadZoneTickets,
+} from "../routes/routePrefetch";
 
 export const adminSidebarItems = [
   {
@@ -27,6 +32,7 @@ export const adminSidebarItems = [
     label: "Tickets",
     key: "Tickets",
     paths: ["/tickets"],
+    prefetch: preloadTickets,
   },
   {
     icon: Users,
@@ -48,7 +54,7 @@ export const adminSidebarItems = [
   // },
   {
     icon: CreditCard,
-    label: "Payments",
+    label: "Payment-History",
     key: "Payments",
     paths: ["/payments"],
   },
@@ -138,6 +144,7 @@ export const franchiseSidebarItems = [
     label: "Tickets",
     key: "Tickets",
     paths: ["/zone-tickets"],
+    prefetch: preloadZoneTickets,
   },
   {
     icon: User,
@@ -159,6 +166,7 @@ export const staffSidebarItems = [
     label: "Assigned Tickets",
     key: "Assigned Tickets",
     paths: ["/assigned-tickets"],
+    prefetch: preloadAssignedTickets,
   },
   {
     icon: Users,

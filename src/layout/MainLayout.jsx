@@ -230,6 +230,7 @@ const MainLayout = () => {
               label={item.label}
               active={isItemActive(item)}
               collapsed={sidebarCollapsed}
+              onPrefetch={item.prefetch}
               onClick={() => {
                 navigate(item.paths[0]);
                 setSidebarOpen(false);
