@@ -7,6 +7,9 @@ import {
   preloadAssignedTickets,
   preloadTickets,
   preloadZoneTickets,
+  preloadAdminNotifications,
+  preloadFranchiseNotifications,
+  preloadStaffNotifications,
 } from "./routePrefetch";
 // Settings - Canned Responses
 import Main from "../pages/Admin/Settings/CannedResponses/CannedResponses.jsx";
@@ -50,15 +53,9 @@ const SettingsPage = lazy(() => import("../pages/Admin/Settings/SettingsPage"));
 const Frenchiseadmin = lazy(() =>
   import("../pages/Admin/Frenchiseadmin/Frenchiseadmin")
 );
-const AdminNotifications = lazy(() =>
-  import("../pages/Admin/Notification/AdminNotification")
-);
-const FranchiseNotifications = lazy(() =>
-  import("../pages/Franchise/Notification/FranchiseNotification")
-);
-const StaffNotifications = lazy(() =>
-  import("../pages/Staff/Notification/StaffNotification")
-);
+const AdminNotifications = lazy(preloadAdminNotifications);
+const FranchiseNotifications = lazy(preloadFranchiseNotifications);
+const StaffNotifications = lazy(preloadStaffNotifications);
 
 const ForgotPassword = lazy(() => import("../pages/auth/ForgotPassword"));
 const FranchisePage = lazy(() => import("../pages/Admin/Franchise"));

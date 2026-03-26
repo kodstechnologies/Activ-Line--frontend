@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useTheme } from "../../../context/ThemeContext";
 import Lottie from "lottie-react";
 import emailAnimation from "../../../animations/Email.json";
@@ -23,9 +23,8 @@ export default function AdminNotifications() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [filter, setFilter] = useState("all");
 
-  // Normalize notification data
-  const normalizeNotifications = (data) =>
-    data.map((n) => ({
+  const normalizeNotifications = useCallback((data) => {
+    return data.map((n) => ({
       ...n,
       unread: !n.isRead,
       icon: n.category === "ticket" ? Mail : Bell,
@@ -34,13 +33,9 @@ export default function AdminNotifications() {
       description: n.message,
       title: n.title || "Notification",
     }));
-
-  // Fetch notifications
-  useEffect(() => {
-    fetchNotifications();
   }, []);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getNotificationsApi();
@@ -50,22 +45,32 @@ export default function AdminNotifications() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [normalizeNotifications]);
 
-  const unreadCount = notifications.reduce(
-    (count, n) => (!n.isRead ? count + 1 : count),
-    0
+  // Fetch notifications
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const unreadCount = useMemo(
+    () => notifications.reduce((count, n) => (!n.isRead ? count + 1 : count), 0),
+    [notifications]
   );
-  
-  const readCount = notifications.length - unreadCount;
 
-  const filteredNotifications = notifications.filter(n => {
-    if (filter === "unread") return !n.isRead;
-    if (filter === "read") return n.isRead;
-    return true;
-  });
+  const readCount = useMemo(
+    () => notifications.length - unreadCount,
+    [notifications.length, unreadCount]
+  );
 
-  const markAsRead = async (id, e) => {
+  const filteredNotifications = useMemo(() => {
+    return notifications.filter((n) => {
+      if (filter === "unread") return !n.isRead;
+      if (filter === "read") return n.isRead;
+      return true;
+    });
+  }, [notifications, filter]);
+
+  const markAsRead = useCallback(async (id, e) => {
     if (e) e.stopPropagation();
     
     const notification = notifications.find((n) => n._id === id);
@@ -98,9 +103,9 @@ export default function AdminNotifications() {
         return newSet;
       });
     }
-  };
+  }, [notifications, selectedNotification]);
 
-  const markAllAsRead = async () => {
+  const markAllAsRead = useCallback(async () => {
     const unread = notifications.filter((n) => !n.isRead);
     if (!unread.length) return;
 
@@ -118,9 +123,9 @@ export default function AdminNotifications() {
     } finally {
       setProcessingIds(new Set());
     }
-  };
+  }, [notifications]);
 
-  const deleteNotification = async (id) => {
+  const deleteNotification = useCallback(async (id) => {
     setProcessingIds(prev => new Set([...prev, id]));
 
     try {
@@ -141,19 +146,19 @@ export default function AdminNotifications() {
       });
       setShowDeleteConfirm(null);
     }
-  };
+  }, [selectedNotification]);
 
-  const showDeleteConfirmation = (id, e) => {
+  const showDeleteConfirmation = useCallback((id, e) => {
     if (e) e.stopPropagation();
     setShowDeleteConfirm(id);
-  };
+  }, []);
 
-  const clearAll = async () => {
+  const clearAll = useCallback(async () => {
     if (notifications.length === 0 || processingIds.size > 0) return;
     setShowClearConfirm(true);
-  };
+  }, [notifications.length, processingIds.size]);
 
-  const handleConfirmClearAll = async () => {
+  const handleConfirmClearAll = useCallback(async () => {
     setShowClearConfirm(false);
     try {
       setProcessingIds(new Set(notifications.map(n => n._id)));
@@ -164,16 +169,16 @@ export default function AdminNotifications() {
     } finally {
       setProcessingIds(new Set());
     }
-  };
+  }, [notifications]);
 
-  const handleNotificationClick = (notification) => {
+  const handleNotificationClick = useCallback((notification) => {
     setSelectedNotification(notification);
     if (!notification.isRead) {
       markAsRead(notification._id);
     }
-  };
+  }, [markAsRead]);
 
-  const getTimeAgo = (dateString) => {
+  const getTimeAgo = useCallback((dateString) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now - date;
@@ -186,7 +191,7 @@ export default function AdminNotifications() {
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
     return date.toLocaleDateString();
-  };
+  }, []);
 
   return (
     <div className={`w-full min-h-screen relative overflow-hidden ${

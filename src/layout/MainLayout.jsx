@@ -29,6 +29,11 @@ import {
   franchiseSidebarItems,
   staffSidebarItems,
 } from "../config/Sidebar.config";
+import {
+  preloadAdminNotifications,
+  preloadFranchiseNotifications,
+  preloadStaffNotifications,
+} from "../routes/routePrefetch";
 import { getStaffUnreadCount } from "../api/staffnotification.api";
 import { getUnreadCountApi } from "../api/notification.api";
 import { getFranchiseUnreadCount } from "../api/franchisenotification.api";
@@ -123,6 +128,17 @@ const MainLayout = () => {
       navigate("/franchise-notifications");
     } else {
       navigate("/staff-notifications");
+    }
+  };
+
+  const prefetchNotifications = () => {
+    const role = user?.role?.toLowerCase();
+    if (role === "admin" || role === "super_admin") {
+      preloadAdminNotifications();
+    } else if (role === "franchise" || role === "franchise_admin") {
+      preloadFranchiseNotifications();
+    } else {
+      preloadStaffNotifications();
     }
   };
 
@@ -401,6 +417,9 @@ const MainLayout = () => {
 
             <button
               onClick={handleNotificationClick}
+              onMouseEnter={prefetchNotifications}
+              onFocus={prefetchNotifications}
+              onTouchStart={prefetchNotifications}
               className={`relative p-2.5 rounded-xl transition-all duration-300 transform hover:scale-110 shadow-lg
                 ${isDark 
                   ? "hover:bg-slate-800/80 shadow-slate-900/50" 
