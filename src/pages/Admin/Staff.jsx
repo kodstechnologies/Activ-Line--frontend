@@ -49,6 +49,15 @@ const getUserRole = () => {
   }
 };
 
+const normalizeStatus = (status) => {
+  const value = String(status || "").toUpperCase();
+  if (value === "INACTIVE") return "DISABLED";
+  if (value === "ACTIVE" || value === "DISABLED" || value === "TERMINATED") {
+    return value;
+  }
+  return "DISABLED";
+};
+
 const Staff = () => {
   const { isDark } = useTheme();
   const [staffs, setStaffs] = useState([]);
@@ -110,7 +119,7 @@ const Staff = () => {
       const res = await getAllAdminStaff();
       const normalized = res.data.map((s) => ({
         ...s,
-        status: s.status?.toUpperCase() || "INACTIVE",
+        status: normalizeStatus(s.status),
         role: s.role?.toUpperCase() || "ADMIN_STAFF",
       }));
       setStaffs(normalized);
@@ -185,7 +194,7 @@ const Staff = () => {
         name: staff.name,
         email: staff.email,
         role: staff.role,
-        status: staff.status,
+        status: normalizeStatus(staff.status),
         password: "",
       });
     } else {
@@ -266,7 +275,7 @@ const Staff = () => {
     switch (status) {
       case "ACTIVE":
         return <ShieldCheck className="w-4 h-4" />;
-      case "INACTIVE":
+      case "DISABLED":
         return <ShieldOff className="w-4 h-4" />;
       case "TERMINATED":
         return <XCircle className="w-4 h-4" />;
@@ -469,7 +478,7 @@ const Staff = () => {
                       >
                         <option value="ALL">All Status</option>
                         <option value="ACTIVE">Active</option>
-                        <option value="INACTIVE">Inactive</option>
+                        <option value="DISABLED">Disabled</option>
                         <option value="TERMINATED">Terminated</option>
                       </select>
                     </div>
@@ -1214,7 +1223,7 @@ const Staff = () => {
                   }`}
                     >
                       <option value="ACTIVE">Active</option>
-                      <option value="INACTIVE">Inactive</option>
+                      <option value="DISABLED">Disabled</option>
                       <option value="TERMINATED">Terminated</option>
                     </select>
                   </div>

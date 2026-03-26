@@ -10,6 +10,7 @@ import { useAuth } from "../../context/AuthContext";
 import { getMyProfile, updateMyProfile } from "../../api/frenchise/franchiseprofile";
 import {
   getAccountMaintenance,
+  getMyAccountMaintenance,
   createAccountMaintenance,
   updateAccountMaintenance,
   deleteAccountMaintenance
@@ -97,20 +98,21 @@ const Profile = () => {
         setAccountId(resolvedAccountId);
         setLastUpdated(new Date());
         if (resolvedAccountId) {
+          // Load maintenance immediately after profile fetch
           setMaintenanceLoading(true);
           try {
-            const maintenanceRes = await getAccountMaintenance(resolvedAccountId);
+            const maintenanceRes = await getMyAccountMaintenance();
             const data = maintenanceRes?.data?.data || {};
             setForm((prev) => ({
               ...prev,
-              maintenanceLastDate: data.lastDate || "",
+              maintenanceLastDate: data.firstDate || "",
               maintenanceEndDate: data.endDate || ""
             }));
             setMaintenanceSnapshot({
-              lastDate: data.lastDate || "",
+              lastDate: data.firstDate || "",
               endDate: data.endDate || ""
             });
-            setMaintenanceExists(Boolean(data.lastDate || data.endDate));
+            setMaintenanceExists(Boolean(data.firstDate || data.endDate));
           } catch (err) {
             const status = err?.response?.status;
             if (status === 404) {
@@ -140,9 +142,50 @@ const Profile = () => {
     }
   }, [resolveAccountId, user]);
 
+  const loadMaintenance = useCallback(async () => {
+    setMaintenanceLoading(true);
+    try {
+      const maintenanceRes = await getMyAccountMaintenance();
+      const data = maintenanceRes?.data?.data || {};
+      setForm((prev) => ({
+        ...prev,
+        maintenanceLastDate: data.firstDate || "",
+        maintenanceEndDate: data.endDate || ""
+      }));
+      setMaintenanceSnapshot({
+        lastDate: data.firstDate || "",
+        endDate: data.endDate || ""
+      });
+      setMaintenanceExists(Boolean(data.firstDate || data.endDate));
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status === 404) {
+        setMaintenanceExists(false);
+        setForm((prev) => ({
+          ...prev,
+          maintenanceLastDate: "",
+          maintenanceEndDate: ""
+        }));
+        setMaintenanceSnapshot({ lastDate: "", endDate: "" });
+      } else {
+        toast.error(
+          err.response?.data?.message || "Failed to load maintenance dates"
+        );
+      }
+    } finally {
+      setMaintenanceLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  useEffect(() => {
+    if (activeTab === "maintenance") {
+      loadMaintenance();
+    }
+  }, [activeTab, loadMaintenance]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -386,11 +429,11 @@ const Profile = () => {
             </div>
             
             {lastUpdated && (
-              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg max-w-full ${
                 isDark ? "bg-slate-700/50" : "bg-blue-50"
               }`}>
-                <Clock className="w-4 h-4 text-blue-500" />
-                <span className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                <Clock className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                <span className={`text-sm break-words ${isDark ? "text-slate-400" : "text-slate-600"}`}>
                   Last updated: {lastUpdated.toLocaleDateString()}
                 </span>
               </div>
@@ -725,12 +768,12 @@ const Profile = () => {
                         </div>
                       </div>
                       
-                      <div className="mt-8 flex flex-col sm:flex-row gap-4">
+                      <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap gap-4">
                         <button
                           type="button"
                           onClick={handleSaveMaintenance}
                           disabled={maintenanceSaving || !accountId}
-                          className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
+                          className={`w-full sm:w-auto flex-1 min-w-[200px] px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
                             maintenanceSaving || !accountId
                               ? "bg-slate-400 cursor-not-allowed opacity-60"
                               : `bg-gradient-to-r ${isDark ? "from-blue-600 to-cyan-600" : "from-blue-600 to-indigo-600"} hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl active:scale-95`
@@ -752,7 +795,7 @@ const Profile = () => {
                           type="button"
                           onClick={handleCancelMaintenance}
                           disabled={maintenanceLoading}
-                          className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
+                          className={`w-full sm:w-auto min-w-[140px] px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
                             maintenanceLoading
                               ? "bg-slate-200 text-slate-400 cursor-not-allowed"
                               : isDark
@@ -767,7 +810,7 @@ const Profile = () => {
                             type="button"
                             onClick={handleDeleteMaintenance}
                             disabled={maintenanceDeleting || !accountId}
-                            className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
+                            className={`w-full sm:w-auto min-w-[160px] px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
                               maintenanceDeleting || !accountId
                                 ? "bg-slate-200 text-slate-400 cursor-not-allowed"
                                 : isDark

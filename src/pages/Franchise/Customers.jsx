@@ -403,7 +403,7 @@ const MySubscribers = () => {
         </div>
 
         {/* Search and Filter */}
-        <div className="flex gap-3 items-center w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center w-full md:w-auto min-w-0">
           <button
             onClick={() => {
               setAddModal(true);
@@ -412,14 +412,14 @@ const MySubscribers = () => {
               setPaymentVerified(false);
               setFiles({ idFile: null, addressFile: null, signFile: null, profilePicFile: null });
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-sm whitespace-nowrap"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-sm whitespace-nowrap"
           >
             <Plus className="w-4 h-4" />
             Add Customer
           </button>
 
-          <div ref={filterRef} className="flex gap-3 relative items-center w-full md:w-auto">
-          <div className="relative flex-1 md:flex-none">
+          <div ref={filterRef} className="flex flex-col sm:flex-row gap-3 relative items-stretch sm:items-center w-full md:w-auto min-w-0">
+          <div className="relative w-full sm:w-72 min-w-0">
             <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${
               isDark ? "text-slate-400" : "text-gray-400"
             }`} />
@@ -431,7 +431,7 @@ const MySubscribers = () => {
                 setSearchTerm(e.target.value);
                 setPage(1);
               }}
-              className={`w-full md:w-64 pl-9 pr-3 py-2 border rounded-lg text-sm outline-none 
+              className={`w-full pl-9 pr-3 py-2 border rounded-lg text-sm outline-none 
                 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all
                 ${isDark
                   ? "bg-slate-800 border-slate-700 text-white placeholder-slate-500"
@@ -442,7 +442,7 @@ const MySubscribers = () => {
 
           <button
             onClick={() => setShowFilter(!showFilter)}
-            className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-sm transition-all
+            className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 border rounded-lg text-sm transition-all
               ${isDark 
                 ? "bg-slate-800 border-slate-700 text-white hover:bg-slate-700" 
                 : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -454,7 +454,7 @@ const MySubscribers = () => {
 
           {/* Filter Popup */}
           {showFilter && (
-            <div className={`absolute right-0 top-12 w-72 p-4 rounded-xl shadow-2xl border z-50 animate-in fade-in zoom-in duration-150
+            <div className={`absolute left-0 right-0 sm:left-auto sm:right-0 top-12 w-full sm:w-72 p-4 rounded-xl shadow-2xl border z-50 animate-in fade-in zoom-in duration-150
               ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`}>
               <h4 className={`text-base font-bold mb-3 ${
                 isDark ? "text-white" : "text-gray-900"

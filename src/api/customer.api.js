@@ -96,6 +96,11 @@ export const getAccountMaintenance = (accountId) => {
   return api.get(`/api/customer/customers/account/${encodeURIComponent(accountId)}/maintenance`);
 };
 
+// ✅ Maintenance dates for current logged-in account
+export const getMyAccountMaintenance = () => {
+  return api.get("/api/customer/customers/account/me/maintenance");
+};
+
 export const createAccountMaintenance = (accountId, payload) => {
   if (!accountId) throw new Error("accountId is required");
   return api.post(
