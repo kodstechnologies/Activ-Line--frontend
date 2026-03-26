@@ -18,7 +18,7 @@ import Lottie from "lottie-react";
 import activityAnimation from "../../animations/time tracker.json";
 
 const ITEMS_PER_PAGE = 10;
-const ROLE_OPTIONS = ["ALL", "SUPER_ADMIN", "ADMIN", "ADMIN_STAFF", "STAFF", "CUSTOMER"];
+const ROLE_OPTIONS = ["ALL", "ADMIN", "ADMIN_STAFF", "FRANCHISE_ADMIN"];
 
 const Logs = () => {
   const { isDark } = useTheme();
