@@ -337,41 +337,10 @@ const handleSubmit = async (values, { setSubmitting }) => {
                       <div className="flex items-center">
                         <label className="flex items-center gap-2 cursor-pointer">
                           <div className="relative">
-                            <Field
-                              type="checkbox"
-                              name="remember"
-                              id="remember"
-                              className="peer hidden"
-                            />
-                            <div
-                              className={`w-4 h-4 rounded border flex items-center justify-center transition-all duration-300 ${
-                                isDark
-                                  ? "border-gray-600 peer-checked:border-blue-400 peer-checked:bg-blue-400"
-                                  : "border-gray-300 peer-checked:border-blue-500 peer-checked:bg-blue-500"
-                              }`}
-                            >
-                              <svg
-                                className="w-2.5 h-2.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-300"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="3"
-                                  d="M5 13l4 4L19 7"
-                                />
-                              </svg>
-                            </div>
+                           
+                          
                           </div>
-                          <span
-                            className={`text-xs select-none transition-colors duration-300 ${
-                              isDark ? "text-gray-400" : "text-gray-600"
-                            }`}
-                          >
-                            Remember me for 30 days
-                          </span>
+                          
                         </label>
                       </div>
 

@@ -12,6 +12,19 @@ function App() {
   const lastNotificationRef = useRef({ key: null, ts: 0 });
 
   useEffect(() => {
+    const ensureNotificationPermission = async () => {
+      if (!("Notification" in window)) return;
+      if (Notification.permission === "default") {
+        try {
+          await Notification.requestPermission();
+        } catch {
+          // ignore permission errors
+        }
+      }
+    };
+
+    ensureNotificationPermission();
+
     const unsubscribe = listenToMessages((payload) => {
       const data = payload?.data || payload;
       const notification = payload?.notification || {};
@@ -64,13 +77,23 @@ function App() {
         document.title = originalTitle;
       }, 3000);
 
-      if ("Notification" in window && Notification.permission === "granted") {
-        if (document.visibilityState !== "visible") {
+      if ("Notification" in window) {
+        if (Notification.permission === "granted") {
           try {
             new Notification(title, { body, icon });
           } catch {
             // Ignore Notification errors in unsupported contexts
           }
+        } else if (Notification.permission === "default") {
+          Notification.requestPermission().then((permission) => {
+            if (permission === "granted") {
+              try {
+                new Notification(title, { body, icon });
+              } catch {
+                // Ignore Notification errors in unsupported contexts
+              }
+            }
+          });
         }
       }
     });

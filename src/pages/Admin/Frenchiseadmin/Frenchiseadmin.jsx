@@ -740,23 +740,7 @@ const Frenchiseadmin = () => {
                   />
                 </div>
 
-                {editingAdmin && (
-                  <div>
-                    <label className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}>
-                      Profile Image
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className={`w-full p-2 rounded-xl border text-sm ${
-                        isDark 
-                          ? "bg-slate-800 border-slate-700 text-white" 
-                          : "bg-white border-gray-300 text-gray-900"
-                      }`}
-                    />
-                  </div>
-                )}
+              
 
                 <div className="flex justify-end gap-3 pt-4">
                   <button

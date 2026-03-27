@@ -37,3 +37,22 @@ export const adminLogin = async ({ email, password }) => {
 export const logoutApi = () => {
   return api.post("/api/auth/logout");
 };
+
+export const forgotPassword = async (email) => {
+  const response = await api.post("/api/auth/forgot-password", { email });
+  return response.data;
+};
+
+export const resendForgotPasswordOtp = async (email) => {
+  const response = await api.post("/api/auth/forgot-password/resend", { email });
+  return response.data;
+};
+
+export const resetPassword = async ({ email, otp, password }) => {
+  const response = await api.post("/api/auth/reset-password", {
+    email,
+    otp,
+    password,
+  });
+  return response.data;
+};

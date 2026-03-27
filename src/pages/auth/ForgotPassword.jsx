@@ -1,33 +1,75 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Formik, Form, Field, ErrorMessage } from "formik";
-import * as Yup from "yup";
-import { Mail, ArrowLeft } from "lucide-react";
+import { Mail, ArrowLeft, Lock, KeyRound, RefreshCw, Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
 import LoginAnimation from "../../components/LoginAnimation";
 import ActivlineLogo from "../../logo/Logo";
 import { useTheme } from "../../context/ThemeContext";
 import ThemeToggle from "../../components/ThemeToggle";
-
-const forgotPasswordSchema = Yup.object({
-  email: Yup.string()
-    .email("Enter a valid email")
-    .required("Email is required"),
-});
+import { forgotPassword, resendForgotPasswordOtp, resetPassword } from "../../api/auth.api";
 
 const ForgotPassword = () => {
   const { isDark } = useTheme();
-  const [sent, setSent] = useState(false);
+  const [step, setStep] = useState("request");
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState({ send: false, resend: false, reset: false });
+  const [formError, setFormError] = useState("");
 
-  const handleSubmit = async (values, { setSubmitting }) => {
+  const handleSendOtp = async () => {
+    setFormError("");
+    if (!email.trim()) {
+      setFormError("Email is required");
+      return;
+    }
     try {
-      await new Promise((res) => setTimeout(res, 1000));
-      setSent(true);
-      toast.success("Reset link sent to your email 📩");
+      setLoading((prev) => ({ ...prev, send: true }));
+      await forgotPassword(email.trim());
+      toast.success("OTP sent to your email");
+      setStep("reset");
     } catch (err) {
-      toast.error("Something went wrong");
+      setFormError(err?.response?.data?.message || err?.message || "Failed to send OTP");
     } finally {
-      setSubmitting(false);
+      setLoading((prev) => ({ ...prev, send: false }));
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setFormError("");
+    if (!email.trim()) {
+      setFormError("Email is required");
+      return;
+    }
+    try {
+      setLoading((prev) => ({ ...prev, resend: true }));
+      await resendForgotPasswordOtp(email.trim());
+      toast.success("OTP resent");
+    } catch (err) {
+      setFormError(err?.response?.data?.message || err?.message || "Failed to resend OTP");
+    } finally {
+      setLoading((prev) => ({ ...prev, resend: false }));
+    }
+  };
+
+  const handleResetPassword = async () => {
+    setFormError("");
+    if (!email.trim() || !otp.trim() || !password.trim()) {
+      setFormError("Email, OTP, and new password are required");
+      return;
+    }
+    try {
+      setLoading((prev) => ({ ...prev, reset: true }));
+      await resetPassword({ email: email.trim(), otp: otp.trim(), password: password.trim() });
+      toast.success("Password reset successfully");
+      setStep("request");
+      setOtp("");
+      setPassword("");
+    } catch (err) {
+      setFormError(err?.response?.data?.message || err?.message || "Failed to reset password");
+    } finally {
+      setLoading((prev) => ({ ...prev, reset: false }));
     }
   };
 
@@ -107,89 +149,168 @@ const ForgotPassword = () => {
                   Reset Password
                 </h1>
                 <p className={`text-base font-medium transition-colors duration-300 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Enter your email to receive a reset link
+                  Send OTP to your email and reset your password
                 </p>
               </div>
 
-              {!sent ? (
-                <Formik
-                  initialValues={{ email: "" }}
-                  validationSchema={forgotPasswordSchema}
-                  onSubmit={handleSubmit}
-                >
-                  {({ isSubmitting, errors, touched }) => (
-                    <Form className="space-y-6">
-                      {/* EMAIL FIELD */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold flex items-center gap-2 transition-colors duration-300">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${isDark ? 'bg-blue-900/40' : 'bg-blue-100'}`}>
-                            <Mail className={`w-4 h-4 transition-colors duration-300 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
-                          </div>
-                          <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Email Address</span>
-                        </label>
-                        <Field
-                          type="email"
-                          name="email"
-                          className={`mt-1 w-full h-12 rounded-xl border px-4 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 placeholder:text-gray-400 ${
-                            errors.email && touched.email 
-                              ? 'border-red-400 focus:ring-red-400' 
-                              : `border-gray-300 focus:ring-blue-500 ${isDark ? 'border-gray-600/50 focus:ring-blue-400' : ''}`
-                          } ${isDark ? 'bg-gray-800 text-white placeholder:text-gray-500' : 'bg-white text-gray-900'}`}
-                          placeholder="Enter your registered email"
-                        />
-                        <ErrorMessage
-                          name="email"
-                          component="p"
-                          className={`text-xs mt-1 flex items-center gap-1 transition-colors duration-300 ${isDark ? 'text-red-400' : 'text-red-500'}`}
-                        />
-                      </div>
+              {formError && (
+                <div className={`mb-4 rounded-xl border px-4 py-3 text-sm font-medium ${
+                  isDark ? "bg-red-900/20 border-red-500/40 text-red-300" : "bg-red-50 border-red-200 text-red-700"
+                }`}>
+                  {formError}
+                </div>
+              )}
 
-                      {/* SUBMIT BUTTON */}
+              {step === "request" ? (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold flex items-center gap-2 transition-colors duration-300">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${isDark ? 'bg-blue-900/40' : 'bg-blue-100'}`}>
+                        <Mail className={`w-4 h-4 transition-colors duration-300 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+                      </div>
+                      <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Email Address</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className={`mt-1 w-full h-12 rounded-xl border px-4 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 placeholder:text-gray-400 ${
+                        isDark ? 'bg-gray-800 text-white placeholder:text-gray-500 border-gray-600/50 focus:ring-blue-400' : 'bg-white text-gray-900 border-gray-300 focus:ring-blue-500'
+                      }`}
+                      placeholder="Enter your registered email"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={loading.send}
+                    className={`relative w-full h-12 rounded-xl text-white font-semibold text-base active:scale-[0.98] transition-all duration-200 shadow-lg group overflow-hidden disabled:opacity-70 disabled:cursor-not-allowed ${
+                      isDark 
+                        ? 'bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 hover:shadow-blue-500/20' 
+                        : 'bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 hover:shadow-blue-500/40'
+                    }`}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-white/20 to-blue-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                    {loading.send ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Sending OTP...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        <span>Send OTP</span>
+                      </div>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold flex items-center gap-2 transition-colors duration-300">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${isDark ? 'bg-blue-900/40' : 'bg-blue-100'}`}>
+                        <Mail className={`w-4 h-4 transition-colors duration-300 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+                      </div>
+                      <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Email Address</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className={`mt-1 w-full h-12 rounded-xl border px-4 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 placeholder:text-gray-400 ${
+                        isDark ? 'bg-gray-800 text-white placeholder:text-gray-500 border-gray-600/50 focus:ring-blue-400' : 'bg-white text-gray-900 border-gray-300 focus:ring-blue-500'
+                      }`}
+                      placeholder="Enter your registered email"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold flex items-center gap-2 transition-colors duration-300">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${isDark ? 'bg-blue-900/40' : 'bg-blue-100'}`}>
+                        <KeyRound className={`w-4 h-4 transition-colors duration-300 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+                      </div>
+                      <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>OTP</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                      className={`mt-1 w-full h-12 rounded-xl border px-4 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 placeholder:text-gray-400 ${
+                        isDark ? 'bg-gray-800 text-white placeholder:text-gray-500 border-gray-600/50 focus:ring-blue-400' : 'bg-white text-gray-900 border-gray-300 focus:ring-blue-500'
+                      }`}
+                      placeholder="Enter 6-digit OTP"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold flex items-center gap-2 transition-colors duration-300">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${isDark ? 'bg-blue-900/40' : 'bg-blue-100'}`}>
+                        <Lock className={`w-4 h-4 transition-colors duration-300 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+                      </div>
+                      <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>New Password</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className={`mt-1 w-full h-12 rounded-xl border px-4 pr-12 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 placeholder:text-gray-400 ${
+                          isDark ? 'bg-gray-800 text-white placeholder:text-gray-500 border-gray-600/50 focus:ring-blue-400' : 'bg-white text-gray-900 border-gray-300 focus:ring-blue-500'
+                        }`}
+                        placeholder="Enter new password"
+                      />
                       <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className={`relative w-full h-12 rounded-xl text-white font-semibold text-base active:scale-[0.98] transition-all duration-200 shadow-lg group overflow-hidden disabled:opacity-70 disabled:cursor-not-allowed ${
-                          isDark 
-                            ? 'bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 hover:shadow-blue-500/20' 
-                            : 'bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 hover:shadow-blue-500/40'
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all duration-300 ${
+                          isDark ? "text-gray-400 hover:text-gray-300 hover:bg-gray-800" : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                         }`}
                       >
-                        {/* Animated background effect */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-white/20 to-blue-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                        
-                        {isSubmitting ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            <span>Sending reset link...</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center gap-2">
-                            <Mail className="w-4 h-4" />
-                            <span>Send Reset Link</span>
-                          </div>
-                        )}
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
-                    </Form>
-                  )}
-                </Formik>
-              ) : (
-                <div className="text-center space-y-6">
-                  <div className={`p-4 rounded-xl border transition-all duration-300 ${isDark ? 'bg-green-900/20 border-green-800' : 'bg-green-50 border-green-200'}`}>
-                    <div className={`text-sm font-medium transition-colors duration-300 ${isDark ? 'text-green-400' : 'text-green-600'}`}>
-                      Password reset link has been sent to your email!
                     </div>
-                    <p className={`text-xs mt-2 transition-colors duration-300 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                      Check your inbox and follow the instructions to reset your password.
-                    </p>
                   </div>
-                  
-                  <Link
-                    to="/login"
-                    className={`inline-flex items-center justify-center gap-2 text-sm font-medium transition-colors duration-300 ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back to Login
-                  </Link>
+
+                  <div className="flex flex-col gap-3">
+                    <button
+                      type="button"
+                      onClick={handleResetPassword}
+                      disabled={loading.reset}
+                      className={`relative w-full h-12 rounded-xl text-white font-semibold text-base active:scale-[0.98] transition-all duration-200 shadow-lg group overflow-hidden disabled:opacity-70 disabled:cursor-not-allowed ${
+                        isDark 
+                          ? 'bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 hover:shadow-blue-500/20' 
+                          : 'bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 hover:shadow-blue-500/40'
+                      }`}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-white/20 to-blue-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                      {loading.reset ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span>Resetting...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2">
+                          <Lock className="w-4 h-4" />
+                          <span>Reset Password</span>
+                        </div>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={loading.resend}
+                      className={`w-full h-12 rounded-xl font-semibold text-sm transition-all duration-200 border ${
+                        isDark ? "border-gray-700 text-gray-300 hover:bg-gray-800" : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                      } ${loading.resend ? "opacity-70 cursor-not-allowed" : ""}`}
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <RefreshCw className={`w-4 h-4 ${loading.resend ? "animate-spin" : ""}`} />
+                        Resend OTP
+                      </span>
+                    </button>
+                  </div>
                 </div>
               )}
 
