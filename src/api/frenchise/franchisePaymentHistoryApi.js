@@ -89,3 +89,8 @@ export const getFranchisePaymentHistoryDetails = async (paymentId) => {
 
   return response.data;
 };
+
+export const getLatestFranchisePaymentHistory = async () => {
+  const response = await api.get(`/api/payment/franchise/account/history/latest`);
+  return response.data;
+};

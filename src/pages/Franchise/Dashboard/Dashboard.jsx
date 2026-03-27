@@ -4,6 +4,7 @@ import FullScreenLoader from '../../../components/loaders/FullscreenLoaderWithLo
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { getFranchiseReportSummary } from '../../../api/reportapi';
+import { getLatestFranchisePaymentHistory } from '../../../api/frenchise/paymanehistypapi';
 import Lottie from "lottie-react";
 import telecomAnimation from "../../../animations/Activline-Dashboard.json";
 import { 
@@ -19,6 +20,7 @@ import {
   ArrowUpRight,
   Zap,
   Wallet,
+  User,
   UserPlus,
   TicketCheck,
   TicketX
@@ -77,6 +79,40 @@ const formatDateTime = (value) => {
     return '--';
   }
 };
+
+const getStatusClass = (status, isDark) => {
+  const statusStr = String(status || '').toUpperCase();
+  const color = ['SUCCESS', 'PAID'].includes(statusStr)
+    ? 'green'
+    : statusStr === 'PENDING'
+    ? 'amber'
+    : statusStr === 'FAILED'
+    ? 'red'
+    : 'gray';
+
+  const colorClasses = {
+    green: isDark
+      ? "bg-green-500/20 text-green-300 border-green-500/30"
+      : "bg-green-50 text-green-700 border-green-200",
+    amber: isDark
+      ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+      : "bg-amber-50 text-amber-700 border-amber-200",
+    red: isDark
+      ? "bg-red-500/20 text-red-300 border-red-500/30"
+      : "bg-red-50 text-red-700 border-red-200",
+    gray: isDark
+      ? "bg-gray-500/20 text-gray-300 border-gray-500/30"
+      : "bg-gray-50 text-gray-700 border-gray-200",
+  };
+
+  return colorClasses[color] || colorClasses.gray;
+};
+
+const StatusBadge = ({ status, isDark }) => (
+  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${getStatusClass(status, isDark)}`}>
+    <span className="text-xs font-medium">{String(status || 'Unknown')}</span>
+  </span>
+);
 
 const formatRelativeTime = (timestamp) => {
   if (!timestamp) return '--';
@@ -161,17 +197,67 @@ const SkeletonCards = () => (
   </>
 );
 
-const SkeletonTickets = ({ isDark }) => (
-  <div className={`rounded-xl p-4 ${isDark ? "bg-gray-700/40" : "bg-gray-100"} animate-pulse`}>
-    <div className="space-y-3">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="grid grid-cols-4 gap-3">
-          <div className={`h-4 rounded ${isDark ? "bg-gray-600" : "bg-gray-300"}`} />
-          <div className={`h-4 rounded ${isDark ? "bg-gray-600" : "bg-gray-300"}`} />
-          <div className={`h-4 rounded ${isDark ? "bg-gray-600" : "bg-gray-300"}`} />
-          <div className={`h-4 rounded ${isDark ? "bg-gray-600" : "bg-gray-300"}`} />
-        </div>
-      ))}
+const SkeletonTable = ({ isDark }) => (
+  <div className="space-y-3 animate-pulse">
+    {[1, 2, 3, 4, 5].map((i) => (
+      <div key={i} className={`h-12 rounded ${isDark ? "bg-gray-700/40" : "bg-gray-100"}`} />
+    ))}
+  </div>
+);
+
+const EmptyState = ({ icon: Icon, message, isDark }) => (
+  <div className={`py-12 text-center rounded-xl ${isDark ? "bg-gray-700/30" : "bg-gray-50"}`}>
+    <Icon className={`h-12 w-12 mx-auto mb-3 ${isDark ? "text-gray-600" : "text-gray-400"}`} />
+    <p className={`text-sm ${isDark ? "text-gray-500" : "text-gray-500"}`}>{message}</p>
+  </div>
+);
+
+const DataTable = ({ headers, data, renderRow, onViewAll, onRowAction, isDark }) => (
+  <div className="overflow-x-auto">
+    <table className="w-full">
+      <thead>
+        <tr className={`border-b ${isDark ? "border-gray-700" : "border-gray-200"}`}>
+          {headers.map((header, idx) => (
+            <th key={idx} className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              {header}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {data.slice(0, 5).map((item, idx) => (
+          <tr
+            key={item?.ticketId || item?.paymentId || item?._id || idx}
+            className={`group transition-all duration-200 hover:bg-opacity-50 ${
+              isDark ? "hover:bg-gray-700/50 border-b border-gray-700/50" : "hover:bg-gray-50 border-b border-gray-100"
+            }`}
+          >
+            {renderRow(item)}
+            <td className="py-3 px-4 text-right">
+              <button
+                onClick={() => onRowAction?.(item)}
+                className={`p-1.5 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100 ${
+                  isDark ? "hover:bg-gray-700 text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+
+    <div className={`mt-4 pt-4 text-center border-t ${isDark ? "border-gray-700" : "border-gray-200"}`}>
+      <button
+        onClick={onViewAll}
+        className={`inline-flex items-center gap-1 text-sm font-medium transition-all duration-200 hover:gap-2 ${
+          isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-500"
+        }`}
+      >
+        View All
+        <ArrowUpRight className="h-4 w-4" />
+      </button>
     </div>
   </div>
 );
@@ -357,6 +443,7 @@ const Dashboard = () => {
   const [error, setError] = useState('');
   const [summary, setSummary] = useState(null);
   const [hoveredCard, setHoveredCard] = useState(null);
+  const [recentPayments, setRecentPayments] = useState([]);
 
   const resolvedAccountId = useMemo(
     () => user?.accountId || user?.AccountId || user?.account_id || '',
@@ -376,14 +463,38 @@ const Dashboard = () => {
         throw new Error('Missing accountId for dashboard reports');
       }
 
-      const data = await getFranchiseReportSummary({
-        accountId: resolvedAccountId,
-        months: 6,
-      });
+      const [reportResult, paymentsResult] = await Promise.allSettled([
+        getFranchiseReportSummary({
+          accountId: resolvedAccountId,
+          months: 6,
+        }),
+        getLatestFranchisePaymentHistory(),
+      ]);
 
-      setSummary(data || null);
+      if (reportResult.status === 'fulfilled') {
+        setSummary(reportResult.value || null);
+      } else {
+        const reportStatus = reportResult.reason?.response?.status;
+        setSummary(null);
+        if (reportStatus !== 404) {
+          throw reportResult.reason;
+        }
+      }
+
+      if (paymentsResult.status === 'fulfilled') {
+        const paymentsRes = paymentsResult.value;
+        const paymentRows = Array.isArray(paymentsRes?.data)
+          ? paymentsRes.data
+          : Array.isArray(paymentsRes)
+          ? paymentsRes
+          : [];
+        setRecentPayments(paymentRows);
+      } else {
+        setRecentPayments([]);
+      }
     } catch (err) {
       setSummary(null);
+      setRecentPayments([]);
       setError(err?.response?.data?.message || err?.message || 'Failed to load dashboard reports');
     } finally {
       setIsLoading(false);
@@ -643,175 +754,142 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* Recently Resolved Tickets Section */}
-      <div className="grid grid-cols-1 gap-6">
+      {/* Tables Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
         <SectionCard
-          title="Recently Resolved Tickets"
+          title="Recent Tickets"
           subtitle="Latest customer support tickets resolved"
           icon={<CheckCircle className="h-5 w-5" />}
           isDark={isDark}
-          actionButton={
-            resolvedTickets.length > 0 && (
-              <button
-                onClick={() => navigate("/Zone-tickets")}
-                className={`text-sm flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors ${
-                  isDark 
-                    ? 'text-slate-400 hover:text-white hover:bg-slate-800' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                View All
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            )
-          }
         >
           {isLoading ? (
-            <SkeletonTickets isDark={isDark} />
+            <SkeletonTable isDark={isDark} />
           ) : resolvedTickets.length === 0 ? (
-            <div
-              className={`p-12 text-center rounded-xl ${
-                isDark ? "bg-gray-700/50" : "bg-gray-100"
-              }`}
-            >
-              <CheckCircle className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <p className="text-gray-400">No resolved tickets yet this month</p>
-            </div>
+            <EmptyState icon={CheckCircle} message="No recent tickets" isDark={isDark} />
           ) : (
-            <div className="overflow-x-auto rounded-xl">
-              <table className="w-full">
-                <thead>
-                  <tr
-                    className={`border-b ${
-                      isDark ? "border-gray-700" : "border-gray-200"
-                    }`}
-                  >
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">
-                      Ticket Details
-                    </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">
-                      Customer
-                    </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">
-                      Assigned To
-                    </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">
-                      Resolved At
-                    </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">
-                      Action
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {resolvedTickets.map((ticket, index) => (
-                    <tr
-                      key={ticket?._id || ticket?.ticketId || index}
-                      className={`group transition-all duration-300 hover:scale-[1.02] ${
-                        isDark
-                          ? "hover:bg-gray-700/50 border-b border-gray-700/50"
-                          : "hover:bg-gray-50 border-b border-gray-100"
-                      }`}
-                    >
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`p-2 rounded-lg ${
-                              isDark ? "bg-gray-700" : "bg-gray-100"
-                            }`}
-                          >
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                          </div>
-                          <div>
-                            <div
-                              className={`font-medium ${
-                                isDark ? "text-white" : "text-gray-900"
-                              }`}
-                            >
-                              {ticket?.ticketName || '--'}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              #{ticket?.ticketId || ticket?._id?.slice(-8) || '--'}
-                            </div>
-                          </div>
+            <DataTable
+              headers={["Ticket", "Customer", "Assigned", "Resolved"]}
+              data={resolvedTickets}
+              renderRow={(ticket) => (
+                <>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2">
+                      <div className={`p-2 rounded-lg ${isDark ? "bg-gray-700" : "bg-gray-100"}`}>
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      </div>
+                      <div>
+                        <div className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+                          {ticket?.ticketName || "--"}
                         </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div>
-                          <div
-                            className={`font-medium ${
-                              isDark ? "text-white" : "text-gray-900"
-                            }`}
-                          >
-                            {ticket?.customer?.name || '--'}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {ticket?.customer?.phoneNumber || ticket?.customer?.email || '--'}
-                          </div>
+                        <div className="text-xs text-gray-500">
+                          #{ticket?.ticketId || ticket?._id?.slice(-8) || "--"}
                         </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className={`p-1 rounded-full ${isDark ? 'bg-slate-800' : 'bg-gray-100'}`}>
-                            <UserCheck className={`w-3 h-3 ${isDark ? 'text-slate-400' : 'text-gray-600'}`} />
-                          </div>
-                          <span className={isDark ? 'text-slate-200' : 'text-gray-700'}>
-                            {ticket?.assignedStaffName || ticket?.assignedStaffEmail || 'Super Admin'}
-                          </span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div>
+                      <div className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+                        {ticket?.customer?.name || "--"}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {ticket?.customer?.phoneNumber || ticket?.customer?.email || "--"}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2">
+                      <div className={`p-1 rounded-full ${isDark ? 'bg-slate-800' : 'bg-gray-100'}`}>
+                        <UserCheck className={`w-3 h-3 ${isDark ? 'text-slate-400' : 'text-gray-600'}`} />
+                      </div>
+                      <span className={isDark ? 'text-slate-200' : 'text-gray-700'}>
+                        {ticket?.assignedStaffName || ticket?.assignedStaffEmail || 'Super Admin'}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2">
+                      <Clock className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
+                      <div>
+                        <div className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                          {formatDateTime(ticket?.resolvedAt)}
                         </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <Clock className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
-                          <div>
-                            <div className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                              {formatDateTime(ticket?.resolvedAt)}
-                            </div>
-                            <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                              {formatRelativeTime(ticket?.resolvedAt)}
-                            </div>
-                          </div>
+                        <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                          {formatRelativeTime(ticket?.resolvedAt)}
                         </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <button
-                          onClick={() => navigate("/Zone-tickets")}
-                          className={`p-1.5 rounded-lg transition-all duration-300 hover:scale-110 ${
-                            isDark
-                              ? "hover:bg-gray-700 text-gray-400 hover:text-white"
-                              : "hover:bg-gray-100 text-gray-600 hover:text-gray-900"
-                          }`}
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {resolvedTickets.length > 0 && (
-                <div
-                  className={`p-3 text-center border-t ${
-                    isDark
-                      ? "border-gray-700 bg-gray-800/50"
-                      : "border-gray-200 bg-gray-50"
-                  }`}
-                >
-                  <button
-                    onClick={() => navigate("/Zone-tickets")}
-                    className={`text-sm font-medium transition-all duration-300 hover:gap-2 ${
-                      isDark
-                        ? "text-blue-400 hover:text-blue-300"
-                        : "text-blue-600 hover:text-blue-500"
-                    }`}
-                  >
-                    View all resolved tickets
-                    <ArrowUpRight className="inline h-4 w-4 ml-1" />
-                  </button>
-                </div>
+                      </div>
+                    </div>
+                  </td>
+                </>
               )}
-            </div>
+              onViewAll={() => navigate("/Zone-tickets")}
+              onRowAction={() => navigate("/Zone-tickets")}
+              isDark={isDark}
+            />
+          )}
+        </SectionCard>
+
+        <SectionCard
+          title="Recent Payments"
+          subtitle="Latest 5 payment transactions"
+          icon={<TrendingUp className="h-5 w-5" />}
+          isDark={isDark}
+        >
+          {isLoading ? (
+            <SkeletonTable isDark={isDark} />
+          ) : recentPayments.length === 0 ? (
+            <EmptyState icon={TrendingUp} message="No recent payments" isDark={isDark} />
+          ) : (
+            <DataTable
+              headers={["Customer", "Plan", "Amount", "Status", "Date"]}
+              data={recentPayments}
+              renderRow={(payment) => (
+                <>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-gray-400" />
+                      <span className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+                        {payment.userName ||
+                          payment.customer?.name ||
+                          payment.customer?.userName ||
+                          payment.customer?.username ||
+                          payment.customer?.email ||
+                          "--"}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex flex-col">
+                      <span className={`text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-800"}`}>
+                        {payment.planName || payment?.plan?.planName || "--"}
+                      </span>
+                      {payment.profileId && (
+                        <span className="text-xs text-gray-500">{payment.profileId}</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+                      {formatAmount(payment.amount ?? payment.planAmount, payment.currency)}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <StatusBadge status={payment.status} isDark={isDark} />
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <span className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                        {formatDateTime(payment.paidAt || payment.createdAt)}
+                      </span>
+                    </div>
+                  </td>
+                </>
+              )}
+              onViewAll={() => navigate("/payment-history")}
+              onRowAction={() => navigate("/payment-history")}
+              isDark={isDark}
+            />
           )}
         </SectionCard>
       </div>
