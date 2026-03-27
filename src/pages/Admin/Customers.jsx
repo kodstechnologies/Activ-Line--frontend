@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, Filter, XCircle, ChevronDown, ChevronLeft, ChevronRight, Edit, Eye } from 'lucide-react';
+import { Search, Filter, XCircle, ChevronDown, ChevronLeft, ChevronRight, Edit, Eye, Loader2 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from "../../context/AuthContext.jsx";
 import {
@@ -53,6 +53,7 @@ const [selectedStatus, setSelectedStatus] = useState('All');
   const [groupError, setGroupError] = useState('');
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [createdCustomer, setCreatedCustomer] = useState(null);
+  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
   const isFormLocked = Boolean(createdCustomer);
 
   const [newSubscriber, setNewSubscriber] = useState({
@@ -307,6 +308,7 @@ const [selectedStatus, setSelectedStatus] = useState('All');
   };
 
   const handleAddSubscriber = async () => {
+    if (isCreatingCustomer) return;
     const formData = new FormData();
 
     // Append text fields
@@ -326,6 +328,7 @@ const [selectedStatus, setSelectedStatus] = useState('All');
     });
 
     try {
+      setIsCreatingCustomer(true);
       const res = await createCustomer(formData);
       if (res.data.success) {
         fetchCustomers(currentPage, itemsPerPage);
@@ -337,6 +340,8 @@ const [selectedStatus, setSelectedStatus] = useState('All');
     } catch (err) {
       console.error("Failed to create customer", err);
       alert("Failed to create customer: " + (err.response?.data?.message || err.message));
+    } finally {
+      setIsCreatingCustomer(false);
     }
   };
 
@@ -1365,13 +1370,14 @@ const handlePageChange = (page) => {
             </div>
             <div className={`p-4 border-t flex gap-3 justify-end rounded-b-xl ${isDark ? 'border-slate-800 bg-slate-900' : 'border-gray-200 bg-white'}`}>
               <button onClick={handleCancelAddSubscriber} className={`px-4 py-2 text-base font-medium rounded-lg transition-colors ${isDark ? 'text-slate-300 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'}`}>Cancel</button>
-              <button
-                onClick={handleAddSubscriber}
-                disabled={!newSubscriber.firstName || !newSubscriber.phoneNumber || Boolean(createdCustomer)}
-                className="px-4 py-2 text-base font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                Create Account
-              </button>
+                <button
+                  onClick={handleAddSubscriber}
+                  disabled={!newSubscriber.firstName || !newSubscriber.phoneNumber || Boolean(createdCustomer) || isCreatingCustomer}
+                  className="px-4 py-2 text-base font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all inline-flex items-center gap-2"
+                >
+                  {isCreatingCustomer && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isCreatingCustomer ? "Creating..." : "Create Account"}
+                </button>
             </div>
           </div>
         </div>

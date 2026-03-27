@@ -238,7 +238,7 @@ const TicketRow = memo(({ item, isDark, navigate }) => {
       </td>
       <td className="py-4 px-4">
         <button
-          onClick={() => navigate(`/tickets/${item.ticketId}`)}
+          onClick={() => navigate("/assigned-tickets")}
           className={`p-2 rounded-lg transition ${isDark ? "hover:bg-gray-600" : "hover:bg-gray-200"}`}
         >
           <ChevronRight className="h-5 w-5" />
@@ -289,12 +289,9 @@ const PaymentRow = memo(({ item, isDark, navigate }) => {
       </td>
       <td className="py-4 px-4">
         <button
-          onClick={() => item.paymentId && navigate(`/payments/${item.paymentId}`)}
-          disabled={!item.paymentId}
+          onClick={() => navigate("/staff-payment-history")}
           className={`p-2 rounded-lg transition ${
-            item.paymentId
-              ? isDark ? "hover:bg-gray-600" : "hover:bg-gray-200"
-              : "opacity-40 cursor-not-allowed"
+            isDark ? "hover:bg-gray-600" : "hover:bg-gray-200"
           }`}
         >
           <ChevronRight className="h-5 w-5" />
@@ -345,25 +342,37 @@ const PaymentsTable = memo(({ payments, isDark, navigate }) => {
   if (!payments?.length) return <EmptyState type="payments" isDark={isDark} />;
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[720px]">
-        <thead>
-          <tr className={`border-b ${isDark ? "border-gray-700" : "border-gray-200"}`}>
-            <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">Payment</th>
-            <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">Plan</th>
-            <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">Amount</th>
-            <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">Status</th>
-            <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">Date</th>
-            <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {payments.map(item => (
-            <PaymentRow key={item.paymentId || item._id} item={item} isDark={isDark} navigate={navigate} />
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[720px]">
+          <thead>
+            <tr className={`border-b ${isDark ? "border-gray-700" : "border-gray-200"}`}>
+              <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">Payment</th>
+              <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">Plan</th>
+              <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">Amount</th>
+              <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">Status</th>
+              <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">Date</th>
+              <th className="py-3 px-4 text-left text-sm font-semibold text-gray-500">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {payments.map(item => (
+              <PaymentRow key={item.paymentId || item._id} item={item} isDark={isDark} navigate={navigate} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className={`mt-5 text-center ${isDark ? "border-t border-gray-700 pt-4" : "border-t border-gray-200 pt-4"}`}>
+        <button
+          onClick={() => navigate("/staff-payment-history")}
+          className={`inline-flex items-center gap-1.5 text-sm font-medium ${
+            isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-700"
+          }`}
+        >
+          View all payments <ArrowUpRight className="h-4 w-4" />
+        </button>
+      </div>
+    </>
   );
 });
 

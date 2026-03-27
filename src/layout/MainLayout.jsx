@@ -15,7 +15,6 @@ import {
 
 import ActivlineLogo from "./logo.jsx";
 import SidebarItem from "../components/SidebarItem";
-import Breadcrumb from "../components/Breadcrumb";
 import ThemeToggle from "../components/ThemeToggle";
 import Lottie from "lottie-react";
 import sidebarWifiAnimation from "../animations/SidebarWifi.json";
@@ -440,9 +439,6 @@ const MainLayout = () => {
 
         {/* CONTENT */}
         <div className="flex-1 p-6 md:p-8 overflow-y-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-400/20">
-          <div className="mb-6">
-            <Breadcrumb />
-          </div>
           <div className={`rounded-2xl p-6 md:p-8 transition-all duration-500
             ${isDark 
               ? "bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 shadow-2xl shadow-slate-900/20" 
