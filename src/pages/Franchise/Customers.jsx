@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { 
   Pencil, Trash2, Plus, Eye, Search, Filter, XCircle,
   ChevronLeft, ChevronRight, Mail, Phone, MapPin, Calendar,
-  User, CreditCard, FileText, Download, ExternalLink
+  User, CreditCard, FileText, Download, ExternalLink, Loader2
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -43,6 +43,7 @@ const MySubscribers = () => {
   const [viewCustomerDetails, setViewCustomerDetails] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [createdCustomer, setCreatedCustomer] = useState(null);
+  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -94,6 +95,11 @@ const MySubscribers = () => {
     signFile: null,
     profilePicFile: null
   });
+  const isUserDetailsComplete = Boolean(
+    newSubscriber.firstName?.trim() &&
+    newSubscriber.phoneNumber?.trim() &&
+    newSubscriber.emailId?.trim()
+  );
 
   // Fetch customers with filters
   useEffect(() => {
@@ -240,6 +246,7 @@ const MySubscribers = () => {
   }, [newSubscriber.accountId, newSubscriber.userType]);
 
   const handleCreateCustomer = async () => {
+    if (isCreatingCustomer) return;
     const requiredFields = [
       { key: "firstName", label: "First Name" },
       { key: "phoneNumber", label: "Phone Number" },
@@ -267,6 +274,7 @@ const MySubscribers = () => {
     });
 
     try {
+      setIsCreatingCustomer(true);
       Object.keys(files).forEach((key) => {
         if (files[key]) {
           formData.append(key, files[key]);
@@ -285,6 +293,8 @@ const MySubscribers = () => {
     } catch (err) {
       console.error("Failed to create customer", err);
       alert("Failed to create customer: " + (err.response?.data?.message || err.message));
+    } finally {
+      setIsCreatingCustomer(false);
     }
   };
 
@@ -1162,7 +1172,7 @@ const MySubscribers = () => {
               <h3 className={`text-xl font-bold ${
                 isDark ? "text-white" : "text-gray-900"
               }`}>
-                Add Customer
+                Add New Customer
               </h3>
               <button
                 onClick={() => setAddModal(false)}
@@ -1174,279 +1184,336 @@ const MySubscribers = () => {
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-6 space-y-4">
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDark ? "text-slate-400" : "text-gray-600"
-                  }`}>
-                    Account ID
-                  </label>
-                  <input
-                    type="text"
-                    name="accountId"
-                    value={newSubscriber.accountId}
-                    readOnly
-                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700 text-white"
-                        : "bg-gray-50 border-gray-300 text-gray-900"
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDark ? "text-slate-400" : "text-gray-600"
-                  }`}>
-                    User Type
-                  </label>
-                  <select
-                    name="userType"
-                    value={newSubscriber.userType}
-                    onChange={handleAddInputChange}
-                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700 text-white"
-                        : "bg-gray-50 border-gray-300 text-gray-900"
-                    }`}
-                  >
-                    <option value="business">Business</option>
-                    <option value="home">Home</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDark ? "text-slate-400" : "text-gray-600"
-                  }`}>
-                    Group ID
-                  </label>
-                  <select
-                    name="userGroupId"
-                    value={newSubscriber.userGroupId}
-                    onChange={handleAddInputChange}
-                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700 text-white"
-                        : "bg-gray-50 border-gray-300 text-gray-900"
-                    }`}
-                  >
-                    <option value="">Select Group</option>
-                    {groupOptions.map((group) => (
-                      <option key={group.Group_id || group.Group_name} value={group.Group_id || ""}>
-                        {group.Group_name || group.Group_id}
-                      </option>
-                    ))}
-                  </select>
-                  {groupLoading && (
-                    <p className={`text-xs mt-1 ${isDark ? "text-slate-500" : "text-gray-500"}`}>Loading groups...</p>
-                  )}
-                  {groupError && (
-                    <p className={`text-xs mt-1 ${isDark ? "text-red-300" : "text-red-600"}`}>{groupError}</p>
-                  )}
-                </div>
-               
-                
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDark ? "text-slate-400" : "text-gray-600"
-                  }`}>
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    name="firstName"
-                    value={newSubscriber.firstName}
-                    onChange={handleAddInputChange}
-                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700 text-white"
-                        : "bg-gray-50 border-gray-300 text-gray-900"
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDark ? "text-slate-400" : "text-gray-600"
-                  }`}>
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    value={newSubscriber.lastName}
-                    onChange={handleAddInputChange}
-                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700 text-white"
-                        : "bg-gray-50 border-gray-300 text-gray-900"
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDark ? "text-slate-400" : "text-gray-600"
-                  }`}>
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    name="phoneNumber"
-                    value={newSubscriber.phoneNumber}
-                    onChange={handleAddInputChange}
-                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700 text-white"
-                        : "bg-gray-50 border-gray-300 text-gray-900"
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDark ? "text-slate-400" : "text-gray-600"
-                  }`}>
-                    Email ID
-                  </label>
-                  <input
-                    type="email"
-                    name="emailId"
-                    value={newSubscriber.emailId}
-                    onChange={handleAddInputChange}
-                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700 text-white"
-                        : "bg-gray-50 border-gray-300 text-gray-900"
-                    }`}
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDark ? "text-slate-400" : "text-gray-600"
-                  }`}>
-                    Address Line
-                  </label>
-                  <input
-                    type="text"
-                    name="installation_address_line2"
-                    value={newSubscriber.installation_address_line2}
-                    onChange={handleAddInputChange}
-                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700 text-white"
-                        : "bg-gray-50 border-gray-300 text-gray-900"
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDark ? "text-slate-400" : "text-gray-600"
-                  }`}>
-                    City
-                  </label>
-                  <input
-                    type="text"
-                    name="installation_address_city"
-                    value={newSubscriber.installation_address_city}
-                    onChange={handleAddInputChange}
-                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700 text-white"
-                        : "bg-gray-50 border-gray-300 text-gray-900"
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDark ? "text-slate-400" : "text-gray-600"
-                  }`}>
-                    State
-                  </label>
-                  <input
-                    type="text"
-                    name="installation_address_state"
-                    value={newSubscriber.installation_address_state}
-                    onChange={handleAddInputChange}
-                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700 text-white"
-                        : "bg-gray-50 border-gray-300 text-gray-900"
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${
-                    isDark ? "text-slate-400" : "text-gray-600"
-                  }`}>
-                    Pin Code
-                  </label>
-                  <input
-                    type="text"
-                    name="installation_address_pin"
-                    value={newSubscriber.installation_address_pin}
-                    onChange={handleAddInputChange}
-                    className={`w-full p-2.5 border rounded-lg text-sm outline-none ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700 text-white"
-                        : "bg-gray-50 border-gray-300 text-gray-900"
-                    }`}
-                  />
-                </div>
-              </div>
-
-              {/* Documents */}
-              <h4 className={`text-base font-bold uppercase mt-4 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>Documents Upload</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {['idFile', 'addressFile', 'signFile', 'profilePicFile'].map((fileKey) => (
-                  <div key={fileKey}>
-                    <label className={`block text-sm font-medium mb-1 capitalize ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
-                      {fileKey.replace('File', '').replace(/([A-Z])/g, ' $1')}
-                    </label>
-                    <input
-                      type="file"
-                      name={fileKey}
-                      onChange={handleFileChange}
-                      className={`w-full text-sm ${isDark ? 'text-slate-400 file:bg-slate-800 file:text-slate-300' : 'text-gray-600 file:bg-gray-100 file:text-gray-700'} file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold hover:file:bg-blue-100 transition-all`}
-                    />
+                  {/* Personal Info */}
+                  <h4 className={`text-base font-bold uppercase mt-2 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>Personal Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className={`block text-base font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-600"}`}>
+                        First Name
+                      </label>
+                      <input
+                        type="text"
+                        name="firstName"
+                        value={newSubscriber.firstName}
+                        onChange={handleAddInputChange}
+                        className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${
+                          isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-base font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-600"}`}>
+                        Last Name
+                      </label>
+                      <input
+                        type="text"
+                        name="lastName"
+                        value={newSubscriber.lastName}
+                        onChange={handleAddInputChange}
+                        className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${
+                          isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-base font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-600"}`}>
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        name="phoneNumber"
+                        value={newSubscriber.phoneNumber}
+                        onChange={handleAddInputChange}
+                        className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${
+                          isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-base font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-600"}`}>
+                        Email ID
+                      </label>
+                      <input
+                        type="email"
+                        name="emailId"
+                        value={newSubscriber.emailId}
+                        onChange={handleAddInputChange}
+                        className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${
+                          isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                        }`}
+                      />
+                    </div>
                   </div>
-                ))}
-              </div>
-              {Object.values(files).some(Boolean) && (
-                <div className={`mt-3 text-sm ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
-                  <div className="font-semibold mb-1">Selected documents</div>
-                  {Object.entries(files).map(([key, file]) => (
-                    file ? (
-                      <div key={key}>
-                        {key.replace('File', '').replace(/([A-Z])/g, ' $1')}: {file.name}
+
+                  {/* Service Info */}
+                  <h4 className={`text-base font-bold uppercase mt-4 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>Service Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className={`block text-base font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-600"}`}>
+                        User Type
+                      </label>
+                      <select
+                        name="userType"
+                        value={newSubscriber.userType}
+                        onChange={handleAddInputChange}
+                        className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${
+                          isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                        }`}
+                      >
+                        <option value="business">Business</option>
+                        <option value="home">Home</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className={`block text-base font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-600"}`}>
+                        Activation Date
+                      </label>
+                      <select
+                        name="activationDate"
+                        value={newSubscriber.activationDate}
+                        onChange={handleAddInputChange}
+                        className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${
+                          isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                        }`}
+                      >
+                        <option value="now">Now</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Address */}
+                  <h4 className={`text-base font-bold uppercase mt-4 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>Installation Address</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <label className={`block text-base font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-600"}`}>
+                        Address Line 2
+                      </label>
+                      <input
+                        type="text"
+                        name="installation_address_line2"
+                        value={newSubscriber.installation_address_line2}
+                        onChange={handleAddInputChange}
+                        placeholder="Floor, Building, Street"
+                        className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${
+                          isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-base font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-600"}`}>
+                        City
+                      </label>
+                      <input
+                        type="text"
+                        name="installation_address_city"
+                        value={newSubscriber.installation_address_city}
+                        onChange={handleAddInputChange}
+                        className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${
+                          isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-base font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-600"}`}>
+                        State
+                      </label>
+                      <input
+                        type="text"
+                        name="installation_address_state"
+                        value={newSubscriber.installation_address_state}
+                        onChange={handleAddInputChange}
+                        className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${
+                          isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-base font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-600"}`}>
+                        Pin Code
+                      </label>
+                      <input
+                        type="text"
+                        name="installation_address_pin"
+                        value={newSubscriber.installation_address_pin}
+                        onChange={handleAddInputChange}
+                        className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${
+                          isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-base font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-600"}`}>
+                        Country
+                      </label>
+                      <input
+                        type="text"
+                        name="installation_address_country"
+                        value={newSubscriber.installation_address_country}
+                        onChange={handleAddInputChange}
+                        className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${
+                          isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Settings */}
+                  <div className="flex gap-6 mt-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="createBilling"
+                        checked={newSubscriber.createBilling}
+                        onChange={handleAddInputChange}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className={`text-base ${isDark ? "text-slate-300" : "text-gray-700"}`}>Create Billing</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="notifyUserSms"
+                        checked={newSubscriber.notifyUserSms}
+                        onChange={handleAddInputChange}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className={`text-base ${isDark ? "text-slate-300" : "text-gray-700"}`}>Notify User via SMS</span>
+                    </label>
+                  </div>
+
+                  {/* Documents */}
+                  <h4 className={`text-base font-bold uppercase mt-4 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>Documents Upload</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {['idFile', 'addressFile', 'signFile', 'profilePicFile'].map((fileKey) => (
+                      <div key={fileKey}>
+                        <label className={`block text-base font-medium mb-1 capitalize ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
+                          {fileKey.replace('File', '').replace(/([A-Z])/g, ' $1')}
+                        </label>
+                        <input
+                          type="file"
+                          name={fileKey}
+                          onChange={handleFileChange}
+                          className={`w-full text-base ${isDark ? 'text-slate-400 file:bg-slate-800 file:text-slate-300' : 'text-gray-600 file:bg-gray-100 file:text-gray-700'} file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold hover:file:bg-blue-100 transition-all`}
+                        />
                       </div>
-                    ) : null
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                  {Object.values(files).some(Boolean) && (
+                    <div className={`mt-3 text-sm ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
+                      <div className="font-semibold mb-1">Selected documents</div>
+                      {Object.entries(files).map(([key, file]) => (
+                        file ? (
+                          <div key={key}>
+                            {key.replace('File', '').replace(/([A-Z])/g, ' $1')}: {file.name}
+                          </div>
+                        ) : null
+                      ))}
+                    </div>
+                  )}
 
-              {formError && (
-                <div className={`text-sm ${
-                  isDark ? "text-red-300" : "text-red-600"
-                }`}>
-                  {formError}
-                </div>
-              )}
+                  {/* Franchise & Payment */}
+                  <h4 className={`text-base font-bold uppercase mt-6 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>Franchise & Payment</h4>
+                  <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${isUserDetailsComplete ? '' : 'opacity-60 pointer-events-none'}`}>
+                    <div>
+                      <label className={`block text-base font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-600"}`}>
+                        Account ID
+                      </label>
+                      <input
+                        type="text"
+                        name="accountId"
+                        value={newSubscriber.accountId}
+                        readOnly
+                        className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${
+                          isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-base font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-600"}`}>
+                        Group / Plan
+                      </label>
+                      <select
+                        name="userGroupId"
+                        value={newSubscriber.userGroupId}
+                        onChange={handleAddInputChange}
+                        className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${
+                          isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                        }`}
+                      >
+                        <option value="">Select Group</option>
+                        {groupOptions.map((group) => (
+                          <option key={group.Group_id || group.Group_name} value={group.Group_id || ""}>
+                            {group.Group_name || group.Group_id}
+                          </option>
+                        ))}
+                      </select>
+                      {groupLoading && (
+                        <div className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Loading groups...</div>
+                      )}
+                      {groupError && (
+                        <div className={`text-xs mt-1 ${isDark ? 'text-red-300' : 'text-red-600'}`}>{groupError}</div>
+                      )}
+                    </div>
+                    <div>
+                      <label className={`block text-base font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-600"}`}>
+                        User Group ID
+                      </label>
+                      <input
+                        type="number"
+                        name="userGroupId"
+                        value={newSubscriber.userGroupId}
+                        readOnly
+                        disabled
+                        className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${
+                          isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                        }`}
+                      />
+                    </div>
+                  </div>
 
-              {paymentStatus && (
-                <div className={`text-sm ${
-                  paymentStatus.type === "success"
+                  <div className="mt-4">
+                    {!isUserDetailsComplete && (
+                      <div className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
+                        Fill user details above to unlock plan selection.
+                      </div>
+                    )}
+                    {isUserDetailsComplete && !newSubscriber.accountId && (
+                      <div className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
+                        Select an Account ID to view plans on the next page.
+                      </div>
+                    )}
+                    {isUserDetailsComplete && newSubscriber.accountId && !createdCustomer && (
+                      <div className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
+                        Create the customer first. After creation, you can select plans and pay.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {formError && (
+                  <div className={`text-base ${isDark ? "text-red-300" : "text-red-600"}`}>
+                    {formError}
+                  </div>
+                )}
+
+                {paymentStatus && (
+                  <div className={`mt-4 text-sm ${paymentStatus.type === "success"
                     ? isDark ? "text-green-300" : "text-green-700"
                     : isDark ? "text-red-300" : "text-red-600"
-                }`}>
-                  {paymentStatus.message}
-                </div>
-              )}
-            </div>
+                  }`}>
+                    {paymentStatus.message}
+                  </div>
+                )}
+              </div>
 
             <div className={`p-4 border-t flex gap-3 justify-end rounded-b-xl ${
               isDark ? "border-slate-800 bg-slate-900" : "border-gray-200 bg-white"
             }`}>
               <button
                 onClick={() => setAddModal(false)}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                className={`px-4 py-2 text-base font-medium rounded-lg transition-colors ${
                   isDark
                     ? "text-slate-300 hover:bg-slate-800"
                     : "text-gray-700 hover:bg-gray-100"
@@ -1457,16 +1524,18 @@ const MySubscribers = () => {
               {createdCustomer ? (
                 <button
                   onClick={handleGoToPlans}
-                  className="px-4 py-2 text-sm font-bold text-white bg-purple-600 rounded-lg hover:bg-purple-500 shadow-sm transition-all"
+                  className="px-4 py-2 text-base font-bold text-white bg-purple-600 rounded-lg hover:bg-purple-500 shadow-sm transition-all"
                 >
                   Select Plans & Pay
                 </button>
               ) : (
                 <button
                   onClick={handleCreateCustomer}
-                  className="px-4 py-2 text-sm font-bold text-white bg-green-600 rounded-lg hover:bg-green-500 shadow-sm transition-all"
+                  disabled={isCreatingCustomer}
+                  className="px-4 py-2 text-base font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-500 shadow-sm transition-all inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Create Customer
+                  {isCreatingCustomer && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isCreatingCustomer ? "Creating..." : "Create Customer"}
                 </button>
               )}
             </div>

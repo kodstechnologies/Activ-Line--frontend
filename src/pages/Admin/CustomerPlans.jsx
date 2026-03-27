@@ -550,14 +550,7 @@ const CustomerPlans = () => {
               >
                 {isPaying ? "Processing Payment..." : "Pay with Razorpay"}
               </button>
-              <button
-                type="button"
-                onClick={handleReturnToCustomer}
-                disabled={!paymentVerified}
-                className="w-full px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-500 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                Use This Plan
-              </button>
+             
             </div>
           </div>
         </div>
