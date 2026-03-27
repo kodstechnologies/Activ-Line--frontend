@@ -15,6 +15,7 @@ import {
   createPlanOrder,
   verifyPlanPayment
 } from "../../api/customer.api";
+import { getLatestPlan } from "../../api/payment.api";
 import { getTicketRooms } from "../../api/frenchise/franchiseTicketApi";
 
 const CustomerDetails = () => {
@@ -44,6 +45,9 @@ const CustomerDetails = () => {
   const [paymentVerified, setPaymentVerified] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [supportTickets, setSupportTickets] = useState([]);
+  const [latestPlan, setLatestPlan] = useState(null);
+  const [latestPlanLoading, setLatestPlanLoading] = useState(false);
+  const [latestPlanError, setLatestPlanError] = useState('');
 
   // Filter and paginate Support Tickets
   const filteredTickets = useMemo(() => {
@@ -169,6 +173,39 @@ const CustomerDetails = () => {
     customer?.franchiseAccountId ||
     customer?.account?.id ||
     '';
+  const groupId =
+    customer?.userGroupId ||
+    customer?.groupId ||
+    customer?.group_id ||
+    customer?.group?.id ||
+    '';
+
+  useEffect(() => {
+    let active = true;
+    if (!accountId) {
+      setLatestPlan(null);
+      return;
+    }
+    setLatestPlanLoading(true);
+    setLatestPlanError('');
+    getLatestPlan({ accountId, ...(groupId ? { groupId } : {}) })
+      .then((res) => {
+        if (!active) return;
+        setLatestPlan(res?.data || null);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setLatestPlan(null);
+        setLatestPlanError(err?.response?.data?.message || err?.message || 'Failed to load current plan');
+      })
+      .finally(() => {
+        if (!active) return;
+        setLatestPlanLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [accountId, groupId]);
 
   const ticketStats = useMemo(() => {
     const openTickets = supportTickets.filter(t => t.status === 'Open').length;
@@ -597,22 +634,40 @@ const CustomerDetails = () => {
               {!isDark && (
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-100 to-purple-100 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
               )}
-              <h3 className={`text-lg font-semibold mb-6 flex items-center gap-2 relative z-10 ${isDark ? 'text-white/90' : 'text-gray-900'}`}>
-                <Zap className={`w-5 h-5 ${isDark ? 'text-violet-300' : 'text-violet-500'}`} />
-                Current Plan
-              </h3>
-              <div className="mb-6 relative z-10">
-                <div className="flex items-center gap-2 mb-2">
-                  <Award className={`w-5 h-5 ${isDark ? 'text-amber-300' : 'text-amber-500'}`} />
-                  <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {customer.userType || 'ActivLine Home 200'}
-                  </p>
+                <h3 className={`text-lg font-semibold mb-6 flex items-center gap-2 relative z-10 ${isDark ? 'text-white/90' : 'text-gray-900'}`}>
+                  <Zap className={`w-5 h-5 ${isDark ? 'text-violet-300' : 'text-violet-500'}`} />
+                  Current Plan
+                </h3>
+                <div className="mb-6 relative z-10">
+                  {latestPlanLoading ? (
+                    <div className={`text-sm ${isDark ? 'text-white/60' : 'text-gray-500'}`}>
+                      Loading current plan...
+                    </div>
+                  ) : latestPlanError ? (
+                    <div className={`text-sm ${isDark ? 'text-red-300' : 'text-red-600'}`}>
+                      {latestPlanError}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Award className={`w-5 h-5 ${isDark ? 'text-amber-300' : 'text-amber-500'}`} />
+                        <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                          {latestPlan?.planName || 'No plan found'}
+                        </p>
+                      </div>
+                      <p className={`text-sm ${isDark ? 'text-white/60' : 'text-gray-500'} flex items-center gap-2`}>
+                        <CreditCard className="w-3 h-3" />
+                        {latestPlan?.amount != null
+                          ? `Price: ${new Intl.NumberFormat('en-IN', {
+                              style: 'currency',
+                              currency: latestPlan?.currency || 'INR',
+                              maximumFractionDigits: 2
+                            }).format(Number(latestPlan.amount) || 0)}`
+                          : 'Price: —'}
+                      </p>
+                    </>
+                  )}
                 </div>
-                <p className={`text-sm ${isDark ? 'text-white/60' : 'text-gray-500'} flex items-center gap-2`}>
-                  <User className="w-3 h-3" />
-                  Username: {customer.userName || 'N/A'}
-                </p>
-              </div>
               <button
                 type="button"
                 onClick={() => setIsPlanModalOpen(true)}

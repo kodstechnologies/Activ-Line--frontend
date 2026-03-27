@@ -235,23 +235,9 @@ const Reports = () => {
           <p className={`mt-1 text-xs ${mutedText}`}>This month</p>
         </div>
 
-        <div className={`rounded-xl p-5 border ${cardBg}`}>
-          <p className={`text-sm font-medium ${mutedText}`}>Total Staff</p>
-          <p className={`mt-2 text-3xl font-bold ${textColor}`}>
-            {loading ? "—" : supportData.length}
-          </p>
-          <p className={`mt-1 text-xs ${mutedText}`}>Active ticket handlers</p>
-        </div>
+      
 
-        <div className={`rounded-xl p-5 border ${cardBg}`}>
-          <p className={`text-sm font-medium ${mutedText}`}>Avg per Staff</p>
-          <p className={`mt-2 text-3xl font-bold ${textColor}`}>
-            {loading || supportData.length === 0 
-              ? "—" 
-              : Math.round(totalResolvedTickets / supportData.length).toLocaleString()}
-          </p>
-          <p className={`mt-1 text-xs ${mutedText}`}>Tickets per person</p>
-        </div>
+      
       </div>
 
       {loading ? (

@@ -52,7 +52,7 @@ const getUserRole = () => {
 const normalizeStatus = (status) => {
   const value = String(status || "").toUpperCase();
   if (value === "INACTIVE") return "DISABLED";
-  if (value === "ACTIVE" || value === "DISABLED" || value === "TERMINATED") {
+  if (value === "ACTIVE" || value === "DISABLED") {
     return value;
   }
   return "DISABLED";
@@ -277,12 +277,10 @@ const Staff = () => {
         return <ShieldCheck className="w-4 h-4" />;
       case "DISABLED":
         return <ShieldOff className="w-4 h-4" />;
-      case "TERMINATED":
-        return <XCircle className="w-4 h-4" />;
-      default:
-        return null;
-    }
-  };
+    default:
+      return null;
+  }
+};
 
   const exportStaffData = () => {
     const data = filteredStaffs.map((staff) => ({
@@ -479,7 +477,6 @@ const Staff = () => {
                         <option value="ALL">All Status</option>
                         <option value="ACTIVE">Active</option>
                         <option value="DISABLED">Disabled</option>
-                        <option value="TERMINATED">Terminated</option>
                       </select>
                     </div>
 
@@ -919,9 +916,7 @@ const Staff = () => {
                             ${
                               staff.status === "ACTIVE"
                                 ? "bg-green-500/10 text-green-400 border-green-500/20"
-                                : staff.status === "INACTIVE"
-                                  ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
-                                  : "bg-red-500/10 text-red-400 border-red-500/20"
+                                : "bg-red-500/10 text-red-400 border-red-500/20"
                             }
                           `}
                         >
@@ -1224,7 +1219,6 @@ const Staff = () => {
                     >
                       <option value="ACTIVE">Active</option>
                       <option value="DISABLED">Disabled</option>
-                      <option value="TERMINATED">Terminated</option>
                     </select>
                   </div>
 
@@ -1276,21 +1270,6 @@ const Staff = () => {
                     </div>
                   )}
 
-                  {/* Terminated Warning */}
-                  {formData.status === "TERMINATED" && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="md:col-span-2 p-4 rounded-xl
-                           bg-red-500/10 border border-red-500/30 shadow-inner"
-                    >
-                      <p className="text-sm text-red-400 flex items-center gap-2">
-                        <XCircle className="w-4 h-4" />
-                        User will be blocked and shown a termination notice on
-                        login.
-                      </p>
-                    </motion.div>
-                  )}
                 </div>
 
                 {/* Footer */}

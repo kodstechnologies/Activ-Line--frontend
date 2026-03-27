@@ -30,6 +30,12 @@ import {
 
 const STATUS_OPTIONS = ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"];
 
+const normalizeTicketStatus = (status) => {
+  const normalized = String(status || "").toUpperCase();
+  if (normalized === "ASSIGNED") return "IN_PROGRESS";
+  return normalized;
+};
+
 const getStatusColor = (status, isDark) => {
   const map = {
     OPEN: isDark 
@@ -152,6 +158,7 @@ const ZoneTickets = () => {
   const messageEndRef = useRef();
 
   const activeChat = chats.find(c => c.id === activeChatId);
+  const activeChatStatus = normalizeTicketStatus(activeChat?.status) || "OPEN";
   const sortedActiveMessages = useMemo(
     () => sortMessagesByCreatedAt(activeChat?.messages || []),
     [activeChat?.messages]
@@ -187,7 +194,7 @@ const ZoneTickets = () => {
         id: room._id,
         name: `${room.customer.firstName} ${room.customer.lastName}`,
         customerId: room.customer.userName,
-        status: room.status,
+        status: normalizeTicketStatus(room.status),
         lastMsg: room.lastMessage || "No messages yet",
         time: room.lastMessageAt || new Date().toISOString(),
         unreadCount: room.unreadCount || 0,
@@ -213,15 +220,19 @@ const loadMessages = async (roomId) => {
 
     const res = await getRoomMessages(roomId);
 
-    console.log("MESSAGES API RESPONSE:", res);   // 👈 ADD THIS
-
     const messages = sortMessagesByCreatedAt(
       (res?.data?.data || res?.data || []).map(normalizeMessage)
     );
 
+    const roomStatus =
+      res?.data?.room?.status ||
+      res?.room?.status ||
+      res?.status;
+    const normalizedRoomStatus = normalizeTicketStatus(roomStatus);
+
     setChats(prev => prev.map(c =>
       c.id === roomId
-        ? { ...c, messages }
+        ? { ...c, messages, ...(roomStatus ? { status: normalizedRoomStatus } : {}) }
         : c
     ));
   } catch (err) {
@@ -247,6 +258,7 @@ const loadMessages = async (roomId) => {
 
     const onNewMessage = (msg) => {
       const normalized = normalizeMessage(msg);
+      const nextStatus = normalizeTicketStatus(msg?.status || msg?.ticketStatus);
 
       setChats((prev) =>
         prev.map((chat) => {
@@ -258,6 +270,7 @@ const loadMessages = async (roomId) => {
             messages: sortMessagesByCreatedAt([...chat.messages, normalized]),
             lastMsg: normalized.text || normalized.attachments?.[0]?.name || "Attachment",
             time: msg?.createdAt || new Date().toISOString(),
+            ...(nextStatus ? { status: nextStatus } : {}),
           };
         })
       );
@@ -652,7 +665,7 @@ const loadMessages = async (roomId) => {
                 </div>
 
                 <select
-                  value={activeChat.status}
+                  value={activeChatStatus}
                   onChange={(e) => handleStatusChange(e.target.value)}
                   className={`
                     text-xs px-3 py-1.5 rounded-md border outline-none

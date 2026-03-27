@@ -23,10 +23,13 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useTheme } from "../../../../context/ThemeContext";
+import { useAuth } from "../../../../context/AuthContext.jsx";
 import { Link } from "react-router-dom";
 
 const CannedResponsesPage = () => {
   const { isDark } = useTheme();
+  const { user } = useAuth();
+  const isAdminStaff = user?.role?.toLowerCase() === "admin_staff";
 
   /* ---------------- STATE ---------------- */
   const [categories, setCategories] = useState([]);
@@ -163,7 +166,7 @@ const CannedResponsesPage = () => {
 
 
         {/* HEADER WITH ANIMATION */}
-       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
 
           <div className="space-y-2">
             <div className="flex items-center gap-3">
@@ -182,160 +185,164 @@ const CannedResponsesPage = () => {
             </div>
           </div>
 
-          <Link
-            to="/settings/canned/categories"
-            className={`group flex items-center gap-3 px-6 py-3 rounded-xl border transition-all duration-300 hover:scale-105 hover:shadow-xl ${
-              isDark 
-                ? "bg-gradient-to-r from-gray-800 to-gray-900 border-gray-700 hover:border-blue-500" 
-                : "bg-gradient-to-r from-white to-blue-50 border-blue-100 hover:border-blue-300"
-            } shadow-lg`}
-          >
-            <Folder size={20} className="text-blue-500 group-hover:rotate-12 transition-transform" />
-            <span className="font-medium">Manage Categories</span>
-            <ChevronRight size={18} className="opacity-50 group-hover:translate-x-1 transition-transform" />
-          </Link>
+          {!isAdminStaff && (
+            <Link
+              to="/settings/canned/categories"
+              className={`group flex items-center gap-3 px-6 py-3 rounded-xl border transition-all duration-300 hover:scale-105 hover:shadow-xl ${
+                isDark 
+                  ? "bg-gradient-to-r from-gray-800 to-gray-900 border-gray-700 hover:border-blue-500" 
+                  : "bg-gradient-to-r from-white to-blue-50 border-blue-100 hover:border-blue-300"
+              } shadow-lg`}
+            >
+              <Folder size={20} className="text-blue-500 group-hover:rotate-12 transition-transform" />
+              <span className="font-medium">Manage Categories</span>
+              <ChevronRight size={18} className="opacity-50 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          )}
         </div>
 
         {/* CREATE / EDIT FORM WITH SLIDE ANIMATION */}
-        <div 
-          className={`rounded-2xl border-2 p-6 transition-all duration-500 transform ${isFormVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} ${
-            isDark 
-              ? "bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-700/50 backdrop-blur-sm" 
-              : "bg-gradient-to-br from-white to-blue-50/30 border-blue-100 backdrop-blur-sm"
-          } shadow-2xl hover:shadow-3xl transition-shadow`}
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${editingId ? "bg-amber-500/20" : "bg-green-500/20"}`}>
-                {editingId ? <Pencil size={20} className={editingId ? "text-amber-500" : "text-green-500"} /> : <Plus size={20} className="text-green-500" />}
+        {!isAdminStaff && (
+          <div 
+            className={`rounded-2xl border-2 p-6 transition-all duration-500 transform ${isFormVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} ${
+              isDark 
+                ? "bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-700/50 backdrop-blur-sm" 
+                : "bg-gradient-to-br from-white to-blue-50/30 border-blue-100 backdrop-blur-sm"
+            } shadow-2xl hover:shadow-3xl transition-shadow`}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${editingId ? "bg-amber-500/20" : "bg-green-500/20"}`}>
+                  {editingId ? <Pencil size={20} className={editingId ? "text-amber-500" : "text-green-500"} /> : <Plus size={20} className="text-green-500" />}
+                </div>
+                <h2 className="text-2xl font-bold">
+                  {editingId ? "Edit Response" : "Create New Response"}
+                </h2>
               </div>
-              <h2 className="text-2xl font-bold">
-                {editingId ? "Edit Response" : "Create New Response"}
-              </h2>
+              <button
+                onClick={() => setIsFormVisible(!isFormVisible)}
+                className={`p-2 rounded-full ${isDark ? "hover:bg-gray-700" : "hover:bg-gray-100"}`}
+              >
+                <ChevronRight className={`transform transition-transform ${isFormVisible ? "rotate-90" : "-rotate-90"}`} />
+              </button>
             </div>
-            <button
-              onClick={() => setIsFormVisible(!isFormVisible)}
-              className={`p-2 rounded-full ${isDark ? "hover:bg-gray-700" : "hover:bg-gray-100"}`}
-            >
-              <ChevronRight className={`transform transition-transform ${isFormVisible ? "rotate-90" : "-rotate-90"}`} />
-            </button>
-          </div>
 
-          {isFormVisible && (
-            <div className="space-y-6 animate-fadeIn">
-              {formError && (
-                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 animate-shake">
-                  <p className="text-red-500 flex items-center gap-2">
-                    <X size={18} />
-                    {formError}
-                  </p>
-                </div>
-              )}
-              
-              {success && (
-                <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 animate-pulse">
-                  <p className="text-green-500 flex items-center gap-2">
-                    <Check size={18} />
-                    {success}
-                  </p>
-                </div>
-              )}
+            {isFormVisible && (
+              <div className="space-y-6 animate-fadeIn">
+                {formError && (
+                  <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 animate-shake">
+                    <p className="text-red-500 flex items-center gap-2">
+                      <X size={18} />
+                      {formError}
+                    </p>
+                  </div>
+                )}
+                
+                {success && (
+                  <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 animate-pulse">
+                    <p className="text-green-500 flex items-center gap-2">
+                      <Check size={18} />
+                      {success}
+                    </p>
+                  </div>
+                )}
 
-              <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="font-medium text-sm opacity-75">Category</label>
+                    <select
+                      value={createCategoryId}
+                      onChange={(e) => setCreateCategoryId(e.target.value)}
+                      className={`w-full px-4 py-3 rounded-xl border transition-all ${
+                        isDark 
+                          ? "bg-gray-900/50 border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30" 
+                          : "bg-white border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/30"
+                      } shadow-inner`}
+                    >
+                      <option value="" className={isDark ? "bg-gray-800" : "bg-white"}>Select category</option>
+                      {categories.map((c) => (
+                        <option key={c._id} value={c._id} className={isDark ? "bg-gray-800" : "bg-white"}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="font-medium text-sm opacity-75">Title</label>
+                    <input
+                      placeholder="Response title"
+                      value={form.title}
+                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+                      className={`w-full px-4 py-3 rounded-xl border transition-all ${
+                        isDark 
+                          ? "bg-gray-900/50 border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30" 
+                          : "bg-white border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/30"
+                      } shadow-inner`}
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <label className="font-medium text-sm opacity-75">Category</label>
-                  <select
-                    value={createCategoryId}
-                    onChange={(e) => setCreateCategoryId(e.target.value)}
+                  <label className="font-medium text-sm opacity-75">Message</label>
+                  <textarea
+                    rows={5}
+                    placeholder="Enter your response message here..."
+                    value={form.message}
+                    onChange={(e) => setForm({ ...form, message: e.target.value })}
                     className={`w-full px-4 py-3 rounded-xl border transition-all ${
                       isDark 
                         ? "bg-gray-900/50 border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30" 
                         : "bg-white border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/30"
-                    } shadow-inner`}
-                  >
-                    <option value="" className={isDark ? "bg-gray-800" : "bg-white"}>Select category</option>
-                    {categories.map((c) => (
-                      <option key={c._id} value={c._id} className={isDark ? "bg-gray-800" : "bg-white"}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="font-medium text-sm opacity-75">Title</label>
-                  <input
-                    placeholder="Response title"
-                    value={form.title}
-                    onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    className={`w-full px-4 py-3 rounded-xl border transition-all ${
-                      isDark 
-                        ? "bg-gray-900/50 border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30" 
-                        : "bg-white border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/30"
-                    } shadow-inner`}
+                    } shadow-inner resize-none`}
                   />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <label className="font-medium text-sm opacity-75">Message</label>
-                <textarea
-                  rows={5}
-                  placeholder="Enter your response message here..."
-                  value={form.message}
-                  onChange={(e) => setForm({ ...form, message: e.target.value })}
-                  className={`w-full px-4 py-3 rounded-xl border transition-all ${
-                    isDark 
-                      ? "bg-gray-900/50 border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30" 
-                      : "bg-white border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/30"
-                  } shadow-inner resize-none`}
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={handleSave}
-                  disabled={loading}
-                  className={`group flex items-center gap-3 px-8 py-3 rounded-xl font-medium transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
-                    editingId 
-                      ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:shadow-amber-500/25" 
-                      : "bg-gradient-to-r from-blue-500 to-cyan-500 hover:shadow-blue-500/25"
-                  } shadow-lg hover:shadow-xl`}
-                >
-                  {loading ? (
-                    <Loader2 className="animate-spin" size={20} />
-                  ) : editingId ? (
-                    <>
-                      <Save size={20} />
-                      Update Response
-                    </>
-                  ) : (
-                    <>
-                      <Plus size={20} />
-                      Create Response
-                    </>
-                  )}
-                </button>
-
-                {editingId && (
+                <div className="flex gap-3 pt-4">
                   <button
-                    onClick={() => {
-                      setEditingId(null);
-                      setForm({ title: "", message: "" });
-                    }}
-                    className={`px-6 py-3 rounded-xl border transition-all duration-300 hover:scale-105 ${
-                      isDark 
-                        ? "border-gray-600 hover:border-gray-500 hover:bg-gray-800" 
-                        : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
-                    }`}
+                    onClick={handleSave}
+                    disabled={loading}
+                    className={`group flex items-center gap-3 px-8 py-3 rounded-xl font-medium transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      editingId 
+                        ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:shadow-amber-500/25" 
+                        : "bg-gradient-to-r from-blue-500 to-cyan-500 hover:shadow-blue-500/25"
+                    } shadow-lg hover:shadow-xl`}
                   >
-                    Cancel
+                    {loading ? (
+                      <Loader2 className="animate-spin" size={20} />
+                    ) : editingId ? (
+                      <>
+                        <Save size={20} />
+                        Update Response
+                      </>
+                    ) : (
+                      <>
+                        <Plus size={20} />
+                        Create Response
+                      </>
+                    )}
                   </button>
-                )}
+
+                  {editingId && (
+                    <button
+                      onClick={() => {
+                        setEditingId(null);
+                        setForm({ title: "", message: "" });
+                      }}
+                      className={`px-6 py-3 rounded-xl border transition-all duration-300 hover:scale-105 ${
+                        isDark 
+                          ? "border-gray-600 hover:border-gray-500 hover:bg-gray-800" 
+                          : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                      }`}
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         {/* RESPONSES LIST WITH STAGGERED ANIMATION */}
         <div className={`rounded-2xl border-2 p-6 ${
@@ -448,34 +455,36 @@ const CannedResponsesPage = () => {
                         )}
                       </button>
 
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setEditingId(r._id);
-                            setCreateCategoryId(listCategoryId);
-                            setForm({ title: r.title, message: r.message });
-                            window.scrollTo({ top: 0, behavior: "smooth" });
-                          }}
-                          className={`p-2 rounded-lg transition-all hover:scale-110 ${
-                            isDark 
-                              ? "bg-amber-500/20 hover:bg-amber-500/30 text-amber-400" 
-                              : "bg-amber-100 hover:bg-amber-200 text-amber-600"
-                          }`}
-                        >
-                          <Pencil size={18} />
-                        </button>
+                      {!isAdminStaff && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setEditingId(r._id);
+                              setCreateCategoryId(listCategoryId);
+                              setForm({ title: r.title, message: r.message });
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                            }}
+                            className={`p-2 rounded-lg transition-all hover:scale-110 ${
+                              isDark 
+                                ? "bg-amber-500/20 hover:bg-amber-500/30 text-amber-400" 
+                                : "bg-amber-100 hover:bg-amber-200 text-amber-600"
+                            }`}
+                          >
+                            <Pencil size={18} />
+                          </button>
 
-                        <button 
-                          onClick={() => handleDelete(r._id)}
-                          className={`p-2 rounded-lg transition-all hover:scale-110 ${
-                            isDark 
-                              ? "bg-red-500/20 hover:bg-red-500/30 text-red-400" 
-                              : "bg-red-100 hover:bg-red-200 text-red-600"
-                          }`}
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
+                          <button 
+                            onClick={() => handleDelete(r._id)}
+                            className={`p-2 rounded-lg transition-all hover:scale-110 ${
+                              isDark 
+                                ? "bg-red-500/20 hover:bg-red-500/30 text-red-400" 
+                                : "bg-red-100 hover:bg-red-200 text-red-600"
+                            }`}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

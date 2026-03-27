@@ -51,3 +51,9 @@ export const verifyPlanPaymentWithCustomerDetails = async (payload) => {
   return { ...verifyRes, customerDetails };
 };
 
+export const getLatestPlan = async ({ accountId, groupId } = {}) => {
+  const params = cleanPayload({ accountId, groupId });
+  const res = await api.get("/api/payment/plan/latest", { params });
+  return res.data;
+};
+
