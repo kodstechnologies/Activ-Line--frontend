@@ -130,6 +130,12 @@ const BillingPage = () => {
   const [transactions, setTransactions] = useState([]);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [totals, setTotals] = useState({
+    totalPaymentAmount: 0,
+    pendingPaymentCount: 0,
+    totalCustomerCount: 0,
+  });
+  const [summaryCounts, setSummaryCounts] = useState({ success: 0, pending: 0 });
 
   const [viewLoadingId, setViewLoadingId] = useState('');
   const [selectedPayment, setSelectedPayment] = useState(null);
@@ -154,10 +160,31 @@ const BillingPage = () => {
       setTransactions(rows);
       setTotalItems(Number(res?.total || 0));
       setTotalPages(Number(res?.totalPages || 0));
+
+      const fallbackTotalAmount = rows.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+      const fallbackPending = rows.filter((tx) => tx.status === 'PENDING').length;
+      const fallbackNotPaid = rows.filter((tx) => tx.status !== 'SUCCESS').length;
+      const fallbackCustomers = new Set(rows.map((tx) => tx.customer?._id || tx.profileId)).size;
+
+      setTotals({
+        totalPaymentAmount: Number(res?.totals?.totalPaymentAmount ?? fallbackTotalAmount),
+        pendingPaymentCount: Number(res?.totals?.pendingPaymentCount ?? fallbackPending),
+        totalCustomerCount: Number(res?.totals?.totalCustomerCount ?? fallbackCustomers),
+      });
+      setSummaryCounts({
+        success: Number(res?.summary?.SUCCESS ?? rows.filter((tx) => tx.status === 'SUCCESS').length),
+        pending: Number(res?.summary?.PENDING ?? fallbackPending),
+      });
     } catch (err) {
       setTransactions([]);
       setTotalItems(0);
       setTotalPages(0);
+      setTotals({
+        totalPaymentAmount: 0,
+        pendingPaymentCount: 0,
+        totalCustomerCount: 0,
+      });
+      setSummaryCounts({ success: 0, pending: 0 });
       setError(err?.response?.data?.message || err?.message || 'Failed to load payment history');
     } finally {
       setLoading(false);
@@ -213,18 +240,18 @@ const BillingPage = () => {
 
   // Calculate stats
   const stats = useMemo(() => {
-    const totalAmount = transactions.reduce((sum, tx) => sum + (tx.amount || 0), 0);
-    const paidCount = transactions.filter(tx => tx.status === 'SUCCESS').length;
-    const pendingCount = transactions.filter(tx => tx.status === 'PENDING').length;
-    const uniqueCustomers = new Set(transactions.map(tx => tx.customer?._id || tx.profileId)).size;
+    const totalAmount = totals.totalPaymentAmount || 0;
+    const pendingCount = summaryCounts.pending || totals.pendingPaymentCount || 0;
+    const successCount = summaryCounts.success || 0;
+    const totalCustomerCount = totals.totalCustomerCount || 0;
     
     return {
       totalAmount,
-      paidCount,
       pendingCount,
-      uniqueCustomers,
+      successCount,
+      totalCustomerCount,
     };
-  }, [transactions]);
+  }, [totals, summaryCounts]);
 
   const uiRows = useMemo(() => {
     return paginationData.paginatedTransactions.map((tx) => {
@@ -443,7 +470,7 @@ const BillingPage = () => {
           </div>
 
           {/* Stats Cards */}
-          {!loading && transactions.length > 0 && (
+          {!loading && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
               <motion.div
                 whileHover={{ y: -5 }}
@@ -480,7 +507,7 @@ const BillingPage = () => {
                       Successful Payments
                     </p>
                     <p className={`text-2xl font-bold mt-1 ${isDark ? "text-white" : "text-gray-900"}`}>
-                      {stats.paidCount}
+                      {stats.successCount}
                     </p>
                   </div>
                   <div className={`p-2 rounded-xl ${isDark ? "bg-green-500/10" : "bg-green-100"}`}>
@@ -511,7 +538,27 @@ const BillingPage = () => {
                 </div>
               </motion.div>
 
-              
+              <motion.div
+                whileHover={{ y: -5 }}
+                transition={{ duration: 0.2 }}
+                className={`p-4 rounded-xl border ${
+                  isDark ? "bg-slate-800/50 border-slate-700" : "bg-white border-gray-200 shadow-sm"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-xs uppercase tracking-wider ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+                      Total Customers
+                    </p>
+                    <p className={`text-2xl font-bold mt-1 ${isDark ? "text-white" : "text-gray-900"}`}>
+                      {stats.totalCustomerCount}
+                    </p>
+                  </div>
+                  <div className={`p-2 rounded-xl ${isDark ? "bg-blue-500/10" : "bg-blue-100"}`}>
+                    <Users className={`w-6 h-6 ${isDark ? "text-blue-400" : "text-blue-600"}`} />
+                  </div>
+                </div>
+              </motion.div>
             </div>
           )}
         </div>
