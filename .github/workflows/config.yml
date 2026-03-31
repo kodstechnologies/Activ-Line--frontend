@@ -19,7 +19,7 @@ jobs:
           node-version: 18
 
       # ✅ Create .env file from GitHub Secret
-      - name: 📝 Create .env file
+      - name: 🧪 Create .env file
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
 
@@ -29,22 +29,28 @@ jobs:
       - name: 🏗️ Build project
         run: npm run build
 
-      - name: 🚀 Deploy to EC2
+      # ✅ Upload build to temp folder
+      - name: 🚀 Upload to EC2 (temp)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
           source: "dist/*"
-          target: "/home/ubuntu/Activ-Line--frontend/dist"
+          target: "/home/ubuntu/temp-dist"
 
-      - name: 🔄 Fix permissions + Restart Nginx
+      # ✅ Deploy + fix permissions
+      - name: 🔄 Deploy on server
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
           script: |
+            sudo rm -rf /home/ubuntu/Activ-Line--frontend/dist
+            sudo mv /home/ubuntu/temp-dist/dist /home/ubuntu/Activ-Line--frontend/
+
             sudo chown -R www-data:www-data /home/ubuntu/Activ-Line--frontend/dist
             sudo chmod -R 755 /home/ubuntu/Activ-Line--frontend/dist
+
             sudo systemctl restart nginx
