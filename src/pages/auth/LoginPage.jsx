@@ -174,7 +174,7 @@ const handleSubmit = async (values, { setSubmitting }) => {
                 </div>
 
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent mb-3">
-                  Loginn
+                  Login
                 </h1>
                 <p
                   className={`text-base font-medium transition-colors duration-300 ${
