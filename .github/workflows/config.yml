@@ -34,7 +34,7 @@ jobs:
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.EC2_KEY }}
           source: "dist/*"
           target: "/home/ubuntu/Activ-Line--frontend/dist"
 
@@ -43,7 +43,7 @@ jobs:
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.EC2_KEY }}
           script: |
             sudo chown -R www-data:www-data /home/ubuntu/Activ-Line--frontend/dist
             sudo chmod -R 755 /home/ubuntu/Activ-Line--frontend/dist
