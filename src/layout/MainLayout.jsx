@@ -109,8 +109,12 @@ const MainLayout = () => {
 
     fetchCount();
     const interval = setInterval(fetchCount, 60000); // Refresh every minute
+    window.addEventListener("app:notification-received", fetchCount);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("app:notification-received", fetchCount);
+    };
   }, [user]);
 
   /* ---------------- HELPERS ---------------- */

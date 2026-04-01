@@ -11,6 +11,9 @@ export const adminLogin = async ({ email, password }) => {
 
       if (permission === "granted") {
         fcmToken = await getFcmToken();
+        if (!fcmToken) {
+          console.warn("Permission granted, but FCM token not retrieved.");
+        }
       }
     }
   } catch (err) {

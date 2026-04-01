@@ -20,7 +20,10 @@ let messagingInstance = null;
 const getMessagingIfSupported = async () => {
   if (messagingInstance) return messagingInstance;
   const supported = await isSupported();
-  if (!supported) return null;
+  if (!supported) {
+    console.warn("FCM is not supported in this browser or environment.");
+    return null;
+  }
   messagingInstance = getMessaging(app);
   return messagingInstance;
 };
@@ -62,6 +65,8 @@ export const getFcmToken = async () => {
     });
     if (!token) {
       console.warn("FCM token not available (permission or VAPID issue).");
+    } else {
+      console.debug("FCM token success:", token);
     }
     return token || null;
   } catch (err) {
@@ -74,9 +79,12 @@ export const listenToMessages = (handler) => {
   let unsubscribe = null;
 
   getMessagingIfSupported().then((messaging) => {
-    if (!messaging) return;
+    if (!messaging) {
+      console.warn("listenToMessages: messaging unsupported");
+      return;
+    }
     unsubscribe = onMessage(messaging, (payload) => {
-      console.log("Foreground message:", payload);
+      console.debug("FCM foreground message received:", payload);
       if (typeof handler === "function") {
         handler(payload);
       }
