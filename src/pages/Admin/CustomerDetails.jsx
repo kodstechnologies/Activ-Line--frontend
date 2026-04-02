@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import {
   getSingleCustomer,
   getAdminCustomerTickets,
+  getAdminCustomerPaymentHistory,
   getFranchiseGroupDetails,
   getFranchiseProfiles,
   createPlanOrder,
@@ -44,6 +45,19 @@ const CustomerDetails = () => {
   const [paymentVerified, setPaymentVerified] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [supportTickets, setSupportTickets] = useState([]);
+  const [customerPayments, setCustomerPayments] = useState([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+
+  const normalizeTicketStatus = (status) => {
+    const normalized = String(status || '').toUpperCase();
+    if (normalized === 'ASSIGNED' || normalized === 'IN_PROGRESS') {
+      return 'In Progress';
+    }
+    if (normalized === 'RESOLVED') {
+      return 'Resolved';
+    }
+    return 'Open';
+  };
 
   // Filter and paginate Support Tickets
   const filteredTickets = useMemo(() => {
@@ -105,6 +119,40 @@ const CustomerDetails = () => {
     if (id) fetchCustomer();
   }, [id]);
 
+  useEffect(() => {
+    const loadPayments = async () => {
+      const userName =
+        customer?.userName ||
+        customer?.username ||
+        customer?.customer?.userName ||
+        "";
+
+      if (!userName) {
+        setCustomerPayments([]);
+        return;
+      }
+
+      try {
+        setPaymentsLoading(true);
+        const res = await getAdminCustomerPaymentHistory({
+          userName,
+          page: 1,
+          limit: 20,
+          status: "SUCCESS",
+        });
+        const rows = res?.data?.data || [];
+        setCustomerPayments(Array.isArray(rows) ? rows : []);
+      } catch (err) {
+        console.error(err);
+        setCustomerPayments([]);
+      } finally {
+        setPaymentsLoading(false);
+      }
+    };
+
+    loadPayments();
+  }, [customer]);
+
   const fetchCustomer = async () => {
     try {
       const res = await getSingleCustomer(id);
@@ -124,7 +172,7 @@ const CustomerDetails = () => {
           id: room?.roomId || room?._id || room?.id || `#${idx + 1}`,
           date: room?.createdAt ? new Date(room.createdAt).toLocaleDateString('en-IN') : '—',
           subject: room?.subject || room?.title || 'Support Ticket',
-          status: room?.status || 'Open',
+          status: normalizeTicketStatus(room?.status),
           priority: room?.priority || 'Medium',
           category: room?.category || 'General'
         }));
@@ -151,6 +199,40 @@ const CustomerDetails = () => {
     const resolvedTickets = supportTickets.filter(t => t.status === 'Resolved').length;
     return { openTickets, inProgressTickets, resolvedTickets };
   }, [supportTickets]);
+
+  const latestSuccessfulPayment = useMemo(() => {
+    return [...customerPayments]
+      .sort(
+        (a, b) =>
+          new Date(b?.paidAt || b?.createdAt || 0) -
+          new Date(a?.paidAt || a?.createdAt || 0)
+      )[0] || null;
+  }, [customerPayments]);
+
+  const formatPaymentAmount = (amount, currency = 'INR') => {
+    const value = Number(amount || 0);
+    if (Number.isNaN(value)) return '--';
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
+  const formatPaymentDate = (value) => {
+    if (!value) return '--';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '--';
+    return date.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
 
   const extractProfileInfo = (profile) => {
     if (!profile) return { profileId: '', groupId: '', name: '', planName: '', amount: '' };
@@ -616,13 +698,18 @@ const CustomerDetails = () => {
                 <div className="flex items-center gap-2 mb-2">
                   <Award className={`w-5 h-5 ${isDark ? 'text-amber-300' : 'text-amber-500'}`} />
                   <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {customer.userType || 'ActivLine Home 200'}
+                    {latestSuccessfulPayment?.planName || customer.userType || 'No plan found'}
                   </p>
                 </div>
                 <p className={`text-sm ${isDark ? 'text-white/60' : 'text-gray-500'} flex items-center gap-2`}>
                   <User className="w-3 h-3" />
                   Username: {customer.userName || 'N/A'}
                 </p>
+                <div className={`mt-3 space-y-1 text-sm ${isDark ? 'text-white/60' : 'text-gray-500'}`}>
+                  <p>Amount: {latestSuccessfulPayment ? formatPaymentAmount(latestSuccessfulPayment.amount, latestSuccessfulPayment.currency) : '--'}</p>
+                  <p>Last Paid: {latestSuccessfulPayment ? formatPaymentDate(latestSuccessfulPayment.paidAt || latestSuccessfulPayment.createdAt) : '--'}</p>
+                  <p>Plan End: {latestSuccessfulPayment ? formatPaymentDate(latestSuccessfulPayment.planEndDate) : '--'}</p>
+                </div>
               </div>
               <button
                 type="button"
@@ -789,6 +876,86 @@ const CustomerDetails = () => {
                       <ChevronRight className="w-5 h-5" />
                     </button>
                   </div>
+                </div>
+              )}
+            </div>
+
+            <div className={`${glassCardClass} p-6`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <h3 className={`text-lg font-semibold flex items-center gap-2 ${isDark ? 'text-white/90' : 'text-gray-900'}`}>
+                  <CreditCard className={`w-5 h-5 ${isDark ? 'text-violet-300' : 'text-violet-500'}`} />
+                  Payment History
+                </h3>
+                <div className={`rounded-lg px-3 py-1.5 text-sm ${isDark ? 'bg-white/5 text-white/60' : 'bg-gray-100 text-gray-600'}`}>
+                  Total: {customerPayments.length}
+                </div>
+              </div>
+
+              {paymentsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((item) => (
+                    <div
+                      key={item}
+                      className={`h-16 rounded-xl animate-pulse ${isDark ? 'bg-white/5' : 'bg-gray-100'}`}
+                    />
+                  ))}
+                </div>
+              ) : customerPayments.length === 0 ? (
+                <div className={`rounded-xl border p-6 text-center text-sm ${isDark ? 'border-white/10 bg-white/5 text-white/60' : 'border-gray-200 bg-gray-50 text-gray-500'}`}>
+                  No successful payment history found for this customer.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead>
+                      <tr className={`border-b ${isDark ? 'border-white/10 text-white/40' : 'border-gray-200 text-gray-500'} uppercase text-xs`}>
+                        <th className="py-3 font-semibold tracking-wider">Plan</th>
+                        <th className="py-3 font-semibold tracking-wider">Amount</th>
+                        <th className="py-3 font-semibold tracking-wider">Status</th>
+                        <th className="py-3 font-semibold tracking-wider">Paid At</th>
+                        <th className="py-3 font-semibold tracking-wider">Order ID</th>
+                      </tr>
+                    </thead>
+                    <tbody className={`divide-y ${isDark ? 'divide-white/10' : 'divide-gray-100'}`}>
+                      {customerPayments.map((payment) => (
+                        <tr key={payment.paymentId || payment.razorpayPaymentId} className={`${isDark ? 'hover:bg-white/5' : 'hover:bg-violet-50'} transition-all`}>
+                          <td className="py-4">
+                            <div>
+                              <div className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                {payment.planName || '--'}
+                              </div>
+                              <div className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-500'}`}>
+                                Profile ID: {payment.profileId || '--'}
+                              </div>
+                            </div>
+                          </td>
+                          <td className={`py-4 font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {formatPaymentAmount(payment.amount, payment.currency)}
+                          </td>
+                          <td className="py-4">
+                            <span className={`px-3 py-1 text-xs font-bold rounded-full inline-flex items-center gap-1 ${
+                              payment.status === 'SUCCESS'
+                                ? isDark
+                                  ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                                  : 'bg-green-100 text-green-700 border border-green-200'
+                                : isDark
+                                  ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+                                  : 'bg-red-100 text-red-700 border border-red-200'
+                            }`}>
+                              <CheckCircle className="w-3 h-3" />
+                              {payment.status || '--'}
+                            </span>
+                          </td>
+                          <td className={`py-4 ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
+                            {formatPaymentDate(payment.paidAt || payment.createdAt)}
+                          </td>
+                          <td className={`py-4 font-mono text-xs ${isDark ? 'text-white/50' : 'text-gray-500'}`}>
+                            {payment.orderId || payment.razorpayPaymentId || '--'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>

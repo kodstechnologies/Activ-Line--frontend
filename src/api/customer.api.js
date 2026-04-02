@@ -72,11 +72,19 @@ export const getMyPaymentHistory = () => {
   return api.get("/api/customer/plans/my/payment-history");
 };
 
-// ✅ Admin: payment history for a particular customer
-export const getAdminCustomerPaymentHistory = (customerId, userName) => {
-  if (!customerId) throw new Error("customerId is required");
-  const params = userName ? { userName } : undefined;
-  return api.get(`/api/admin/customers/${encodeURIComponent(customerId)}/payment-history`, { params });
+// ✅ Admin: payment history for a particular customer by username
+export const getAdminCustomerPaymentHistory = ({
+  userName,
+  page = 1,
+  limit = 20,
+  status = "SUCCESS",
+} = {}) => {
+  if (!userName) throw new Error("userName is required");
+  return api.post(
+    "/api/admin/customers/payment-history/by-username",
+    { userName },
+    { params: { page, limit, status } }
+  );
 };
 
 // ✅ Admin: ticket status/details for a particular customer
