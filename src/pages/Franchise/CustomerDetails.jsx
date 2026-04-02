@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
   Mail, Phone, MapPin, ArrowLeft, Search,
@@ -10,12 +10,12 @@ import { useTheme } from '../../context/ThemeContext';
 import { useEffect } from "react";
 import {
   getSingleCustomer,
+  getAdminCustomerPaymentHistory,
   getFranchiseGroupDetails,
   getFranchiseProfiles,
   createPlanOrder,
   verifyPlanPayment
 } from "../../api/customer.api";
-import { getLatestPlan } from "../../api/payment.api";
 import { getTicketRooms } from "../../api/frenchise/franchiseTicketApi";
 
 const CustomerDetails = () => {
@@ -45,9 +45,23 @@ const CustomerDetails = () => {
   const [paymentVerified, setPaymentVerified] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [supportTickets, setSupportTickets] = useState([]);
-  const [latestPlan, setLatestPlan] = useState(null);
-  const [latestPlanLoading, setLatestPlanLoading] = useState(false);
-  const [latestPlanError, setLatestPlanError] = useState('');
+  const [customerPayments, setCustomerPayments] = useState([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+
+  // Prevent overwriting user's manual selection while modal is open.
+  const userSelectedPlanRef = useRef(false);
+  const currentPlanSectionRef = useRef(null);
+
+  const normalizeTicketStatus = (status) => {
+    const normalized = String(status || '').toUpperCase();
+    if (normalized === 'ASSIGNED' || normalized === 'IN_PROGRESS') {
+      return 'In Progress';
+    }
+    if (normalized === 'RESOLVED') {
+      return 'Resolved';
+    }
+    return 'Open';
+  };
 
   // Filter and paginate Support Tickets
   const filteredTickets = useMemo(() => {
@@ -109,6 +123,40 @@ const CustomerDetails = () => {
     if (id) fetchCustomer();
   }, [id]);
 
+  useEffect(() => {
+    const loadPayments = async () => {
+      const userName =
+        customer?.userName ||
+        customer?.username ||
+        customer?.customer?.userName ||
+        "";
+
+      if (!userName) {
+        setCustomerPayments([]);
+        return;
+      }
+
+      try {
+        setPaymentsLoading(true);
+        const res = await getAdminCustomerPaymentHistory({
+          userName,
+          page: 1,
+          limit: 20,
+          status: "SUCCESS",
+        });
+        const rows = res?.data?.data || [];
+        setCustomerPayments(Array.isArray(rows) ? rows : []);
+      } catch (err) {
+        console.error(err);
+        setCustomerPayments([]);
+      } finally {
+        setPaymentsLoading(false);
+      }
+    };
+
+    loadPayments();
+  }, [customer]);
+
   const fetchCustomer = async () => {
     try {
       const res = await getSingleCustomer(id);
@@ -153,7 +201,7 @@ const CustomerDetails = () => {
           id: room?.roomId || room?._id || room?.id || `#${idx + 1}`,
           date: room?.createdAt ? new Date(room.createdAt).toLocaleDateString('en-IN') : '—',
           subject: room?.subject || room?.title || 'Support Ticket',
-          status: room?.status || 'Open',
+          status: normalizeTicketStatus(room?.status),
           priority: room?.priority || 'Medium',
           category: room?.category || 'General'
         }));
@@ -173,39 +221,6 @@ const CustomerDetails = () => {
     customer?.franchiseAccountId ||
     customer?.account?.id ||
     '';
-  const groupId =
-    customer?.userGroupId ||
-    customer?.groupId ||
-    customer?.group_id ||
-    customer?.group?.id ||
-    '';
-
-  useEffect(() => {
-    let active = true;
-    if (!accountId) {
-      setLatestPlan(null);
-      return;
-    }
-    setLatestPlanLoading(true);
-    setLatestPlanError('');
-    getLatestPlan({ accountId, ...(groupId ? { groupId } : {}) })
-      .then((res) => {
-        if (!active) return;
-        setLatestPlan(res?.data || null);
-      })
-      .catch((err) => {
-        if (!active) return;
-        setLatestPlan(null);
-        setLatestPlanError(err?.response?.data?.message || err?.message || 'Failed to load current plan');
-      })
-      .finally(() => {
-        if (!active) return;
-        setLatestPlanLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [accountId, groupId]);
 
   const ticketStats = useMemo(() => {
     const openTickets = supportTickets.filter(t => t.status === 'Open').length;
@@ -213,6 +228,116 @@ const CustomerDetails = () => {
     const resolvedTickets = supportTickets.filter(t => t.status === 'Resolved').length;
     return { openTickets, inProgressTickets, resolvedTickets };
   }, [supportTickets]);
+
+  const latestSuccessfulPayment = useMemo(() => {
+    return [...customerPayments]
+      .sort(
+        (a, b) =>
+          new Date(b?.paidAt || b?.createdAt || 0) -
+          new Date(a?.paidAt || a?.createdAt || 0)
+      )[0] || null;
+  }, [customerPayments]);
+
+  const prefillPaymentFormFromLatestPlan = (plan) => {
+    if (!plan) return;
+
+    // Fields may vary depending on backend payload; try multiple common shapes.
+    const groupIdRaw =
+      plan?.groupId ??
+      plan?.group_id ??
+      plan?.group?._id ??
+      plan?.group?.id ??
+      plan?.group?.Group_id ??
+      plan?.group?.groupId;
+
+    const profileIdRaw =
+      plan?.profileId ??
+      plan?.profile_id ??
+      plan?.profile?._id ??
+      plan?.profile?.id ??
+      plan?.profile?.profileId ??
+      plan?.planProfileId ??
+      plan?.profile_id;
+
+    const amountRaw =
+      plan?.amount ??
+      plan?.planAmount ??
+      plan?.paidAmount ??
+      plan?.paymentAmount ??
+      plan?.orderAmount ??
+      plan?.price ??
+      plan?.plan?.amount ??
+      plan?.plan?.price;
+
+    const groupId = groupIdRaw !== undefined && groupIdRaw !== null ? String(groupIdRaw) : '';
+    const profileId =
+      profileIdRaw !== undefined && profileIdRaw !== null ? String(profileIdRaw) : '';
+
+    const amount =
+      amountRaw !== undefined && amountRaw !== null && amountRaw !== '' ? String(amountRaw) : '';
+
+    // On initial open, we want the modal to reflect "current plan" immediately.
+    setSelectedGroupId(groupId);
+    setPaymentForm({
+      groupId,
+      profileId,
+      amount,
+    });
+  };
+
+  const handleOpenPlanModal = () => {
+    userSelectedPlanRef.current = false;
+    setPaymentStatus(null);
+    setPaymentVerified(false);
+    setPaymentForm({ groupId: '', profileId: '', amount: '' });
+    setSelectedGroupId('');
+    setSelectedProfile(null);
+    setIsPlanModalOpen(true);
+
+    if (latestSuccessfulPayment) {
+      prefillPaymentFormFromLatestPlan(latestSuccessfulPayment);
+    }
+  };
+
+  const handleScrollToCurrentPlan = () => {
+    currentPlanSectionRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  };
+
+  useEffect(() => {
+    if (!isPlanModalOpen) return;
+    if (!latestSuccessfulPayment) return;
+    if (userSelectedPlanRef.current) return;
+    prefillPaymentFormFromLatestPlan(latestSuccessfulPayment);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPlanModalOpen, latestSuccessfulPayment]);
+
+  const formatPaymentAmount = (amount, currency = 'INR') => {
+    const value = Number(amount || 0);
+    if (Number.isNaN(value)) return '--';
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
+  const formatPaymentDate = (value) => {
+    if (!value) return '--';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '--';
+    return date.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
 
   const extractProfileInfo = (profile) => {
     if (!profile) return { profileId: '', groupId: '', name: '', planName: '', amount: '' };
@@ -282,6 +407,7 @@ const CustomerDetails = () => {
 
   const handleSelectProfile = (profile) => {
     const info = extractProfileInfo(profile);
+    userSelectedPlanRef.current = true;
     setSelectedProfile(profile);
     setPaymentForm({
       profileId: info.profileId || '',
@@ -292,10 +418,7 @@ const CustomerDetails = () => {
     setPaymentStatus(null);
   };
 
-  const handleCreateOrder = async () => {
-    const groupId = paymentForm.groupId?.toString().trim();
-    const profileId = paymentForm.profileId?.toString().trim();
-    const amountValue = paymentForm.amount;
+  const startPlanPayment = async ({ groupId, profileId, amount }) => {
     const resolvedUserName =
       customer?.userName ||
       customer?.username ||
@@ -306,8 +429,8 @@ const CustomerDetails = () => {
       setPaymentStatus({ type: 'error', message: 'Account ID is missing.' });
       return;
     }
-    if (!groupId || !profileId || !amountValue) {
-      setPaymentStatus({ type: 'error', message: 'Please select a plan first.' });
+    if (!groupId || !profileId || amount === undefined || amount === null || amount === '') {
+      setPaymentStatus({ type: 'error', message: 'Current plan details are missing (groupId/profileId/amount).' });
       return;
     }
 
@@ -320,7 +443,7 @@ const CustomerDetails = () => {
         accountId,
         groupId,
         profileId,
-        amount: Number(amountValue)
+        amount: Number(amount)
       };
       if (resolvedUserName) {
         createPayload.userName = resolvedUserName;
@@ -347,7 +470,7 @@ const CustomerDetails = () => {
 
       await loadRazorpayScript();
 
-      const amountInPaise = orderAmount ?? Math.round(Number(amountValue) * 100);
+      const amountInPaise = orderAmount ?? Math.round(Number(amount) * 100);
 
       const options = {
         key: keyId,
@@ -415,6 +538,61 @@ const CustomerDetails = () => {
     } finally {
       setIsPaying(false);
     }
+  };
+
+  const handleCreateOrder = async () => {
+    const groupId = paymentForm.groupId?.toString().trim();
+    const profileId = paymentForm.profileId?.toString().trim();
+    const amount = paymentForm.amount;
+    return startPlanPayment({ groupId, profileId, amount });
+  };
+
+  const handlePayCurrentPlan = async () => {
+    // Use the current-plan data already shown in the UI (latestSuccessfulPayment).
+    const plan = latestSuccessfulPayment;
+    if (!plan) {
+      setPaymentStatus({ type: 'error', message: 'No current plan payment found for this customer.' });
+      return;
+    }
+
+    const groupIdRaw =
+      plan?.groupId ??
+      plan?.group_id ??
+      plan?.group?._id ??
+      plan?.group?.id ??
+      plan?.group?.Group_id ??
+      plan?.group?.groupId;
+
+    const profileIdRaw =
+      plan?.profileId ??
+      plan?.profile_id ??
+      plan?.profile?._id ??
+      plan?.profile?.id ??
+      plan?.profile?.profileId ??
+      plan?.planProfileId;
+
+    const amountRaw =
+      plan?.amount ??
+      plan?.planAmount ??
+      plan?.paidAmount ??
+      plan?.paymentAmount ??
+      plan?.orderAmount ??
+      plan?.price ??
+      plan?.plan?.amount ??
+      plan?.plan?.price;
+
+    const groupId = groupIdRaw !== undefined && groupIdRaw !== null ? String(groupIdRaw).trim() : '';
+    const profileId = profileIdRaw !== undefined && profileIdRaw !== null ? String(profileIdRaw).trim() : '';
+    const amount = amountRaw !== undefined && amountRaw !== null ? String(amountRaw) : '';
+
+    // keep UI state in-sync (optional but useful)
+    userSelectedPlanRef.current = true;
+    setSelectedGroupId(groupId);
+    setSelectedProfile(null);
+    setPaymentForm({ groupId, profileId, amount });
+    setPaymentVerified(false);
+
+    return startPlanPayment({ groupId, profileId, amount });
   };
 
   useEffect(() => {
@@ -532,20 +710,59 @@ const CustomerDetails = () => {
                 Customer ID: {customer.userName || 'N/A'}
               </p>
             </div>
-            <span className={`px-5 py-2 rounded-full text-sm font-medium backdrop-blur-md border ${customer.status?.toUpperCase() === 'ACTIVE'
-              ? isDark 
-                ? 'bg-green-500/20 text-green-300 border-green-500/30 shadow-lg shadow-green-500/10'
-                : 'bg-green-100 text-green-700 border-green-200 shadow-sm'
-              : isDark
-                ? 'bg-red-500/20 text-red-300 border-red-500/30 shadow-lg shadow-red-500/10'
-                : 'bg-red-100 text-red-700 border-red-200 shadow-sm'
-              }`}>
-              {customer.status || 'Active'}
-            </span>
+            <div className="flex items-center flex-wrap gap-3">
+         
+              <span className={`px-5 py-2 rounded-full text-sm font-medium backdrop-blur-md border ${customer.status?.toUpperCase() === 'ACTIVE'
+                ? isDark 
+                  ? 'bg-green-500/20 text-green-300 border-green-500/30 shadow-lg shadow-green-500/10'
+                  : 'bg-green-100 text-green-700 border-green-200 shadow-sm'
+                : isDark
+                  ? 'bg-red-500/20 text-red-300 border-red-500/30 shadow-lg shadow-red-500/10'
+                  : 'bg-red-100 text-red-700 border-red-200 shadow-sm'
+                }`}>
+                {customer.status || 'Active'}
+              </span>
+            </div>
           </div>
         </div>
 
-    
+        {/* Quick Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'Total Tickets', value: supportTickets.length, icon: Ticket, color: 'violet' },
+            { label: 'Open Tickets', value: ticketStats.openTickets, icon: AlertCircle, color: 'amber' },
+            { label: 'In Progress', value: ticketStats.inProgressTickets, icon: Clock, color: 'blue' },
+            { label: 'Resolved', value: ticketStats.resolvedTickets, icon: CheckCircle, color: 'green' }
+          ].map((stat, idx) => {
+            const Icon = stat.icon;
+            const colorClasses = isDark
+              ? {
+                  violet: 'bg-violet-500/20 text-violet-300',
+                  amber: 'bg-amber-500/20 text-amber-300',
+                  blue: 'bg-blue-500/20 text-blue-300',
+                  green: 'bg-green-500/20 text-green-300'
+                }
+              : {
+                  violet: 'bg-violet-100 text-violet-600',
+                  amber: 'bg-amber-100 text-amber-600',
+                  blue: 'bg-blue-100 text-blue-600',
+                  green: 'bg-green-100 text-green-600'
+                };
+            return (
+              <div key={idx} className={`${glassCardClass} p-5`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-sm ${isDark ? 'text-white/50' : 'text-gray-500'}`}>{stat.label}</p>
+                    <p className={`text-3xl font-bold mt-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>{stat.value}</p>
+                  </div>
+                  <div className={`p-3 rounded-xl ${colorClasses[stat.color]}`}>
+                    <Icon className="w-6 h-6" />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Details */}
@@ -630,51 +847,54 @@ const CustomerDetails = () => {
             </div>
 
             {/* Current Plan */}
-            <div className={`${glassCardClass} p-6 relative overflow-hidden`}>
+            <div
+              ref={currentPlanSectionRef}
+              className={`${glassCardClass} p-6 relative overflow-hidden scroll-mt-6`}
+            >
               {!isDark && (
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-100 to-purple-100 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
               )}
-                <h3 className={`text-lg font-semibold mb-6 flex items-center gap-2 relative z-10 ${isDark ? 'text-white/90' : 'text-gray-900'}`}>
-                  <Zap className={`w-5 h-5 ${isDark ? 'text-violet-300' : 'text-violet-500'}`} />
-                  Current Plan
-                </h3>
-                <div className="mb-6 relative z-10">
-                  {latestPlanLoading ? (
-                    <div className={`text-sm ${isDark ? 'text-white/60' : 'text-gray-500'}`}>
-                      Loading current plan...
-                    </div>
-                  ) : latestPlanError ? (
-                    <div className={`text-sm ${isDark ? 'text-red-300' : 'text-red-600'}`}>
-                      {latestPlanError}
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Award className={`w-5 h-5 ${isDark ? 'text-amber-300' : 'text-amber-500'}`} />
-                        <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                          {latestPlan?.planName || 'No plan found'}
-                        </p>
-                      </div>
-                      <p className={`text-sm ${isDark ? 'text-white/60' : 'text-gray-500'} flex items-center gap-2`}>
-                        <CreditCard className="w-3 h-3" />
-                        {latestPlan?.amount != null
-                          ? `Price: ${new Intl.NumberFormat('en-IN', {
-                              style: 'currency',
-                              currency: latestPlan?.currency || 'INR',
-                              maximumFractionDigits: 2
-                            }).format(Number(latestPlan.amount) || 0)}`
-                          : 'Price: —'}
-                      </p>
-                    </>
-                  )}
+              <h3 className={`text-lg font-semibold mb-6 flex items-center gap-2 relative z-10 ${isDark ? 'text-white/90' : 'text-gray-900'}`}>
+                <Zap className={`w-5 h-5 ${isDark ? 'text-violet-300' : 'text-violet-500'}`} />
+                Current Plan
+              </h3>
+              <div className="mb-6 relative z-10">
+                <div className="flex items-center gap-2 mb-2">
+                  <Award className={`w-5 h-5 ${isDark ? 'text-amber-300' : 'text-amber-500'}`} />
+                  <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {latestSuccessfulPayment?.planName || customer.userType || 'No plan found'}
+                  </p>
                 </div>
-              <button
-                type="button"
-                onClick={() => setIsPlanModalOpen(true)}
-                className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl relative z-10"
-              >
-                Change Plan
-              </button>
+                <p className={`text-sm ${isDark ? 'text-white/60' : 'text-gray-500'} flex items-center gap-2`}>
+                  <User className="w-3 h-3" />
+                  Username: {customer.userName || 'N/A'}
+                </p>
+                <div className={`mt-3 space-y-1 text-sm ${isDark ? 'text-white/60' : 'text-gray-500'}`}>
+                  <p>Amount: {latestSuccessfulPayment ? formatPaymentAmount(latestSuccessfulPayment.amount, latestSuccessfulPayment.currency) : '--'}</p>
+                  <p>Last Paid: {latestSuccessfulPayment ? formatPaymentDate(latestSuccessfulPayment.paidAt || latestSuccessfulPayment.createdAt) : '--'}</p>
+                  <p>Plan End: {latestSuccessfulPayment ? formatPaymentDate(latestSuccessfulPayment.planEndDate) : '--'}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={handlePayCurrentPlan}
+                  className={`w-full py-3 rounded-xl font-semibold transition-all relative z-10 border ${
+                    isDark
+                      ? 'bg-white/10 text-white border-white/20 hover:bg-white/15'
+                      : 'bg-white text-violet-700 border-violet-200 hover:bg-violet-50'
+                  }`}
+                >
+                  Current Plan
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenPlanModal}
+                  className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl relative z-10"
+                >
+                  Change Plan
+                </button>
+              </div>
             </div>
           </div>
 
@@ -836,6 +1056,86 @@ const CustomerDetails = () => {
                 </div>
               )}
             </div>
+
+            <div className={`${glassCardClass} p-6`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <h3 className={`text-lg font-semibold flex items-center gap-2 ${isDark ? 'text-white/90' : 'text-gray-900'}`}>
+                  <CreditCard className={`w-5 h-5 ${isDark ? 'text-violet-300' : 'text-violet-500'}`} />
+                  Payment History
+                </h3>
+                <div className={`rounded-lg px-3 py-1.5 text-sm ${isDark ? 'bg-white/5 text-white/60' : 'bg-gray-100 text-gray-600'}`}>
+                  Total: {customerPayments.length}
+                </div>
+              </div>
+
+              {paymentsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((item) => (
+                    <div
+                      key={item}
+                      className={`h-16 rounded-xl animate-pulse ${isDark ? 'bg-white/5' : 'bg-gray-100'}`}
+                    />
+                  ))}
+                </div>
+              ) : customerPayments.length === 0 ? (
+                <div className={`rounded-xl border p-6 text-center text-sm ${isDark ? 'border-white/10 bg-white/5 text-white/60' : 'border-gray-200 bg-gray-50 text-gray-500'}`}>
+                  No successful payment history found for this customer.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead>
+                      <tr className={`border-b ${isDark ? 'border-white/10 text-white/40' : 'border-gray-200 text-gray-500'} uppercase text-xs`}>
+                        <th className="py-3 font-semibold tracking-wider">Plan</th>
+                        <th className="py-3 font-semibold tracking-wider">Amount</th>
+                        <th className="py-3 font-semibold tracking-wider">Status</th>
+                        <th className="py-3 font-semibold tracking-wider">Paid At</th>
+                        <th className="py-3 font-semibold tracking-wider">Order ID</th>
+                      </tr>
+                    </thead>
+                    <tbody className={`divide-y ${isDark ? 'divide-white/10' : 'divide-gray-100'}`}>
+                      {customerPayments.map((payment) => (
+                        <tr key={payment.paymentId || payment.razorpayPaymentId} className={`${isDark ? 'hover:bg-white/5' : 'hover:bg-violet-50'} transition-all`}>
+                          <td className="py-4">
+                            <div>
+                              <div className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                {payment.planName || '--'}
+                              </div>
+                              <div className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-500'}`}>
+                                Profile ID: {payment.profileId || '--'}
+                              </div>
+                            </div>
+                          </td>
+                          <td className={`py-4 font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {formatPaymentAmount(payment.amount, payment.currency)}
+                          </td>
+                          <td className="py-4">
+                            <span className={`px-3 py-1 text-xs font-bold rounded-full inline-flex items-center gap-1 ${
+                              payment.status === 'SUCCESS'
+                                ? isDark
+                                  ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                                  : 'bg-green-100 text-green-700 border border-green-200'
+                                : isDark
+                                  ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+                                  : 'bg-red-100 text-red-700 border border-red-200'
+                            }`}>
+                              <CheckCircle className="w-3 h-3" />
+                              {payment.status || '--'}
+                            </span>
+                          </td>
+                          <td className={`py-4 ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
+                            {formatPaymentDate(payment.paidAt || payment.createdAt)}
+                          </td>
+                          <td className={`py-4 font-mono text-xs ${isDark ? 'text-white/50' : 'text-gray-500'}`}>
+                            {payment.orderId || payment.razorpayPaymentId || '--'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -886,6 +1186,7 @@ const CustomerDetails = () => {
                       value={selectedGroupId}
                       onChange={(e) => {
                         const nextGroupId = e.target.value;
+                        userSelectedPlanRef.current = true;
                         setSelectedGroupId(nextGroupId);
                         setSelectedProfile(null);
                         setPaymentForm({ groupId: nextGroupId, profileId: '', amount: '' });
