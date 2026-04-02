@@ -213,8 +213,9 @@ const EmptyState = ({ icon: Icon, message, isDark }) => (
 );
 
 const DataTable = ({ headers, data, renderRow, onViewAll, onRowAction, isDark }) => (
-  <div className="overflow-x-auto">
-    <table className="w-full">
+  <div className="h-full flex flex-col">
+    <div className="flex-1 overflow-x-auto">
+      <table className="w-full">
       <thead>
         <tr className={`border-b ${isDark ? "border-gray-700" : "border-gray-200"}`}>
           {headers.map((header, idx) => (
@@ -233,32 +234,37 @@ const DataTable = ({ headers, data, renderRow, onViewAll, onRowAction, isDark })
             }`}
           >
             {renderRow(item)}
-            <td className="py-3 px-4 text-right">
-              <button
-                onClick={() => onRowAction?.(item)}
-                className={`p-1.5 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100 ${
-                  isDark ? "hover:bg-gray-700 text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </td>
+            {onRowAction && (
+              <td className="py-3 px-4 text-right">
+                <button
+                  onClick={() => onRowAction(item)}
+                  className={`p-1.5 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100 ${
+                    isDark ? "hover:bg-gray-700 text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </td>
+            )}
           </tr>
         ))}
       </tbody>
-    </table>
-
-    <div className={`mt-4 pt-4 text-center border-t ${isDark ? "border-gray-700" : "border-gray-200"}`}>
-      <button
-        onClick={onViewAll}
-        className={`inline-flex items-center gap-1 text-sm font-medium transition-all duration-200 hover:gap-2 ${
-          isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-500"
-        }`}
-      >
-        View All
-        <ArrowUpRight className="h-4 w-4" />
-      </button>
+      </table>
     </div>
+
+    {onViewAll && (
+      <div className={`mt-4 pt-4 text-center border-t ${isDark ? "border-gray-700" : "border-gray-200"}`}>
+        <button
+          onClick={onViewAll}
+          className={`inline-flex items-center gap-1 text-sm font-medium transition-all duration-200 hover:gap-2 ${
+            isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-500"
+          }`}
+        >
+          View All
+          <ArrowUpRight className="h-4 w-4" />
+        </button>
+      </div>
+    )}
   </div>
 );
 
@@ -387,7 +393,7 @@ const SectionCard = ({
   actionButton,
 }) => (
   <div
-    className={`rounded-2xl overflow-hidden transition-all duration-500 animate-slideUp ${
+    className={`h-full rounded-2xl overflow-hidden transition-all duration-500 animate-slideUp ${
       isDark
         ? "bg-gray-800/70 shadow-lg"
         : "bg-white shadow-lg"
@@ -429,7 +435,7 @@ const SectionCard = ({
       </div>
       {actionButton}
     </div>
-    <div className="p-6">{children}</div>
+    <div className="p-6 h-full">{children}</div>
   </div>
 );
 
@@ -564,13 +570,17 @@ const Dashboard = () => {
     ];
   }, [summary]);
 
-  const resolvedTickets = useMemo(() => {
-    const rows = Array.isArray(summary?.resolvedTicketsThisMonthList)
-      ? summary.resolvedTicketsThisMonthList
+  const latestTickets = useMemo(() => {
+    const rows = Array.isArray(summary?.latestTickets)
+      ? summary.latestTickets
       : [];
     return rows
       .slice()
-      .sort((a, b) => new Date(b?.resolvedAt || 0) - new Date(a?.resolvedAt || 0))
+      .sort(
+        (a, b) =>
+          new Date(b?.updatedAt || b?.lastMessageAt || b?.createdAt || 0) -
+          new Date(a?.updatedAt || a?.lastMessageAt || a?.createdAt || 0)
+      )
       .slice(0, 5);
   }, [summary]);
 
@@ -758,18 +768,18 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
         <SectionCard
           title="Recent Tickets"
-          subtitle="Latest customer support tickets resolved"
+          subtitle="Latest 5 customer support tickets"
           icon={<CheckCircle className="h-5 w-5" />}
           isDark={isDark}
         >
           {isLoading ? (
             <SkeletonTable isDark={isDark} />
-          ) : resolvedTickets.length === 0 ? (
+          ) : latestTickets.length === 0 ? (
             <EmptyState icon={CheckCircle} message="No recent tickets" isDark={isDark} />
           ) : (
             <DataTable
-              headers={["Ticket", "Customer", "Assigned", "Resolved"]}
-              data={resolvedTickets}
+              headers={["Ticket", "Customer", "Assigned", "Updated"]}
+              data={latestTickets}
               renderRow={(ticket) => (
                 <>
                   <td className="py-3 px-4">
@@ -803,7 +813,11 @@ const Dashboard = () => {
                         <UserCheck className={`w-3 h-3 ${isDark ? 'text-slate-400' : 'text-gray-600'}`} />
                       </div>
                       <span className={isDark ? 'text-slate-200' : 'text-gray-700'}>
-                        {ticket?.assignedStaffName || ticket?.assignedStaffEmail || 'Super Admin'}
+                        {ticket?.assignedStaff?.name ||
+                          ticket?.assignedStaffName ||
+                          ticket?.assignedStaff?.email ||
+                          ticket?.assignedStaffEmail ||
+                          "Super Admin"}
                       </span>
                     </div>
                   </td>
@@ -812,18 +826,16 @@ const Dashboard = () => {
                       <Clock className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
                       <div>
                         <div className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                          {formatDateTime(ticket?.resolvedAt)}
+                          {formatDateTime(ticket?.updatedAt || ticket?.lastMessageAt || ticket?.createdAt)}
                         </div>
                         <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                          {formatRelativeTime(ticket?.resolvedAt)}
+                          {formatRelativeTime(ticket?.updatedAt || ticket?.lastMessageAt || ticket?.createdAt)}
                         </div>
                       </div>
                     </div>
                   </td>
                 </>
               )}
-              onViewAll={() => navigate("/Zone-tickets")}
-              onRowAction={() => navigate("/Zone-tickets")}
               isDark={isDark}
             />
           )}
@@ -847,29 +859,36 @@ const Dashboard = () => {
                 <>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-gray-400" />
-                      <span className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
-                        {payment.userName ||
-                          payment.customer?.name ||
-                          payment.customer?.userName ||
-                          payment.customer?.username ||
-                          payment.customer?.email ||
-                          "--"}
-                      </span>
+                      <div className={`p-2 rounded-lg ${isDark ? "bg-gray-700" : "bg-gray-100"}`}>
+                        <User className="h-4 w-4 text-blue-500" />
+                      </div>
+                      <div>
+                        <div className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+                          {payment.userName ||
+                            payment.customer?.name ||
+                            payment.customer?.userName ||
+                            payment.customer?.username ||
+                            payment.customer?.email ||
+                            "--"}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {payment.customer?.phoneNumber || payment.customer?.email || "--"}
+                        </div>
+                      </div>
                     </div>
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex flex-col">
-                      <span className={`text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-800"}`}>
+                      <span className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
                         {payment.planName || payment?.plan?.planName || "--"}
                       </span>
-                      {payment.profileId && (
-                        <span className="text-xs text-gray-500">{payment.profileId}</span>
-                      )}
+                      <span className="text-xs text-gray-500">
+                        {payment.profileId || payment.paymentId || "--"}
+                      </span>
                     </div>
                   </td>
                   <td className="py-3 px-4">
-                    <span className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+                    <span className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
                       {formatAmount(payment.amount ?? payment.planAmount, payment.currency)}
                     </span>
                   </td>
@@ -879,15 +898,18 @@ const Dashboard = () => {
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-gray-400" />
-                      <span className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-                        {formatDateTime(payment.paidAt || payment.createdAt)}
-                      </span>
+                      <div>
+                        <div className={`text-sm ${isDark ? "text-white" : "text-gray-900"}`}>
+                          {formatDateTime(payment.paidAt || payment.createdAt)}
+                        </div>
+                        <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                          {formatRelativeTime(payment.paidAt || payment.createdAt)}
+                        </div>
+                      </div>
                     </div>
                   </td>
                 </>
               )}
-              onViewAll={() => navigate("/payment-history")}
-              onRowAction={() => navigate("/payment-history")}
               isDark={isDark}
             />
           )}

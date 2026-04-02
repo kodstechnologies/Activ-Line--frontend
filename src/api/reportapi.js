@@ -16,14 +16,17 @@ const readStoredUser = () => {
 
 const resolveReportSummaryPath = (scope) => {
   if (scope === "admin") return "/api/admin/dashboard/report-summary";
-  if (scope === "franchise") return "/api/franchise/dashboard/report-summary";
+  if (scope === "franchise") return "/api/franchise/report-summary";
   return "/api/dashboard/report-summary";
 };
 
 const resolveFallbackPaths = (scope) => {
   if (scope === "admin") return ["/api/dashboard/report-summary"];
   if (scope === "franchise")
-    return ["/api/franchise/report-summary", "/api/dashboard/report-summary"];
+    return [
+      "/api/franchise/dashboard/report-summary",
+      "/api/dashboard/report-summary",
+    ];
   return [];
 };
 

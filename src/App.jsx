@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import toast, { Toaster } from "react-hot-toast";
+import { AlertCircle, BellRing, CheckCircle2 } from "lucide-react";
 
 import "./App.css";
 import { getNotificationsApi } from "./api/notification.api";
@@ -13,6 +14,27 @@ import Router from "./routes/Router";
 
 const POPUP_DEDUPE_WINDOW_MS = 3000;
 const NOTIFICATION_POLL_INTERVAL_MS = 15000;
+
+const NotificationToastCard = ({ title, body }) => (
+  <div className="pointer-events-auto w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-2xl ring-1 ring-black/5 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95">
+    <div className="flex items-start gap-3 p-4">
+      <div className="mt-0.5 rounded-xl bg-blue-100 p-2 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+        <BellRing className="h-5 w-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+          {title || "New notification"}
+        </p>
+        <p className="mt-1 text-sm leading-5 text-slate-600 dark:text-slate-300">
+          {body || "You have a new update waiting."}
+        </p>
+      </div>
+    </div>
+    <div className="border-t border-slate-100 bg-slate-50/80 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-400">
+      Activline Alert
+    </div>
+  </div>
+);
 
 const normalizeNotificationPayload = (payload) => {
   const data = payload?.data || payload || {};
@@ -41,7 +63,6 @@ const normalizeNotificationPayload = (payload) => {
 
 const showIncomingNotification = (payload, lastNotificationRef) => {
   const { id, title, body, icon, type } = normalizeNotificationPayload(payload);
-  const message = title && body ? `${title}: ${body}` : title || body || "New notification";
   const now = Date.now();
   const dedupeKey = id || `${title}|${body}|${type}`.slice(0, 200);
 
@@ -54,10 +75,10 @@ const showIncomingNotification = (payload, lastNotificationRef) => {
 
   lastNotificationRef.current = { key: dedupeKey, ts: now };
 
-  toast(message, {
-    icon: "!",
+  toast.custom(() => (
+    <NotificationToastCard title={title} body={body} />
+  ), {
     duration: 5000,
-    style: { fontSize: "14px" },
   });
 
   const originalTitle = document.title;
@@ -212,7 +233,39 @@ function App() {
         <AppLoaderGate>
           <AppNotificationBridge />
           <Router />
-          <Toaster position="top-right" />
+          <Toaster
+            position="top-right"
+            gutter={12}
+            containerStyle={{ top: 24, right: 24 }}
+            toastOptions={{
+              duration: 4000,
+              className:
+                "rounded-2xl border shadow-xl backdrop-blur-md px-4 py-3 text-sm",
+              style: {
+                background: "rgba(15, 23, 42, 0.96)",
+                color: "#e2e8f0",
+                borderColor: "rgba(148, 163, 184, 0.18)",
+              },
+              success: {
+                duration: 3500,
+                icon: <CheckCircle2 className="h-5 w-5 text-emerald-400" />,
+                style: {
+                  background: "linear-gradient(135deg, rgba(6, 78, 59, 0.96), rgba(15, 23, 42, 0.96))",
+                  color: "#ecfdf5",
+                  borderColor: "rgba(52, 211, 153, 0.24)",
+                },
+              },
+              error: {
+                duration: 5000,
+                icon: <AlertCircle className="h-5 w-5 text-rose-300" />,
+                style: {
+                  background: "linear-gradient(135deg, rgba(127, 29, 29, 0.97), rgba(30, 41, 59, 0.96))",
+                  color: "#fff1f2",
+                  borderColor: "rgba(251, 113, 133, 0.22)",
+                },
+              },
+            }}
+          />
         </AppLoaderGate>
       </AuthProvider>
     </ThemeProvider>
