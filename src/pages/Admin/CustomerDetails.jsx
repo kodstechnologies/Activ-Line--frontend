@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
   Mail, Phone, MapPin, ArrowLeft, Search,
@@ -47,6 +47,10 @@ const CustomerDetails = () => {
   const [supportTickets, setSupportTickets] = useState([]);
   const [customerPayments, setCustomerPayments] = useState([]);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
+
+  // Prevent overwriting user's manual selection while modal is open.
+  const userSelectedPlanRef = useRef(false);
+  const currentPlanSectionRef = useRef(null);
 
   const normalizeTicketStatus = (status) => {
     const normalized = String(status || '').toUpperCase();
@@ -209,6 +213,82 @@ const CustomerDetails = () => {
       )[0] || null;
   }, [customerPayments]);
 
+  const prefillPaymentFormFromLatestPlan = (plan) => {
+    if (!plan) return;
+
+    // Fields may vary depending on backend payload; try multiple common shapes.
+    const groupIdRaw =
+      plan?.groupId ??
+      plan?.group_id ??
+      plan?.group?._id ??
+      plan?.group?.id ??
+      plan?.group?.Group_id ??
+      plan?.group?.groupId;
+
+    const profileIdRaw =
+      plan?.profileId ??
+      plan?.profile_id ??
+      plan?.profile?._id ??
+      plan?.profile?.id ??
+      plan?.profile?.profileId ??
+      plan?.planProfileId ??
+      plan?.profile_id;
+
+    const amountRaw =
+      plan?.amount ??
+      plan?.planAmount ??
+      plan?.paidAmount ??
+      plan?.paymentAmount ??
+      plan?.orderAmount ??
+      plan?.price ??
+      plan?.plan?.amount ??
+      plan?.plan?.price;
+
+    const groupId = groupIdRaw !== undefined && groupIdRaw !== null ? String(groupIdRaw) : '';
+    const profileId =
+      profileIdRaw !== undefined && profileIdRaw !== null ? String(profileIdRaw) : '';
+
+    const amount =
+      amountRaw !== undefined && amountRaw !== null && amountRaw !== '' ? String(amountRaw) : '';
+
+    // On initial open, we want the modal to reflect "current plan" immediately.
+    setSelectedGroupId(groupId);
+    setPaymentForm({
+      groupId,
+      profileId,
+      amount,
+    });
+  };
+
+  const handleOpenPlanModal = () => {
+    userSelectedPlanRef.current = false;
+    setPaymentStatus(null);
+    setPaymentVerified(false);
+    setPaymentForm({ groupId: '', profileId: '', amount: '' });
+    setSelectedGroupId('');
+    setSelectedProfile(null);
+    setIsPlanModalOpen(true);
+
+    if (latestSuccessfulPayment) {
+      prefillPaymentFormFromLatestPlan(latestSuccessfulPayment);
+    }
+  };
+
+  const handleScrollToCurrentPlan = () => {
+    currentPlanSectionRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  };
+
+  useEffect(() => {
+    if (!isPlanModalOpen) return;
+    if (!latestSuccessfulPayment) return;
+    if (userSelectedPlanRef.current) return;
+    prefillPaymentFormFromLatestPlan(latestSuccessfulPayment);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPlanModalOpen, latestSuccessfulPayment]);
+
   const formatPaymentAmount = (amount, currency = 'INR') => {
     const value = Number(amount || 0);
     if (Number.isNaN(value)) return '--';
@@ -302,6 +382,7 @@ const CustomerDetails = () => {
 
   const handleSelectProfile = (profile) => {
     const info = extractProfileInfo(profile);
+    userSelectedPlanRef.current = true;
     setSelectedProfile(profile);
     setPaymentForm({
       profileId: info.profileId || '',
@@ -312,10 +393,7 @@ const CustomerDetails = () => {
     setPaymentStatus(null);
   };
 
-  const handleCreateOrder = async () => {
-    const groupId = paymentForm.groupId?.toString().trim();
-    const profileId = paymentForm.profileId?.toString().trim();
-    const amountValue = paymentForm.amount;
+  const startPlanPayment = async ({ groupId, profileId, amount }) => {
     const resolvedUserName =
       customer?.userName ||
       customer?.username ||
@@ -326,8 +404,8 @@ const CustomerDetails = () => {
       setPaymentStatus({ type: 'error', message: 'Account ID is missing.' });
       return;
     }
-    if (!groupId || !profileId || !amountValue) {
-      setPaymentStatus({ type: 'error', message: 'Please select a plan first.' });
+    if (!groupId || !profileId || amount === undefined || amount === null || amount === '') {
+      setPaymentStatus({ type: 'error', message: 'Current plan details are missing (groupId/profileId/amount).' });
       return;
     }
 
@@ -340,7 +418,7 @@ const CustomerDetails = () => {
         accountId,
         groupId,
         profileId,
-        amount: Number(amountValue)
+        amount: Number(amount)
       };
       if (resolvedUserName) {
         createPayload.userName = resolvedUserName;
@@ -367,7 +445,7 @@ const CustomerDetails = () => {
 
       await loadRazorpayScript();
 
-      const amountInPaise = orderAmount ?? Math.round(Number(amountValue) * 100);
+      const amountInPaise = orderAmount ?? Math.round(Number(amount) * 100);
 
       const options = {
         key: keyId,
@@ -435,6 +513,61 @@ const CustomerDetails = () => {
     } finally {
       setIsPaying(false);
     }
+  };
+
+  const handleCreateOrder = async () => {
+    const groupId = paymentForm.groupId?.toString().trim();
+    const profileId = paymentForm.profileId?.toString().trim();
+    const amount = paymentForm.amount;
+    return startPlanPayment({ groupId, profileId, amount });
+  };
+
+  const handlePayCurrentPlan = async () => {
+    // Use the current-plan data already shown in the UI (latestSuccessfulPayment).
+    const plan = latestSuccessfulPayment;
+    if (!plan) {
+      setPaymentStatus({ type: 'error', message: 'No current plan payment found for this customer.' });
+      return;
+    }
+
+    const groupIdRaw =
+      plan?.groupId ??
+      plan?.group_id ??
+      plan?.group?._id ??
+      plan?.group?.id ??
+      plan?.group?.Group_id ??
+      plan?.group?.groupId;
+
+    const profileIdRaw =
+      plan?.profileId ??
+      plan?.profile_id ??
+      plan?.profile?._id ??
+      plan?.profile?.id ??
+      plan?.profile?.profileId ??
+      plan?.planProfileId;
+
+    const amountRaw =
+      plan?.amount ??
+      plan?.planAmount ??
+      plan?.paidAmount ??
+      plan?.paymentAmount ??
+      plan?.orderAmount ??
+      plan?.price ??
+      plan?.plan?.amount ??
+      plan?.plan?.price;
+
+    const groupId = groupIdRaw !== undefined && groupIdRaw !== null ? String(groupIdRaw).trim() : '';
+    const profileId = profileIdRaw !== undefined && profileIdRaw !== null ? String(profileIdRaw).trim() : '';
+    const amount = amountRaw !== undefined && amountRaw !== null ? String(amountRaw) : '';
+
+    // keep UI state in-sync (optional but useful)
+    userSelectedPlanRef.current = true;
+    setSelectedGroupId(groupId);
+    setSelectedProfile(null);
+    setPaymentForm({ groupId, profileId, amount });
+    setPaymentVerified(false);
+
+    return startPlanPayment({ groupId, profileId, amount });
   };
 
   useEffect(() => {
@@ -552,16 +685,19 @@ const CustomerDetails = () => {
                 Customer ID: {customer.userName || 'N/A'}
               </p>
             </div>
-            <span className={`px-5 py-2 rounded-full text-sm font-medium backdrop-blur-md border ${customer.status?.toUpperCase() === 'ACTIVE'
-              ? isDark 
-                ? 'bg-green-500/20 text-green-300 border-green-500/30 shadow-lg shadow-green-500/10'
-                : 'bg-green-100 text-green-700 border-green-200 shadow-sm'
-              : isDark
-                ? 'bg-red-500/20 text-red-300 border-red-500/30 shadow-lg shadow-red-500/10'
-                : 'bg-red-100 text-red-700 border-red-200 shadow-sm'
-              }`}>
-              {customer.status || 'Active'}
-            </span>
+            <div className="flex items-center flex-wrap gap-3">
+         
+              <span className={`px-5 py-2 rounded-full text-sm font-medium backdrop-blur-md border ${customer.status?.toUpperCase() === 'ACTIVE'
+                ? isDark 
+                  ? 'bg-green-500/20 text-green-300 border-green-500/30 shadow-lg shadow-green-500/10'
+                  : 'bg-green-100 text-green-700 border-green-200 shadow-sm'
+                : isDark
+                  ? 'bg-red-500/20 text-red-300 border-red-500/30 shadow-lg shadow-red-500/10'
+                  : 'bg-red-100 text-red-700 border-red-200 shadow-sm'
+                }`}>
+                {customer.status || 'Active'}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -686,7 +822,10 @@ const CustomerDetails = () => {
             </div>
 
             {/* Current Plan */}
-            <div className={`${glassCardClass} p-6 relative overflow-hidden`}>
+            <div
+              ref={currentPlanSectionRef}
+              className={`${glassCardClass} p-6 relative overflow-hidden scroll-mt-6`}
+            >
               {!isDark && (
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-100 to-purple-100 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
               )}
@@ -711,13 +850,26 @@ const CustomerDetails = () => {
                   <p>Plan End: {latestSuccessfulPayment ? formatPaymentDate(latestSuccessfulPayment.planEndDate) : '--'}</p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsPlanModalOpen(true)}
-                className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl relative z-10"
-              >
-                Change Plan
-              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={handlePayCurrentPlan}
+                  className={`w-full py-3 rounded-xl font-semibold transition-all relative z-10 border ${
+                    isDark
+                      ? 'bg-white/10 text-white border-white/20 hover:bg-white/15'
+                      : 'bg-white text-violet-700 border-violet-200 hover:bg-violet-50'
+                  }`}
+                >
+                  Current Plan
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenPlanModal}
+                  className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl relative z-10"
+                >
+                  Change Plan
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1009,6 +1161,7 @@ const CustomerDetails = () => {
                       value={selectedGroupId}
                       onChange={(e) => {
                         const nextGroupId = e.target.value;
+                        userSelectedPlanRef.current = true;
                         setSelectedGroupId(nextGroupId);
                         setSelectedProfile(null);
                         setPaymentForm({ groupId: nextGroupId, profileId: '', amount: '' });
