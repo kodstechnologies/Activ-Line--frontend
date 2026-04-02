@@ -256,33 +256,33 @@ const DashboardPage = () => {
               data={recentTickets}
               renderRow={(ticket) => (
                 <>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 align-top">
                     <div className="flex items-center gap-2">
                       <div className={`p-2 rounded-lg ${isDark ? "bg-gray-700" : "bg-gray-100"}`}>
                         <Hash className="h-4 w-4 text-gray-500" />
                       </div>
-                      <span className={`font-mono text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+                      <span className={`truncate font-mono text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
                         #{ticket.ticketId?.slice(-6)}
                       </span>
                     </div>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 align-top">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-gray-400" />
-                      <span className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+                      <span className={`truncate text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
                         {ticket.customer || "Unknown"}
                       </span>
                     </div>
                   </td>
-                  <td className="py-3 px-4">
-                    <div className="max-w-[150px] truncate text-sm" title={ticket.subject}>
+                  <td className="py-3 px-4 align-top">
+                    <div className="truncate text-sm" title={ticket.subject}>
                       {ticket.subject}
                     </div>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 align-top">
                     <StatusBadge status={ticket.status} isDark={isDark} />
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 align-top">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-gray-400" />
                       <span className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
@@ -312,38 +312,38 @@ const DashboardPage = () => {
               data={recentPayments}
               renderRow={(payment) => (
                 <>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 align-top">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-gray-400" />
-                      <span className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+                      <span className={`truncate text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
                         {payment.userName ||
                           payment.customer?.name ||
                           payment.customer?.userName ||
                           payment.customer?.username ||
                           payment.customer?.email ||
                           "--"}
-                      </span>
+                        </span>
                     </div>
                   </td>
-                  <td className="py-3 px-4">
-                    <div className="flex flex-col">
-                      <span className={`text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-800"}`}>
+                  <td className="py-3 px-4 align-top">
+                    <div className="min-w-0 flex flex-col">
+                      <span className={`truncate text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-800"}`}>
                         {payment.planName || payment?.plan?.planName || "--"}
                       </span>
                       {payment.profileId && (
-                        <span className="text-xs text-gray-500">{payment.profileId}</span>
+                        <span className="truncate text-xs text-gray-500">{payment.profileId}</span>
                       )}
                     </div>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 align-top">
                     <span className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
                       {formatCurrency(payment.amount ?? payment.planAmount, payment.currency)}
                     </span>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 align-top">
                     <StatusBadge status={payment.status} isDark={isDark} />
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 align-top">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-gray-400" />
                       <span className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
@@ -440,7 +440,7 @@ const DashboardCard = ({ index, title, value, icon, color, bgColor, textColor, i
 };
 
 const SectionCard = ({ title, icon, children, isDark }) => (
-  <div className={`rounded-2xl overflow-hidden transition-all duration-500 animate-slideUp ${
+  <div className={`h-full rounded-2xl overflow-hidden transition-all duration-500 animate-slideUp ${
     isDark ? "bg-gray-800/70 shadow-lg" : "bg-white shadow-lg"
   }`}>
     <div className={`px-6 py-4 border-b ${isDark ? "border-gray-700" : "border-gray-200"}`}>
@@ -451,13 +451,14 @@ const SectionCard = ({ title, icon, children, isDark }) => (
         <h2 className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>{title}</h2>
       </div>
     </div>
-    <div className="p-6">{children}</div>
+    <div className="p-6 h-[620px]">{children}</div>
   </div>
 );
 
 const DataTable = ({ headers, data, renderRow, onViewAll, onViewAllPrefetch, onRowAction, isDark }) => (
-  <div className="overflow-x-auto">
-    <table className="w-full">
+  <div className="h-full flex flex-col">
+    <div className="flex-1 overflow-x-auto">
+    <table className="w-full table-fixed">
       <thead>
         <tr className={`border-b ${isDark ? "border-gray-700" : "border-gray-200"}`}>
           {headers.map((header, idx) => (
@@ -489,6 +490,7 @@ const DataTable = ({ headers, data, renderRow, onViewAll, onViewAllPrefetch, onR
         ))}
       </tbody>
     </table>
+    </div>
     
     <div className={`mt-4 pt-4 text-center border-t ${isDark ? "border-gray-700" : "border-gray-200"}`}>
       <button
