@@ -215,7 +215,7 @@ const EmptyState = ({ icon: Icon, message, isDark }) => (
 const DataTable = ({ headers, data, renderRow, onViewAll, onRowAction, isDark }) => (
   <div className="h-full flex flex-col">
     <div className="flex-1 overflow-x-auto">
-      <table className="w-full">
+      <table className="w-full table-fixed">
       <thead>
         <tr className={`border-b ${isDark ? "border-gray-700" : "border-gray-200"}`}>
           {headers.map((header, idx) => (
@@ -435,7 +435,7 @@ const SectionCard = ({
       </div>
       {actionButton}
     </div>
-    <div className="p-6 h-full">{children}</div>
+    <div className="p-6 h-[460px]">{children}</div>
   </div>
 );
 
@@ -771,6 +771,17 @@ const Dashboard = () => {
           subtitle="Latest 5 customer support tickets"
           icon={<CheckCircle className="h-5 w-5" />}
           isDark={isDark}
+          actionButton={
+            <button
+              onClick={() => navigate("/Zone-tickets")}
+              className={`inline-flex items-center gap-1 text-sm font-medium transition-all duration-200 hover:gap-2 ${
+                isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-500"
+              }`}
+            >
+              View All
+              <ArrowUpRight className="h-4 w-4" />
+            </button>
+          }
         >
           {isLoading ? (
             <SkeletonTable isDark={isDark} />
@@ -782,37 +793,37 @@ const Dashboard = () => {
               data={latestTickets}
               renderRow={(ticket) => (
                 <>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 align-top">
                     <div className="flex items-center gap-2">
                       <div className={`p-2 rounded-lg ${isDark ? "bg-gray-700" : "bg-gray-100"}`}>
                         <CheckCircle className="h-4 w-4 text-green-500" />
                       </div>
-                      <div>
-                        <div className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+                      <div className="min-w-0">
+                        <div className={`truncate text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
                           {ticket?.ticketName || "--"}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="truncate text-xs text-gray-500">
                           #{ticket?.ticketId || ticket?._id?.slice(-8) || "--"}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 px-4">
-                    <div>
-                      <div className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+                  <td className="py-3 px-4 align-top">
+                    <div className="min-w-0">
+                      <div className={`truncate text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
                         {ticket?.customer?.name || "--"}
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="truncate text-xs text-gray-500">
                         {ticket?.customer?.phoneNumber || ticket?.customer?.email || "--"}
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 align-top">
                     <div className="flex items-center gap-2">
                       <div className={`p-1 rounded-full ${isDark ? 'bg-slate-800' : 'bg-gray-100'}`}>
                         <UserCheck className={`w-3 h-3 ${isDark ? 'text-slate-400' : 'text-gray-600'}`} />
                       </div>
-                      <span className={isDark ? 'text-slate-200' : 'text-gray-700'}>
+                      <span className={`truncate text-sm ${isDark ? 'text-slate-200' : 'text-gray-700'}`}>
                         {ticket?.assignedStaff?.name ||
                           ticket?.assignedStaffName ||
                           ticket?.assignedStaff?.email ||
@@ -821,14 +832,14 @@ const Dashboard = () => {
                       </span>
                     </div>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 align-top">
                     <div className="flex items-center gap-2">
                       <Clock className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
-                      <div>
-                        <div className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      <div className="min-w-0">
+                        <div className={`truncate text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
                           {formatDateTime(ticket?.updatedAt || ticket?.lastMessageAt || ticket?.createdAt)}
                         </div>
-                        <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                        <div className={`truncate text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                           {formatRelativeTime(ticket?.updatedAt || ticket?.lastMessageAt || ticket?.createdAt)}
                         </div>
                       </div>
@@ -846,6 +857,17 @@ const Dashboard = () => {
           subtitle="Latest 5 payment transactions"
           icon={<TrendingUp className="h-5 w-5" />}
           isDark={isDark}
+          actionButton={
+            <button
+              onClick={() => navigate("/payment-history")}
+              className={`inline-flex items-center gap-1 text-sm font-medium transition-all duration-200 hover:gap-2 ${
+                isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-500"
+              }`}
+            >
+              View All
+              <ArrowUpRight className="h-4 w-4" />
+            </button>
+          }
         >
           {isLoading ? (
             <SkeletonTable isDark={isDark} />
@@ -853,17 +875,17 @@ const Dashboard = () => {
             <EmptyState icon={TrendingUp} message="No recent payments" isDark={isDark} />
           ) : (
             <DataTable
-              headers={["Customer", "Plan", "Amount", "Status", "Date"]}
+              headers={["Customer", "Plan", "Amount", "Date"]}
               data={recentPayments}
               renderRow={(payment) => (
                 <>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 align-top">
                     <div className="flex items-center gap-2">
                       <div className={`p-2 rounded-lg ${isDark ? "bg-gray-700" : "bg-gray-100"}`}>
                         <User className="h-4 w-4 text-blue-500" />
                       </div>
-                      <div>
-                        <div className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+                      <div className="min-w-0">
+                        <div className={`truncate text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
                           {payment.userName ||
                             payment.customer?.name ||
                             payment.customer?.userName ||
@@ -871,38 +893,40 @@ const Dashboard = () => {
                             payment.customer?.email ||
                             "--"}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {payment.customer?.phoneNumber || payment.customer?.email || "--"}
+                        <div className="truncate text-xs text-gray-500">
+                          {payment.customer?.phoneNumber || "--"}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 px-4">
-                    <div className="flex flex-col">
-                      <span className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+                  <td className="py-3 px-4 align-top">
+                    <div className="min-w-0 flex flex-col gap-1">
+                      <span className={`truncate text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
                         {payment.planName || payment?.plan?.planName || "--"}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="truncate text-xs text-gray-500">
                         {payment.profileId || payment.paymentId || "--"}
                       </span>
                     </div>
                   </td>
-                  <td className="py-3 px-4">
-                    <span className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
-                      {formatAmount(payment.amount ?? payment.planAmount, payment.currency)}
-                    </span>
+                  <td className="py-3 px-4 align-top">
+                    <div className="flex flex-col gap-1">
+                      <span className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+                        {formatAmount(payment.amount ?? payment.planAmount, payment.currency)}
+                      </span>
+                      <div>
+                        <StatusBadge status={payment.status} isDark={isDark} />
+                      </div>
+                    </div>
                   </td>
-                  <td className="py-3 px-4">
-                    <StatusBadge status={payment.status} isDark={isDark} />
-                  </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 align-top">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-gray-400" />
-                      <div>
-                        <div className={`text-sm ${isDark ? "text-white" : "text-gray-900"}`}>
+                      <div className="min-w-0">
+                        <div className={`truncate text-sm ${isDark ? "text-white" : "text-gray-900"}`}>
                           {formatDateTime(payment.paidAt || payment.createdAt)}
                         </div>
-                        <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                        <div className={`truncate text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                           {formatRelativeTime(payment.paidAt || payment.createdAt)}
                         </div>
                       </div>
