@@ -38,7 +38,7 @@ const AllResponses = ({
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const currentItems = filteredResponses.slice(startIndex, endIndex);
-
+console.log("All responses")
   const handleCopy = (text, id) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);

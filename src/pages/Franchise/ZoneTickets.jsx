@@ -95,7 +95,7 @@ const downloadFile = (file) => {
   a.click();
   a.remove();
 };
-
+console.log("frnchises chat page")
 const getMessageTime = (message) => {
   const parsed = new Date(message?.createdAt).getTime();
   return Number.isFinite(parsed) ? parsed : 0;
@@ -372,7 +372,7 @@ const loadMessages = async (roomId) => {
     resolved: chats.filter(c => c.status === "RESOLVED").length,
     closed: chats.filter(c => c.status === "CLOSED").length
   };
-
+console.log("franchise admin")
   return (
     <div className={`relative h-[calc(100vh-120px)] overflow-hidden rounded-xl ${
       isDark ? 'bg-gray-900' : 'bg-white'
@@ -683,8 +683,12 @@ const loadMessages = async (roomId) => {
               </div>
 
               {/* Messages */}
-              <div className={`flex-1 overflow-y-auto p-4 space-y-3 ${
-                isDark ? 'bg-gray-900' : 'bg-gray-50'
+              <div className={`flex-1 overflow-y-auto p-4 space-y-3 transition-all duration-500 ${
+                activeChatStatus === "CLOSED"
+                  ? isDark
+                    ? "bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950/50"
+                    : "bg-gradient-to-b from-emerald-50 via-green-50 to-emerald-100/80"
+                  : isDark ? 'bg-gray-900' : 'bg-gray-50'
               }`}>
                 {loadingMessages ? (
                   <div className="space-y-3">

@@ -71,7 +71,6 @@ const AssignedTickets = () => {
     RESOLVED: ["RESOLVED", "OPEN", "IN_PROGRESS", "CLOSED"],
     CLOSED: ["CLOSED"],
   };
-
   const updateTicketStatus = async (roomId, status) => {
     try {
       const res = await api.patch("/api/chat/admin/status", { roomId, status });

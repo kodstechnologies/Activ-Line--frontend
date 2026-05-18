@@ -3,10 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { 
   Mail, Phone, MapPin, ArrowLeft, Search,
   ChevronLeft, ChevronRight, Calendar,
-  User, FileText,
+  User, FileText, Download,
   AlertCircle, Shield, Ticket, Clock, CheckCircle, Zap, CreditCard, Award, Star, Layers, BarChart3
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import DownloadCustomerPdfButton from '../../components/customers/DownloadCustomerPdfButton';
 import { useEffect } from "react";
 import {
   getSingleCustomer,
@@ -23,7 +24,7 @@ const CustomerDetails = () => {
   const { isDark } = useTheme();
   const [customer, setCustomer] = useState(null);
   const { id } = useParams();
-
+   
   // Pagination and filter states for Support Tickets
   const [ticketCurrentPage, setTicketCurrentPage] = useState(1);
   const [ticketSearchTerm, setTicketSearchTerm] = useState('');
@@ -637,6 +638,19 @@ const CustomerDetails = () => {
     ['Profile Photo', documents.profilePicFile],
   ].filter(([, url]) => Boolean(url));
 
+  const handleDownloadDocument = (url, label) => {
+    if (!url) return;
+    const downloadUrl = url.includes("/upload/")
+      ? url.replace("/upload/", "/upload/fl_attachment/")
+      : url;
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = `${label || 'document'}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (!customer) {
     return (
       <div className="space-y-6 p-6 min-h-screen">
@@ -663,6 +677,8 @@ const CustomerDetails = () => {
     ? 'bg-gradient-to-br from-indigo-900/40 via-purple-900/40 to-pink-900/40'
     : 'bg-gradient-to-br from-violet-50 via-white to-indigo-50';
 
+
+    console.log(latestSuccessfulPayment)
   return (
     <div className={`min-h-screen p-6 ${bgGradient}`}>
       <div className="max-w-7xl mx-auto space-y-6">
@@ -686,7 +702,11 @@ const CustomerDetails = () => {
               </p>
             </div>
             <div className="flex items-center flex-wrap gap-3">
-         
+              <DownloadCustomerPdfButton
+                customerId={id}
+                userName={customer?.userName}
+                isDark={isDark}
+              />
               <span className={`px-5 py-2 rounded-full text-sm font-medium backdrop-blur-md border ${customer.status?.toUpperCase() === 'ACTIVE'
                 ? isDark 
                   ? 'bg-green-500/20 text-green-300 border-green-500/30 shadow-lg shadow-green-500/10'
@@ -806,14 +826,24 @@ const CustomerDetails = () => {
                       </div>
                       <div className="mt-2">
                         <div className={`text-xs font-semibold ${isDark ? 'text-white/80' : 'text-gray-700'}`}>{label}</div>
-                        <a
-                          href={url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className={`text-xs ${isDark ? 'text-violet-300 hover:text-violet-200' : 'text-violet-600 hover:text-violet-700'} transition-colors`}
-                        >
-                          View
-                        </a>
+                        <div className="flex items-center gap-3 mt-1">
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`text-[11px] font-medium ${isDark ? 'text-violet-300 hover:text-violet-200' : 'text-violet-600 hover:text-violet-700'} transition-colors`}
+                          >
+                            View
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadDocument(url, label)}
+                            className={`text-[11px] font-medium flex items-center gap-1 ${isDark ? 'text-emerald-300 hover:text-emerald-200' : 'text-emerald-600 hover:text-emerald-700'} transition-colors`}
+                          >
+                            <Download className="w-3 h-3" />
+                            Download
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}

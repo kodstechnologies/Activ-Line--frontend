@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import {
   getCannedCategories,
@@ -97,9 +96,7 @@ const CannedResponsesPage = () => {
         });
 
         setResponses((prev) =>
-          prev.map((r) =>
-            r._id === editingId ? res.data.data : r
-          )
+          prev.map((r) => (r._id === editingId ? res.data.data : r)),
         );
 
         setSuccess("✅ Response updated successfully");
@@ -129,9 +126,7 @@ const CannedResponsesPage = () => {
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      setFormError(
-        err?.response?.data?.message || "❌ Operation failed"
-      );
+      setFormError(err?.response?.data?.message || "❌ Operation failed");
       setTimeout(() => setFormError(""), 3000);
     } finally {
       setLoading(false);
@@ -140,7 +135,8 @@ const CannedResponsesPage = () => {
 
   /* ---------------- DELETE ---------------- */
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this response?")) return;
+    if (!window.confirm("Are you sure you want to delete this response?"))
+      return;
     await deleteCannedResponse(id);
     setResponses((prev) => prev.filter((r) => r._id !== id));
   };
@@ -156,28 +152,30 @@ const CannedResponsesPage = () => {
   const filteredResponses = responses.filter(
     (r) =>
       r.title.toLowerCase().includes(search.toLowerCase()) ||
-      r.message.toLowerCase().includes(search.toLowerCase())
+      r.message.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
-   <div className={`w-full p-0 ${isDark ? "bg-transparent text-white" : "bg-transparent"}`}>
-
+    <div
+      className={`w-full p-0 ${isDark ? "bg-transparent text-white" : "bg-transparent"}`}
+    >
       <div className="w-full space-y-4">
-
-
         {/* HEADER WITH ANIMATION */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-xl ${isDark ? "bg-gradient-to-r from-blue-500 to-purple-600" : "bg-gradient-to-r from-blue-500 to-cyan-400"} shadow-lg`}>
+              <div
+                className={`p-2 rounded-xl ${isDark ? "bg-gradient-to-r from-blue-500 to-purple-600" : "bg-gradient-to-r from-blue-500 to-cyan-400"} shadow-lg`}
+              >
                 <MessageSquare className="text-white" size={28} />
               </div>
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   Canned Response Manager
                 </h1>
-                <p className={`flex items-center gap-2 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+                <p
+                  className={`flex items-center gap-2 ${isDark ? "text-gray-300" : "text-gray-600"}`}
+                >
                   <Sparkles size={16} />
                   Create and manage reusable support replies
                 </p>
@@ -189,31 +187,48 @@ const CannedResponsesPage = () => {
             <Link
               to="/settings/canned/categories"
               className={`group flex items-center gap-3 px-6 py-3 rounded-xl border transition-all duration-300 hover:scale-105 hover:shadow-xl ${
-                isDark 
-                  ? "bg-gradient-to-r from-gray-800 to-gray-900 border-gray-700 hover:border-blue-500" 
+                isDark
+                  ? "bg-gradient-to-r from-gray-800 to-gray-900 border-gray-700 hover:border-blue-500"
                   : "bg-gradient-to-r from-white to-blue-50 border-blue-100 hover:border-blue-300"
               } shadow-lg`}
             >
-              <Folder size={20} className="text-blue-500 group-hover:rotate-12 transition-transform" />
+              <Folder
+                size={20}
+                className="text-blue-500 group-hover:rotate-12 transition-transform"
+              />
               <span className="font-medium">Manage Categories</span>
-              <ChevronRight size={18} className="opacity-50 group-hover:translate-x-1 transition-transform" />
+              <ChevronRight
+                size={18}
+                className="opacity-50 group-hover:translate-x-1 transition-transform"
+              />
             </Link>
           )}
         </div>
 
         {/* CREATE / EDIT FORM WITH SLIDE ANIMATION */}
         {!isAdminStaff && (
-          <div 
-            className={`rounded-2xl border-2 p-6 transition-all duration-500 transform ${isFormVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'} ${
-              isDark 
-                ? "bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-700/50 backdrop-blur-sm" 
+          <div
+            className={`rounded-2xl border-2 p-6 transition-all duration-500 transform ${isFormVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"} ${
+              isDark
+                ? "bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-700/50 backdrop-blur-sm"
                 : "bg-gradient-to-br from-white to-blue-50/30 border-blue-100 backdrop-blur-sm"
             } shadow-2xl hover:shadow-3xl transition-shadow`}
           >
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${editingId ? "bg-amber-500/20" : "bg-green-500/20"}`}>
-                  {editingId ? <Pencil size={20} className={editingId ? "text-amber-500" : "text-green-500"} /> : <Plus size={20} className="text-green-500" />}
+                <div
+                  className={`p-2 rounded-lg ${editingId ? "bg-amber-500/20" : "bg-green-500/20"}`}
+                >
+                  {editingId ? (
+                    <Pencil
+                      size={20}
+                      className={
+                        editingId ? "text-amber-500" : "text-green-500"
+                      }
+                    />
+                  ) : (
+                    <Plus size={20} className="text-green-500" />
+                  )}
                 </div>
                 <h2 className="text-2xl font-bold">
                   {editingId ? "Edit Response" : "Create New Response"}
@@ -223,7 +238,9 @@ const CannedResponsesPage = () => {
                 onClick={() => setIsFormVisible(!isFormVisible)}
                 className={`p-2 rounded-full ${isDark ? "hover:bg-gray-700" : "hover:bg-gray-100"}`}
               >
-                <ChevronRight className={`transform transition-transform ${isFormVisible ? "rotate-90" : "-rotate-90"}`} />
+                <ChevronRight
+                  className={`transform transition-transform ${isFormVisible ? "rotate-90" : "-rotate-90"}`}
+                />
               </button>
             </div>
 
@@ -237,7 +254,7 @@ const CannedResponsesPage = () => {
                     </p>
                   </div>
                 )}
-                
+
                 {success && (
                   <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 animate-pulse">
                     <p className="text-green-500 flex items-center gap-2">
@@ -249,19 +266,30 @@ const CannedResponsesPage = () => {
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="font-medium text-sm opacity-75">Category</label>
+                    <label className="font-medium text-sm opacity-75">
+                      Category
+                    </label>
                     <select
                       value={createCategoryId}
                       onChange={(e) => setCreateCategoryId(e.target.value)}
                       className={`w-full px-4 py-3 rounded-xl border transition-all ${
-                        isDark 
-                          ? "bg-gray-900/50 border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30" 
+                        isDark
+                          ? "bg-gray-900/50 border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
                           : "bg-white border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/30"
                       } shadow-inner`}
                     >
-                      <option value="" className={isDark ? "bg-gray-800" : "bg-white"}>Select category</option>
+                      <option
+                        value=""
+                        className={isDark ? "bg-gray-800" : "bg-white"}
+                      >
+                        Select category
+                      </option>
                       {categories.map((c) => (
-                        <option key={c._id} value={c._id} className={isDark ? "bg-gray-800" : "bg-white"}>
+                        <option
+                          key={c._id}
+                          value={c._id}
+                          className={isDark ? "bg-gray-800" : "bg-white"}
+                        >
                           {c.name}
                         </option>
                       ))}
@@ -269,14 +297,18 @@ const CannedResponsesPage = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="font-medium text-sm opacity-75">Title</label>
+                    <label className="font-medium text-sm opacity-75">
+                      Title
+                    </label>
                     <input
                       placeholder="Response title"
                       value={form.title}
-                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, title: e.target.value })
+                      }
                       className={`w-full px-4 py-3 rounded-xl border transition-all ${
-                        isDark 
-                          ? "bg-gray-900/50 border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30" 
+                        isDark
+                          ? "bg-gray-900/50 border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
                           : "bg-white border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/30"
                       } shadow-inner`}
                     />
@@ -284,15 +316,19 @@ const CannedResponsesPage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="font-medium text-sm opacity-75">Message</label>
+                  <label className="font-medium text-sm opacity-75">
+                    Message
+                  </label>
                   <textarea
                     rows={5}
                     placeholder="Enter your response message here..."
                     value={form.message}
-                    onChange={(e) => setForm({ ...form, message: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, message: e.target.value })
+                    }
                     className={`w-full px-4 py-3 rounded-xl border transition-all ${
-                      isDark 
-                        ? "bg-gray-900/50 border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30" 
+                      isDark
+                        ? "bg-gray-900/50 border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
                         : "bg-white border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/30"
                     } shadow-inner resize-none`}
                   />
@@ -303,8 +339,8 @@ const CannedResponsesPage = () => {
                     onClick={handleSave}
                     disabled={loading}
                     className={`group flex items-center gap-3 px-8 py-3 rounded-xl font-medium transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
-                      editingId 
-                        ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:shadow-amber-500/25" 
+                      editingId
+                        ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:shadow-amber-500/25"
                         : "bg-gradient-to-r from-blue-500 to-cyan-500 hover:shadow-blue-500/25"
                     } shadow-lg hover:shadow-xl`}
                   >
@@ -330,8 +366,8 @@ const CannedResponsesPage = () => {
                         setForm({ title: "", message: "" });
                       }}
                       className={`px-6 py-3 rounded-xl border transition-all duration-300 hover:scale-105 ${
-                        isDark 
-                          ? "border-gray-600 hover:border-gray-500 hover:bg-gray-800" 
+                        isDark
+                          ? "border-gray-600 hover:border-gray-500 hover:bg-gray-800"
                           : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
                       }`}
                     >
@@ -345,21 +381,28 @@ const CannedResponsesPage = () => {
         )}
 
         {/* RESPONSES LIST WITH STAGGERED ANIMATION */}
-        <div className={`rounded-2xl border-2 p-6 ${
-          isDark 
-            ? "bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-700/50 backdrop-blur-sm" 
-            : "bg-gradient-to-br from-white to-blue-50/30 border-blue-100 backdrop-blur-sm"
-        } shadow-sm`}>
+        <div
+          className={`rounded-2xl border-2 p-6 ${
+            isDark
+              ? "bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-700/50 backdrop-blur-sm"
+              : "bg-gradient-to-br from-white to-blue-50/30 border-blue-100 backdrop-blur-sm"
+          } shadow-sm`}
+        >
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
             <div className="space-y-2">
               <h2 className="text-2xl font-bold flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${isDark ? "bg-purple-500/20" : "bg-purple-100"}`}>
+                <div
+                  className={`p-2 rounded-lg ${isDark ? "bg-purple-500/20" : "bg-purple-100"}`}
+                >
                   <MessageSquare size={20} className="text-purple-500" />
                 </div>
                 Saved Responses
               </h2>
-              <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-                {filteredResponses.length} response{filteredResponses.length !== 1 ? 's' : ''} found
+              <p
+                className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+              >
+                {filteredResponses.length} response
+                {filteredResponses.length !== 1 ? "s" : ""} found
               </p>
             </div>
 
@@ -368,14 +411,23 @@ const CannedResponsesPage = () => {
                 value={listCategoryId}
                 onChange={(e) => setListCategoryId(e.target.value)}
                 className={`px-4 py-3 rounded-xl border transition-all ${
-                  isDark 
-                    ? "bg-gray-900/50 border-gray-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30" 
+                  isDark
+                    ? "bg-gray-900/50 border-gray-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30"
                     : "bg-white border-gray-200 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/30"
                 } shadow-inner`}
               >
-                <option value="" className={isDark ? "bg-gray-800" : "bg-white"}>All Categories</option>
+                <option
+                  value=""
+                  className={isDark ? "bg-gray-800" : "bg-white"}
+                >
+                  All Categories
+                </option>
                 {categories.map((c) => (
-                  <option key={c._id} value={c._id} className={isDark ? "bg-gray-800" : "bg-white"}>
+                  <option
+                    key={c._id}
+                    value={c._id}
+                    className={isDark ? "bg-gray-800" : "bg-white"}
+                  >
                     {c.name}
                   </option>
                 ))}
@@ -388,8 +440,8 @@ const CannedResponsesPage = () => {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className={`pl-12 pr-4 py-3 rounded-xl border transition-all w-full ${
-                    isDark 
-                      ? "bg-gray-900/50 border-gray-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30" 
+                    isDark
+                      ? "bg-gray-900/50 border-gray-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30"
                       : "bg-white border-gray-200 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/30"
                   } shadow-inner`}
                 />
@@ -402,32 +454,45 @@ const CannedResponsesPage = () => {
               <div className="mx-auto w-24 h-24 rounded-full flex items-center justify-center mb-6 opacity-30">
                 <MessageSquare size={48} />
               </div>
-              <p className={`text-xl font-medium mb-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+              <p
+                className={`text-xl font-medium mb-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+              >
                 No responses found
               </p>
               <p className={isDark ? "text-gray-500" : "text-gray-400"}>
-                {listCategoryId ? "Try selecting a different category" : "Select a category to view responses"}
+                {listCategoryId
+                  ? "Try selecting a different category"
+                  : "Select a category to view responses"}
               </p>
             </div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredResponses.map((r, index) => (
-                <div 
-                  key={r._id} 
+                <div
+                  key={r._id}
                   className={`border-2 rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl animate-slideUp`}
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <div className="space-y-4">
                     <div className="flex items-start justify-between">
-                      <h4 className="font-bold text-lg line-clamp-2">{r.title}</h4>
-                      <span className={`text-xs px-3 py-1 rounded-full ${
-                        isDark ? "bg-blue-500/20 text-blue-300" : "bg-blue-100 text-blue-600"
-                      }`}>
-                        {categories.find(c => c._id === listCategoryId)?.name || "Uncategorized"}
+                      <h4 className="font-bold text-lg line-clamp-2">
+                        {r.title}
+                      </h4>
+                      <span
+                        className={`text-xs px-3 py-1 rounded-full ${
+                          isDark
+                            ? "bg-blue-500/20 text-blue-300"
+                            : "bg-blue-100 text-blue-600"
+                        }`}
+                      >
+                        {categories.find((c) => c._id === listCategoryId)
+                          ?.name || "Uncategorized"}
                       </span>
                     </div>
-                    
-                    <p className={`text-sm line-clamp-3 ${isDark ? "text-gray-300" : "text-gray-600"} mb-4`}>
+
+                    <p
+                      className={`text-sm line-clamp-3 ${isDark ? "text-gray-300" : "text-gray-600"} mb-4`}
+                    >
                       {r.message}
                     </p>
 
@@ -437,8 +502,8 @@ const CannedResponsesPage = () => {
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 ${
                           copiedId === r._id
                             ? "bg-green-500/20 text-green-500"
-                            : isDark 
-                              ? "bg-gray-800 hover:bg-gray-700" 
+                            : isDark
+                              ? "bg-gray-800 hover:bg-gray-700"
                               : "bg-gray-100 hover:bg-gray-200"
                         }`}
                       >
@@ -465,19 +530,19 @@ const CannedResponsesPage = () => {
                               window.scrollTo({ top: 0, behavior: "smooth" });
                             }}
                             className={`p-2 rounded-lg transition-all hover:scale-110 ${
-                              isDark 
-                                ? "bg-amber-500/20 hover:bg-amber-500/30 text-amber-400" 
+                              isDark
+                                ? "bg-amber-500/20 hover:bg-amber-500/30 text-amber-400"
                                 : "bg-amber-100 hover:bg-amber-200 text-amber-600"
                             }`}
                           >
                             <Pencil size={18} />
                           </button>
 
-                          <button 
+                          <button
                             onClick={() => handleDelete(r._id)}
                             className={`p-2 rounded-lg transition-all hover:scale-110 ${
-                              isDark 
-                                ? "bg-red-500/20 hover:bg-red-500/30 text-red-400" 
+                              isDark
+                                ? "bg-red-500/20 hover:bg-red-500/30 text-red-400"
                                 : "bg-red-100 hover:bg-red-200 text-red-600"
                             }`}
                           >
@@ -492,27 +557,56 @@ const CannedResponsesPage = () => {
             </div>
           )}
         </div>
-
       </div>
 
       {/* Add CSS animations */}
       <style jsx>{`
         @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
         }
         @keyframes slideUp {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
+          from {
+            transform: translateY(20px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
         }
         @keyframes slideDown {
-          from { transform: translateY(-20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
+          from {
+            transform: translateY(-20px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
         }
         @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-          20%, 40%, 60%, 80% { transform: translateX(5px); }
+          0%,
+          100% {
+            transform: translateX(0);
+          }
+          10%,
+          30%,
+          50%,
+          70%,
+          90% {
+            transform: translateX(-5px);
+          }
+          20%,
+          40%,
+          60%,
+          80% {
+            transform: translateX(5px);
+          }
         }
         .animate-fadeIn {
           animation: fadeIn 0.5s ease-out;

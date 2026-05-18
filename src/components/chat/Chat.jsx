@@ -561,7 +561,13 @@ const attachments = await Promise.all(
 
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 sm:space-y-8 overscroll-contain scroll-smooth relative z-10"
+        className={`flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 sm:space-y-8 overscroll-contain scroll-smooth relative z-10 transition-all duration-500 ${
+          ticket?.status === "CLOSED"
+            ? darkMode
+              ? "bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950/50"
+              : "bg-gradient-to-b from-emerald-50 via-green-50 to-emerald-100/80"
+            : ""
+        }`}
       >
         {messages.length === 0 && (
           <div className="h-full flex flex-col items-center justify-center p-4 sm:p-6 text-center">
@@ -733,155 +739,167 @@ const attachments = await Promise.all(
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      <div className={`p-4 sm:p-5 border-t transition-all duration-500 relative z-20 ${
-        darkMode 
-          ? "border-gray-800/50 bg-gradient-to-t from-gray-900/95 via-gray-950/95 to-black/95 backdrop-blur-xl" 
-          : "border-gray-200/50 bg-gradient-to-t from-white/95 via-blue-50/95 to-white/95 backdrop-blur-xl"
-      } shadow-2xl`}>
-        {/* Preview Area */}
-        {selectedFiles.length > 0 && (
-          <div className={`-mx-4 sm:-mx-5 px-4 sm:px-5 pb-4 mb-4 border-b ${darkMode ? 'border-gray-800/50' : 'border-gray-200/50'} animate-in slide-in-from-bottom-2 duration-200`}>
-            <div className="flex gap-3 overflow-x-auto scrollbar-hide">
-              {selectedFiles.map((file, idx) => (
-                <div
-  key={idx}
-  className={`relative flex-shrink-0 w-24 h-24 rounded-xl border overflow-hidden group/preview shadow-sm ${
-    darkMode ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"
-  }`}
->
-  {previewUrls[idx]?.file.type.startsWith("image/") ? (
-    <img
-      src={previewUrls[idx].url}
-      alt="preview"
-      className="w-full h-full object-cover"
-    />
-  ) : (
-    <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center">
-      <FileText className="w-8 h-8 text-blue-500 mb-1.5" />
-      <span
-        className={`text-[10px] leading-tight line-clamp-2 w-full break-all ${
-          darkMode ? "text-gray-300" : "text-gray-600"
-        }`}
-      >
-        {previewUrls[idx]?.file.name}
-      </span>
-    </div>
-  )}
+      {/* ─── BOTTOM BAR: read-only banner when CLOSED, normal input otherwise ─── */}
+      {ticket?.status === "CLOSED" ? (
 
-  <button
-    type="button"
-    onClick={() => removeFile(idx)}
-    className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1.5 opacity-0 group-hover/preview:opacity-100 transition-opacity hover:bg-red-500 backdrop-blur-sm"
-  >
-    <X className="w-3.5 h-3.5" />
-  </button>
-</div>
+        /* ── CLOSED: Read-only banner ── */
+        <div className={`p-4 sm:p-5 border-t flex flex-col items-center justify-center gap-1.5 transition-all duration-500 relative z-20 ${
+          darkMode
+            ? "border-emerald-900/40 bg-gradient-to-t from-emerald-950/80 via-gray-950/95 to-black/95 backdrop-blur-xl"
+            : "border-emerald-200 bg-gradient-to-t from-emerald-50/95 via-white/95 to-white/95 backdrop-blur-xl"
+        } shadow-2xl`}>
+          <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border ${
+            darkMode
+              ? "bg-emerald-900/30 border-emerald-700/40 text-emerald-300"
+              : "bg-emerald-100 border-emerald-300 text-emerald-700"
+          }`}>
+            <CheckCircle className="w-4 h-4 flex-shrink-0" />
+            <span className="text-sm font-semibold">This ticket is closed — chat is read-only</span>
+          </div>
+          <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
+            Chat history is retained for 90 days from the closing date.
+          </p>
+        </div>
 
-              ))}
+      ) : (
+
+        /* ── OPEN / IN_PROGRESS / etc: Normal input — unchanged ── */
+        <div className={`p-4 sm:p-5 border-t transition-all duration-500 relative z-20 ${
+          darkMode
+            ? "border-gray-800/50 bg-gradient-to-t from-gray-900/95 via-gray-950/95 to-black/95 backdrop-blur-xl"
+            : "border-gray-200/50 bg-gradient-to-t from-white/95 via-blue-50/95 to-white/95 backdrop-blur-xl"
+        } shadow-2xl`}>
+
+          {/* Preview Area */}
+          {selectedFiles.length > 0 && (
+            <div className={`-mx-4 sm:-mx-5 px-4 sm:px-5 pb-4 mb-4 border-b ${darkMode ? 'border-gray-800/50' : 'border-gray-200/50'} animate-in slide-in-from-bottom-2 duration-200`}>
+              <div className="flex gap-3 overflow-x-auto scrollbar-hide">
+                {selectedFiles.map((file, idx) => (
+                  <div
+                    key={idx}
+                    className={`relative flex-shrink-0 w-24 h-24 rounded-xl border overflow-hidden group/preview shadow-sm ${
+                      darkMode ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"
+                    }`}
+                  >
+                    {previewUrls[idx]?.file.type.startsWith("image/") ? (
+                      <img src={previewUrls[idx].url} alt="preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center">
+                        <FileText className="w-8 h-8 text-blue-500 mb-1.5" />
+                        <span className={`text-[10px] leading-tight line-clamp-2 w-full break-all ${
+                          darkMode ? "text-gray-300" : "text-gray-600"
+                        }`}>
+                          {previewUrls[idx]?.file.name}
+                        </span>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeFile(idx)}
+                      className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1.5 opacity-0 group-hover/preview:opacity-100 transition-opacity hover:bg-red-500 backdrop-blur-sm"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <form
+            onSubmit={(e) => { e.preventDefault(); send(); }}
+            className="flex items-end gap-3"
+          >
+            {/* INPUT WRAPPER */}
+            <div className="flex-1 relative">
+              {/* ATTACH BUTTON (LEFT INSIDE INPUT) */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current.click()}
+                className={`absolute left-3 bottom-3 p-1.5 rounded-lg transition ${
+                  darkMode
+                    ? "text-gray-400 hover:text-blue-400"
+                    : "text-gray-500 hover:text-blue-600"
+                }`}
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
+
+              {/* TEXTAREA */}
+              <textarea
+                ref={inputRef}
+                value={inputMsg}
+                onChange={(e) => setInputMsg(e.target.value)}
+                onKeyDown={handleKeyPress}
+                onPaste={handlePaste}
+                placeholder={selectedFiles.length > 0 ? "Add a caption..." : "Type your message..."}
+                rows={1}
+                className={`w-full pl-12 pr-12 py-3 rounded-xl resize-none transition-all duration-300 ${
+                  darkMode
+                    ? "bg-gray-900 text-white placeholder-gray-500 border border-gray-800"
+                    : "bg-white text-gray-900 placeholder-gray-400 border border-gray-300"
+                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                style={{ maxHeight: "120px", minHeight: "48px" }}
+                onInput={(e) => {
+                  e.target.style.height = "auto";
+                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                }}
+              />
+
+              {/* EMOJI BUTTON (RIGHT INSIDE INPUT) */}
+            </div>
+
+            {/* SEND BUTTON */}
+            <button
+              type="submit"
+              disabled={!inputMsg.trim() && selectedFiles.length === 0}
+              className={`p-3 rounded-xl transition-all ${
+                inputMsg.trim() || selectedFiles.length > 0
+                  ? "bg-blue-600 text-white hover:scale-110"
+                  : "bg-gray-300 text-gray-400 cursor-not-allowed"
+              }`}
+            >
+              <Send className="w-5 h-5" />
+            </button>
+
+            {/* FILE INPUT */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,application/pdf"
+              hidden
+              onChange={handleFileSelect}
+            />
+          </form>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-3 sm:mt-4 text-xs gap-2 sm:gap-0">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              <span className={`flex items-center gap-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Press Enter to send
+              </span>
+              <span className={`hidden sm:block ${darkMode ? 'text-gray-600' : 'text-gray-300'}`}>•</span>
+              <span className={`flex items-center gap-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                <Feather className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Shift + Enter for new line
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className={`flex items-center gap-1 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+                <Rocket className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Premium
+              </span>
+              <span className={`hidden sm:block ${darkMode ? 'text-gray-600' : 'text-gray-300'}`}>•</span>
+              <span className={`flex items-center gap-1 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                <Shield className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Secure
+              </span>
             </div>
           </div>
-        )}
-       <form
-  onSubmit={(e) => {
-    e.preventDefault();
-    send();
-  }}
-  className="flex items-end gap-3"
->
-  {/* INPUT WRAPPER */}
-  <div className="flex-1 relative">
-    {/* ATTACH BUTTON (LEFT INSIDE INPUT) */}
-    <button
-      type="button"
-      onClick={() => fileInputRef.current.click()}
-      className={`absolute left-3 bottom-3 p-1.5 rounded-lg transition ${
-        darkMode
-          ? "text-gray-400 hover:text-blue-400"
-          : "text-gray-500 hover:text-blue-600"
-      }`}
-    >
-      <Paperclip className="w-4 h-4" />
-    </button>
 
-    {/* TEXTAREA */}
-    <textarea
-      ref={inputRef}
-      value={inputMsg}
-      onChange={(e) => setInputMsg(e.target.value)}
-      onKeyDown={handleKeyPress}
-      onPaste={handlePaste}
-      placeholder={
-        selectedFiles.length > 0
-          ? "Add a caption..."
-          : "Type your message..."
-      }
-      rows={1}
-      className={`w-full pl-12 pr-12 py-3 rounded-xl resize-none transition-all duration-300 ${
-        darkMode
-          ? "bg-gray-900 text-white placeholder-gray-500 border border-gray-800"
-          : "bg-white text-gray-900 placeholder-gray-400 border border-gray-300"
-      } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-      style={{ maxHeight: "120px", minHeight: "48px" }}
-      onInput={(e) => {
-        e.target.style.height = "auto";
-        e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
-      }}
-    />
-
-    {/* EMOJI BUTTON (RIGHT INSIDE INPUT) */}
-   
-  </div>
-
-  {/* SEND BUTTON */}
-  <button
-    type="submit"
-    disabled={!inputMsg.trim() && selectedFiles.length === 0}
-    className={`p-3 rounded-xl transition-all ${
-      inputMsg.trim() || selectedFiles.length > 0
-        ? "bg-blue-600 text-white hover:scale-110"
-        : "bg-gray-300 text-gray-400 cursor-not-allowed"
-    }`}
-  >
-    <Send className="w-5 h-5" />
-  </button>
-
-  {/* FILE INPUT */}
-  <input
-    ref={fileInputRef}
-    type="file"
-    multiple
-    accept="image/*,application/pdf"
-    hidden
-    onChange={handleFileSelect}
-  />
-</form>
-
-
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-3 sm:mt-4 text-xs gap-2 sm:gap-0">
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            <span className={`flex items-center gap-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-              <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Press Enter to send
-            </span>
-            <span className={`hidden sm:block ${darkMode ? 'text-gray-600' : 'text-gray-300'}`}>•</span>
-            <span className={`flex items-center gap-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-              <Feather className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Shift + Enter for new line
-            </span>
-          </div>
-          
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <span className={`flex items-center gap-1 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
-              <Rocket className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Premium
-            </span>
-            <span className={`hidden sm:block ${darkMode ? 'text-gray-600' : 'text-gray-300'}`}>•</span>
-            <span className={`flex items-center gap-1 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
-              <Shield className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Secure
-            </span>
-          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
+
 
 const MessageBubble = ({ 
   msg, 

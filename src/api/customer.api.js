@@ -93,6 +93,17 @@ export const getAdminCustomerTickets = (customerId) => {
   return api.get(`/api/admin/customers/${encodeURIComponent(customerId)}/tickets`);
 };
 
+export const downloadCustomerDetailsPdf = (customerId) => {
+  if (!customerId) throw new Error("customerId is required");
+  return api.get(`/api/admin/customers/${encodeURIComponent(customerId)}/download-pdf`, {
+    responseType: "blob",
+    timeout: 120000,
+  });
+};
+
+/** @deprecated Use downloadCustomerDetailsPdf — kept for backward compatibility */
+export const downloadAdminCustomerDetailsPdf = downloadCustomerDetailsPdf;
+
 // ✅ Admin: payment history across all customers (paginated + filters)
 export const getAdminAllCustomersPaymentHistory = (params = {}) => {
   return api.get("/api/payment/history/all-customers", { params });
