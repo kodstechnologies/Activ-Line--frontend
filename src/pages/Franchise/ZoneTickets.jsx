@@ -17,7 +17,10 @@ import {
   User,
   FileText,
   Image as ImageIcon,
-  Download
+  Download,
+  Tag,
+  Calendar,
+  ListFilter
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
@@ -95,7 +98,7 @@ const downloadFile = (file) => {
   a.click();
   a.remove();
 };
-console.log("frnchises chat page")
+
 const getMessageTime = (message) => {
   const parsed = new Date(message?.createdAt).getTime();
   return Number.isFinite(parsed) ? parsed : 0;
@@ -128,6 +131,7 @@ const normalizeMessage = (m) => {
 
   return {
     id: m._id || m.id || `${m.createdAt || ""}-${m.senderRole || ""}-${m.message || ""}`,
+    roomId: m.roomId || m.ticketId || m.room?._id, // Add roomId to group
     sender: isCustomer ? "customer" : "agent",
     senderRole: role,
     text: m.message || "",
@@ -143,8 +147,11 @@ const normalizeMessage = (m) => {
 const ZoneTickets = () => {
   const { isDark } = useTheme();
   const { token } = useAuth();
-  const [chats, setChats] = useState([]);
-  const [activeChatId, setActiveChatId] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [activeUserId, setActiveUserId] = useState(null);
+  const [activeTicketId, setActiveTicketId] = useState(null);
+  const [messages, setMessages] = useState([]);
+
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
@@ -157,12 +164,35 @@ const ZoneTickets = () => {
   const fileRef = useRef();
   const messageEndRef = useRef();
 
-  const activeChat = chats.find(c => c.id === activeChatId);
-  const activeChatStatus = normalizeTicketStatus(activeChat?.status) || "OPEN";
-  const sortedActiveMessages = useMemo(
-    () => sortMessagesByCreatedAt(activeChat?.messages || []),
-    [activeChat?.messages]
-  );
+  const activeUser = users.find(u => u.customerId === activeUserId);
+  const activeTicket = activeUser?.tickets?.find(t => t.id === activeTicketId) || activeUser?.tickets?.[0];
+  const activeChatStatus = normalizeTicketStatus(activeTicket?.status) || "OPEN";
+  
+  // Group messages
+  const orderedMessageGroups = useMemo(() => {
+    const groups = {};
+    messages.forEach(m => {
+       const key = m.roomId || "unknown";
+       if (!groups[key]) groups[key] = [];
+       groups[key].push(m);
+    });
+
+    const nonActiveGroups = Object.keys(groups).filter(id => id !== activeTicket?.id).map(id => ({
+       roomId: id,
+       messages: groups[id].sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt))
+    }));
+    nonActiveGroups.sort((a,b) => new Date(a.messages[0].createdAt) - new Date(b.messages[0].createdAt));
+
+    const result = [...nonActiveGroups];
+    if (activeTicket?.id && groups[activeTicket.id]) {
+       result.push({
+          roomId: activeTicket.id,
+          messages: groups[activeTicket.id].sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt))
+       });
+    }
+    return result;
+  }, [messages, activeTicket?.id]);
+
 
   // Load rooms
   useEffect(() => {
@@ -182,29 +212,54 @@ const ZoneTickets = () => {
 
   // Auto scroll
   useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeChat?.messages]);
+    setTimeout(() => {
+       messageEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 100);
+  }, [messages, activeTicket?.id]);
 
   const loadRooms = async () => {
     try {
       setRefreshing(true);
       const res = await getTicketRooms(1, 20);
       
-      const rooms = res.data.map(room => ({
-        id: room._id,
-        name: `${room.customer.firstName} ${room.customer.lastName}`,
-        customerId: room.customer.userName,
-        status: normalizeTicketStatus(room.status),
-        lastMsg: room.lastMessage || "No messages yet",
-        time: room.lastMessageAt || new Date().toISOString(),
-        unreadCount: room.unreadCount || 0,
-        messages: []
-      }));
+      const mapped = res.data || [];
+      const groupedUsers = [];
+      const userMap = new Map();
 
-      setChats(rooms);
+      mapped.forEach(r => {
+        const cid = r.customer?._id || r.customer?.userName || "unknown";
+        if(!userMap.has(cid)) {
+           userMap.set(cid, {
+             customerId: cid,
+             name: `${r.customer?.firstName || ''} ${r.customer?.lastName || ''}`.trim() || r.customer?.userName,
+             latestTicketId: r._id.slice(-6).toUpperCase(),
+             latestMessageTime: r.lastMessageAt || r.createdAt,
+             unreadCount: 0,
+             tickets: []
+           });
+           groupedUsers.push(userMap.get(cid));
+        }
+        const u = userMap.get(cid);
+        const t = {
+          id: r._id,
+          ticketId: r._id.slice(-6).toUpperCase(),
+          status: normalizeTicketStatus(r.status),
+          lastMsg: r.lastMessage || "No messages yet",
+          time: r.lastMessageAt || r.createdAt
+        };
+        u.tickets.push(t);
+        u.unreadCount += (r.unreadCount || 0);
+        if (new Date(r.lastMessageAt || 0) > new Date(u.latestMessageTime || 0)) {
+           u.latestMessageTime = r.lastMessageAt;
+           u.latestTicketId = t.ticketId;
+        }
+      });
 
-      if (rooms.length && !activeChatId) {
-        setActiveChatId(rooms[0].id);
+      groupedUsers.sort((a,b) => new Date(b.latestMessageTime || 0) - new Date(a.latestMessageTime || 0));
+      setUsers(groupedUsers);
+
+      if (groupedUsers.length && !activeUserId) {
+        setActiveUserId(groupedUsers[0].customerId);
       }
     } catch (err) {
       console.error(err);
@@ -214,82 +269,88 @@ const ZoneTickets = () => {
     }
   };
 
-const loadMessages = async (roomId) => {
-  try {
-    setLoadingMessages(true);
+  useEffect(() => {
+    if (activeUser && activeUser.tickets.length > 0) {
+       if (!activeUser.tickets.some(t => t.id === activeTicketId)) {
+          const openTicket = activeUser.tickets.find(t => ["OPEN", "IN_PROGRESS"].includes(t.status));
+          setActiveTicketId(openTicket ? openTicket.id : activeUser.tickets[0].id);
+       }
+    }
+  }, [activeUser, activeTicketId]);
 
-    const res = await getRoomMessages(roomId);
-
-    const messages = sortMessagesByCreatedAt(
-      (res?.data?.data || res?.data || []).map(normalizeMessage)
-    );
-
-    const roomStatus =
-      res?.data?.room?.status ||
-      res?.room?.status ||
-      res?.status;
-    const normalizedRoomStatus = normalizeTicketStatus(roomStatus);
-
-    setChats(prev => prev.map(c =>
-      c.id === roomId
-        ? { ...c, messages, ...(roomStatus ? { status: normalizedRoomStatus } : {}) }
-        : c
-    ));
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setLoadingMessages(false);
-  }
-};
-
-  const handleChatSelect = (id) => {
-    setActiveChatId(id);
-    setShowSidebar(false);
-  };
 
   useEffect(() => {
-    if (!activeChatId || !token) return;
+    if (!activeUser || !token) return;
 
-    loadMessages(activeChatId);
+    setLoadingMessages(true);
+    setMessages([]);
+
+    const fetchPromises = activeUser.tickets.map(t => 
+       getRoomMessages(t.id)
+         .then(res => {
+            const msgs = (res?.data?.data || res?.data || []).map(m => ({...normalizeMessage(m), roomId: t.id}));
+            return msgs;
+         })
+         .catch(() => [])
+    );
+
+    Promise.all(fetchPromises).then(results => {
+       const allMsgs = results.flat();
+       setMessages(sortMessagesByCreatedAt(allMsgs));
+    }).finally(() => {
+       setLoadingMessages(false);
+    });
 
     socket.auth = { token };
     if (!socket.connected) socket.connect();
-    socket.emit("join-room", activeChatId);
+    
+    activeUser.tickets.forEach(t => {
+      socket.emit("join-room", t.id);
+    });
 
     const onNewMessage = (msg) => {
       const normalized = normalizeMessage(msg);
-      const nextStatus = normalizeTicketStatus(msg?.status || msg?.ticketStatus);
-
-      setChats((prev) =>
-        prev.map((chat) => {
-          if (chat.id !== activeChatId) return chat;
-          if (chat.messages.some((m) => m.id === normalized.id)) return chat;
-
-          return {
-            ...chat,
-            messages: sortMessagesByCreatedAt([...chat.messages, normalized]),
-            lastMsg: normalized.text || normalized.attachments?.[0]?.name || "Attachment",
-            time: msg?.createdAt || new Date().toISOString(),
-            ...(nextStatus ? { status: nextStatus } : {}),
-          };
-        })
-      );
+      // Ensure we attach the roomId to group it correctly
+      normalized.roomId = msg.roomId || msg.ticketId || (activeUser.tickets.find(t => t.id === msg.roomId)?.id) || activeTicketId;
+      
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === normalized.id)) return prev;
+        return sortMessagesByCreatedAt([...prev, normalized]);
+      });
+      
+      // Update sidebar latest msg
+      setUsers(prev => prev.map(u => {
+         if (u.customerId === activeUserId) {
+            return {
+               ...u,
+               latestMessageTime: msg.createdAt || new Date().toISOString()
+            }
+         }
+         return u;
+      }));
     };
 
     socket.on("new-message", onNewMessage);
 
     return () => {
       socket.off("new-message", onNewMessage);
-      socket.emit("leave-room", activeChatId);
+      activeUser.tickets.forEach(t => {
+        socket.emit("leave-room", t.id);
+      });
     };
-  }, [activeChatId, token]);
+  }, [activeUser?.customerId, token]);
+
+  const handleUserSelect = (id) => {
+    setActiveUserId(id);
+    setShowSidebar(false);
+  };
 
   const handleSend = () => {
     const message = input.trim();
-    if (!message || !activeChatId) return;
+    if (!message || !activeTicketId) return;
 
     socket.emit("send-message", {
-      roomId: activeChatId,
+      roomId: activeTicketId,
       message,
       messageType: "TEXT",
     });
@@ -299,7 +360,7 @@ const loadMessages = async (roomId) => {
 
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files || []);
-    if (!files.length || !activeChatId) {
+    if (!files.length || !activeTicketId) {
       e.target.value = "";
       return;
     }
@@ -319,13 +380,10 @@ const loadMessages = async (roomId) => {
       );
 
       socket.emit("send-message", {
-        roomId: activeChatId,
+        roomId: activeTicketId,
         message: "",
         attachments,
       });
-      setTimeout(() => {
-        loadMessages(activeChatId);
-      }, 700);
     } catch (err) {
       console.error(err);
     } finally {
@@ -334,45 +392,50 @@ const loadMessages = async (roomId) => {
   };
 
   const handleStatusChange = async (status) => {
+    if (!activeTicketId) return;
     try {
-      await updateTicketStatus(activeChatId, status);
-      setChats(prev => prev.map(c =>
-        c.id === activeChatId
-          ? { ...c, status }
-          : c
-      ));
+      await updateTicketStatus(activeTicketId, status);
+      setUsers(prev => prev.map(u => {
+         if (u.tickets.some(t => t.id === activeTicketId)) {
+            return {
+               ...u,
+               tickets: u.tickets.map(t => t.id === activeTicketId ? { ...t, status } : t)
+            }
+         }
+         return u;
+      }));
     } catch (err) {
       console.error(err);
     }
   };
 
   // Filter and search
-  const filteredChats = useMemo(() => {
-    let result = chats;
+  const filteredUsers = useMemo(() => {
+    let result = users;
     
     if (filterStatus !== "All") {
-      result = result.filter(chat => chat.status === filterStatus);
+      result = result.filter(u => u.tickets.some(t => t.status === filterStatus));
     }
     
     if (search) {
-      result = result.filter(chat =>
-        chat.name.toLowerCase().includes(search.toLowerCase()) ||
-        chat.customerId.toLowerCase().includes(search.toLowerCase())
+      result = result.filter(u =>
+        u.name.toLowerCase().includes(search.toLowerCase()) ||
+        u.latestTicketId.toLowerCase().includes(search.toLowerCase())
       );
     }
     
     return result;
-  }, [chats, filterStatus, search]);
+  }, [users, filterStatus, search]);
 
   // Stats
   const stats = {
-    total: chats.length,
-    open: chats.filter(c => c.status === "OPEN").length,
-    inProgress: chats.filter(c => c.status === "IN_PROGRESS").length,
-    resolved: chats.filter(c => c.status === "RESOLVED").length,
-    closed: chats.filter(c => c.status === "CLOSED").length
+    total: users.reduce((acc, u) => acc + u.tickets.length, 0),
+    open: users.reduce((acc, u) => acc + u.tickets.filter(t => t.status === "OPEN").length, 0),
+    inProgress: users.reduce((acc, u) => acc + u.tickets.filter(t => t.status === "IN_PROGRESS").length, 0),
+    resolved: users.reduce((acc, u) => acc + u.tickets.filter(t => t.status === "RESOLVED").length, 0),
+    closed: users.reduce((acc, u) => acc + u.tickets.filter(t => t.status === "CLOSED").length, 0)
   };
-console.log("franchise admin")
+
   return (
     <div className={`relative h-[calc(100vh-120px)] overflow-hidden rounded-xl ${
       isDark ? 'bg-gray-900' : 'bg-white'
@@ -407,7 +470,7 @@ console.log("franchise admin")
                   <Inbox className={`w-4 h-4 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
                 </div>
                 <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  Support Tickets
+                  Support Chats
                 </h2>
               </div>
               <button
@@ -527,7 +590,7 @@ console.log("franchise admin")
           </div>
 
           {/* Tickets List */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto premium-scrollbar">
             {loadingRooms ? (
               <div className="p-4 space-y-3">
                 {[...Array(5)].map((_, i) => (
@@ -536,159 +599,173 @@ console.log("franchise admin")
                   </div>
                 ))}
               </div>
-            ) : filteredChats.length === 0 ? (
+            ) : filteredUsers.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full p-4">
                 <div className={`p-3 rounded-lg mb-3 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
                   <Inbox className={`w-8 h-8 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
                 </div>
                 <p className={`text-center text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {search ? 'No matching tickets found' : 'No tickets available'}
+                  {search ? 'No matching users found' : 'No users available'}
                 </p>
               </div>
             ) : (
               <div className="p-2">
-                {filteredChats.map((chat, index) => (
-                  <div
-                    key={chat.id}
-                    onClick={() => handleChatSelect(chat.id)}
-                    className={`
-                      relative p-3 rounded-lg cursor-pointer mb-2
-                      transition-all duration-150 animate-fade-in-up
-                      ${activeChatId === chat.id
-                        ? isDark
-                          ? 'bg-gray-800 border-blue-500/50 border'
-                          : 'bg-blue-50 border-blue-300 border'
-                        : isDark
-                          ? 'hover:bg-gray-800/50 border border-transparent hover:border-gray-700'
-                          : 'hover:bg-gray-50 border border-transparent hover:border-gray-200'
-                      }
-                    `}
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    {activeChatId === chat.id && (
-                      <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-r ${
-                        isDark ? 'bg-blue-500' : 'bg-blue-500'
-                      }`}></div>
-                    )}
+                {filteredUsers.map((u, index) => {
+                   // Show zig-zag when ALL tickets are RESOLVED or CLOSED (no active tickets)
+                   const allDone = u.tickets.every((t) =>
+                     ["RESOLVED", "CLOSED"].includes(t.status),
+                   );
+                   const isActive = activeUserId === u.customerId;
+                   const closedStyle = allDone
+                     ? isActive
+                       ? {
+                           backgroundImage: isDark
+                             ? `repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(16, 185, 129, 0.15) 8px, rgba(16, 185, 129, 0.15) 16px)`
+                             : `repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(16, 185, 129, 0.18) 8px, rgba(16, 185, 129, 0.18) 16px)`,
+                         }
+                       : {
+                           backgroundColor: isDark
+                             ? 'rgba(16, 185, 129, 0.06)'
+                             : 'rgba(209, 250, 229, 0.75)',
+                           backgroundImage: isDark
+                             ? `repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(16, 185, 129, 0.12) 8px, rgba(16, 185, 129, 0.12) 16px)`
+                             : `repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(16, 185, 129, 0.20) 8px, rgba(16, 185, 129, 0.20) 16px)`,
+                         }
+                     : {};
+                   return (
+                   <div
+                     key={u.customerId}
+                     onClick={() => handleUserSelect(u.customerId)}
+                     className={`
+                       relative p-3 rounded-lg cursor-pointer mb-2
+                       transition-all duration-150 animate-fade-in-up
+                       ${isActive
+                         ? isDark
+                           ? 'bg-gray-800 border-blue-500/50 border'
+                           : 'bg-blue-50 border-blue-300 border'
+                         : isDark
+                           ? 'hover:bg-gray-800/50 border border-transparent hover:border-gray-700'
+                           : 'hover:bg-gray-50 border border-transparent hover:border-gray-200'
+                       }
+                     `}
+                     style={{ animationDelay: `${index * 50}ms`, ...closedStyle }}
+                   >
+                     {activeUserId === u.customerId && (
+                       <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-r ${
+                         isDark ? 'bg-blue-500' : 'bg-blue-500'
+                       }`}></div>
+                     )}
 
-                    <div className="flex items-start gap-2">
-                      <div className={`
-                        flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center
-                        ${activeChatId === chat.id
-                          ? isDark ? 'bg-blue-500' : 'bg-blue-500'
-                          : isDark ? 'bg-gray-700' : 'bg-gray-200'
-                        }
-                      `}>
-                        <User className={`w-3.5 h-3.5 ${
-                          activeChatId === chat.id 
-                            ? 'text-white' 
-                            : isDark ? 'text-gray-400' : 'text-gray-600'
-                        }`} />
-                      </div>
+                     <div className="flex items-start gap-2">
+                       <div className={`
+                         flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center
+                         ${activeUserId === u.customerId
+                           ? isDark ? 'bg-blue-500' : 'bg-blue-500'
+                           : isDark ? 'bg-gray-700' : 'bg-gray-200'
+                         }
+                       `}>
+                         <User className={`w-3.5 h-3.5 ${
+                           activeUserId === u.customerId 
+                             ? 'text-white' 
+                             : isDark ? 'text-gray-400' : 'text-gray-600'
+                         }`} />
+                       </div>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-0.5">
-                          <h3 className={`font-medium text-sm truncate ${
-                            activeChatId === chat.id
-                              ? isDark ? 'text-white' : 'text-gray-900'
-                              : isDark ? 'text-gray-200' : 'text-gray-900'
-                          }`}>
-                            {chat.name}
-                          </h3>
-                          {chat.time && (
-                            <span className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                              {new Date(chat.time).toLocaleTimeString([], { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className={`text-[10px] font-mono ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                            #{chat.customerId.slice(-6)}
-                          </span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${getStatusColor(chat.status, isDark)} flex items-center gap-0.5`}>
-                            {getStatusIcon(chat.status)}
-                            {chat.status}
-                          </span>
-                        </div>
+                       <div className="flex-1 min-w-0">
+                         <div className="flex items-center justify-between mb-0.5">
+                           <h3 className={`font-medium text-sm truncate ${
+                             activeUserId === u.customerId
+                               ? isDark ? 'text-white' : 'text-gray-900'
+                               : isDark ? 'text-gray-200' : 'text-gray-900'
+                           }`}>
+                             {u.name}
+                           </h3>
+                           {u.latestMessageTime && (
+                             <span className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                               {new Date(u.latestMessageTime).toLocaleDateString([], { 
+                                 month: 'short', 
+                                 day: 'numeric'
+                               })}
+                             </span>
+                           )}
+                         </div>
+                         
+                         <div className="flex items-center gap-1.5 mb-1">
+                           <span className={`text-[10px] font-mono ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                             #{u.latestTicketId}
+                           </span>
+                           <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-200 text-gray-700'} flex items-center gap-0.5`}>
+                             {u.tickets.length} Tickets
+                           </span>
+                         </div>
+                       </div>
 
-                        {chat.lastMsg && (
-                          <p className={`text-xs truncate ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                            {chat.lastMsg}
-                          </p>
-                        )}
-                      </div>
-
-                      {chat.unreadCount > 0 && (
-                        <span className={`
-                          flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center
-                          text-[10px] font-bold animate-pulse
-                          ${isDark ? 'bg-blue-500 text-white' : 'bg-blue-500 text-white'}
-                        `}>
-                          {chat.unreadCount}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                       {u.unreadCount > 0 && (
+                         <span className={`
+                           flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center
+                           text-[10px] font-bold animate-pulse
+                           ${isDark ? 'bg-blue-500 text-white' : 'bg-blue-500 text-white'}
+                         `}>
+                           {u.unreadCount}
+                         </span>
+                       )}
+                     </div>
+                   </div>
+                   );
+                })}
               </div>
             )}
           </div>
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
-          {activeChat ? (
+        <div className="flex-1 flex flex-col relative z-20">
+          {activeUser ? (
             <>
               {/* Chat Header */}
-              <div className={`p-4 border-b flex justify-between items-center ${
+              <div className={`p-4 border-b flex flex-col md:flex-row md:justify-between md:items-center gap-3 ${
                 isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'
               }`}>
                 <div className="flex items-center gap-3">
                   <div className={`
-                    w-8 h-8 rounded-lg flex items-center justify-center
-                    ${isDark ? 'bg-gray-800' : 'bg-gray-100'}
+                    w-10 h-10 rounded-xl flex items-center justify-center
+                    ${isDark ? 'bg-blue-900/50' : 'bg-blue-100'}
                   `}>
-                    <User className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+                    <User className={`w-5 h-5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
                   </div>
                   <div>
-                    <h3 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      {activeChat.name}
+                    <h3 className={`font-semibold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {activeUser.name}
                     </h3>
                     <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                      ID: {activeChat.customerId}
+                      Customer ID: {activeUser.customerId}
                     </p>
                   </div>
                 </div>
 
-                <select
-                  value={activeChatStatus}
-                  onChange={(e) => handleStatusChange(e.target.value)}
-                  className={`
-                    text-xs px-3 py-1.5 rounded-md border outline-none
-                    transition-all focus:ring-1 focus:ring-blue-500
-                    ${isDark
-                      ? 'bg-gray-800 border-gray-700 text-gray-300'
-                      : 'bg-white border-gray-300 text-gray-700'
-                    }
-                  `}
-                >
-                  {STATUS_OPTIONS.map(s => (
-                    <option key={s}>{s}</option>
-                  ))}
-                </select>
+                <div className="flex gap-2">
+                  <select
+                    value={activeChatStatus}
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    className={`
+                      text-xs px-3 py-1.5 rounded-md border outline-none
+                      transition-all focus:ring-1 focus:ring-blue-500
+                      ${isDark
+                        ? 'bg-gray-800 border-gray-700 text-gray-300'
+                        : 'bg-white border-gray-300 text-gray-700'
+                      }
+                    `}
+                  >
+                    {STATUS_OPTIONS.map(s => (
+                      <option key={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              {/* Messages */}
-              <div className={`flex-1 overflow-y-auto p-4 space-y-3 transition-all duration-500 ${
-                activeChatStatus === "CLOSED"
-                  ? isDark
-                    ? "bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950/50"
-                    : "bg-gradient-to-b from-emerald-50 via-green-50 to-emerald-100/80"
-                  : isDark ? 'bg-gray-900' : 'bg-gray-50'
+              {/* Messages Area */}
+              <div className={`flex-1 overflow-y-auto premium-scrollbar p-4 space-y-6 transition-all duration-500 ${
+                isDark ? 'bg-gray-900' : 'bg-gray-50'
               }`}>
                 {loadingMessages ? (
                   <div className="space-y-3">
@@ -699,111 +776,196 @@ console.log("franchise admin")
                     ))}
                   </div>
                 ) : (
-                  sortedActiveMessages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.sender === "agent" ? "justify-end" : "justify-start"} animate-fade-in`}
-                    >
-                      <div className={`
-                        max-w-xs md:max-w-md rounded-lg p-3 shadow-sm
-                        ${msg.sender === "agent"
-                          ? isDark
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-blue-500 text-white'
-                          : isDark
-                            ? 'bg-gray-800 text-gray-200'
-                            : 'bg-white text-gray-900 border border-gray-200'
-                        }
-                      `}>
-                        {msg.attachments?.length > 0 && (
-                          <div className="space-y-2 mb-2">
-                            {msg.attachments.map((file, idx) => {
-                              const fileUrl = file?.url;
-                              const fileName = file?.name || "Attachment";
-                              const fileType = file?.type || "";
-                              const isImage = isImageAttachment(file?.messageType, fileType, fileUrl);
+                  orderedMessageGroups.map((group) => {
+                     const groupTicket = activeUser.tickets.find(t => t.id === group.roomId);
+                     const displayTicketId = groupTicket?.ticketId || group.roomId.slice(-6);
+                     const isGroupDone = ['RESOLVED', 'CLOSED'].includes(groupTicket?.status);
 
-                              if (!fileUrl) return null;
+                     // Per-group zig-zag background for RESOLVED or CLOSED tickets
+                     const groupDoneStyle = isGroupDone
+                       ? {
+                           backgroundColor: isDark
+                             ? 'rgba(16, 185, 129, 0.04)'
+                             : 'rgba(209, 250, 229, 0.60)',
+                           backgroundImage: isDark
+                             ? `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(16, 185, 129, 0.10) 10px, rgba(16, 185, 129, 0.10) 20px)`
+                             : `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(16, 185, 129, 0.18) 10px, rgba(16, 185, 129, 0.18) 20px)`,
+                         }
+                       : {};
 
-                              return isImage ? (
-                                <div key={`${msg.id}-img-${idx}`} className="relative group">
-                                  <img
-                                    src={fileUrl}
-                                    alt={fileName}
-                                    className="rounded max-w-[200px] cursor-pointer hover:opacity-90 transition"
-                                    onClick={() => window.open(fileUrl, "_blank")}
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      downloadFile({ url: fileUrl, name: fileName });
-                                    }}
-                                    className="absolute bottom-1 right-1 p-1.5 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Download"
-                                  >
-                                    <Download className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              ) : (
-                                <div
-                                  key={`${msg.id}-file-${idx}`}
-                                  className={`
-                                    flex items-center gap-2 p-2 rounded text-xs
+                     return (
+                        <div
+                          key={`group-${group.roomId}`}
+                          className={`space-y-4 rounded-xl transition-all duration-500 ${
+                            isGroupDone ? 'p-3' : ''
+                          }`}
+                          style={groupDoneStyle}
+                        >
+                           <div className="flex justify-center my-6 sticky top-2 z-20">
+                              <div className={`text-xs px-4 py-1.5 rounded-full backdrop-blur-md border shadow-sm flex items-center gap-2 ${
+                                 group.roomId === activeTicket?.id
+                                    ? isDark 
+                                       ? 'bg-blue-900/80 border-blue-500/50 text-blue-200' 
+                                       : 'bg-blue-100 border-blue-300 text-blue-800'
+                                    : isDark
+                                       ? 'bg-gray-800/80 border-gray-700 text-gray-400'
+                                       : 'bg-white/80 border-gray-300 text-gray-600'
+                              }`}>
+                                 <Tag className="w-3.5 h-3.5" />
+                                 <span className="font-bold">Ticket #{displayTicketId}</span>
+                              </div>
+                           </div>
+
+                           {group.messages.map((msg) => (
+                              <div
+                                key={msg.id}
+                                className={`flex ${msg.sender === "agent" ? "justify-end" : "justify-start"} animate-fade-in`}
+                              >
+                                <div className={`
+                                  max-w-[85%] md:max-w-md rounded-2xl p-3 shadow-md
+                                  ${msg.sender === "agent"
+                                    ? isDark
+                                      ? 'bg-blue-600 text-white rounded-br-sm'
+                                      : 'bg-blue-500 text-white rounded-br-sm'
+                                    : isDark
+                                      ? 'bg-gray-800 text-gray-200 rounded-bl-sm'
+                                      : 'bg-white text-gray-900 border border-gray-200 rounded-bl-sm'
+                                  }
+                                `}>
+                                  {msg.attachments?.length > 0 && (
+                                    <div className="space-y-2 mb-2">
+                                      {msg.attachments.map((file, idx) => {
+                                        const fileUrl = file?.url;
+                                        const fileName = file?.name || "Attachment";
+                                        const fileType = file?.type || "";
+                                        const isImage = isImageAttachment(file?.messageType, fileType, fileUrl);
+          
+                                        if (!fileUrl) return null;
+          
+                                        return isImage ? (
+                                          <div key={`${msg.id}-img-${idx}`} className="relative group">
+                                            <img
+                                              src={fileUrl}
+                                              alt={fileName}
+                                              className="rounded-xl max-w-full cursor-pointer hover:opacity-90 transition border border-white/10"
+                                              onClick={() => window.open(fileUrl, "_blank")}
+                                            />
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                downloadFile({ url: fileUrl, name: fileName });
+                                              }}
+                                              className="absolute bottom-2 right-2 p-1.5 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                              title="Download"
+                                            >
+                                              <Download className="w-3.5 h-3.5" />
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <div
+                                            key={`${msg.id}-file-${idx}`}
+                                            className={`
+                                              flex items-center gap-2 p-2 rounded-xl text-xs
+                                              ${msg.sender === "agent"
+                                                ? "bg-blue-700/50 text-white"
+                                                : isDark ? "bg-gray-700 text-gray-300" : "bg-gray-100 text-gray-700"
+                                              }
+                                            `}
+                                          >
+                                            <FileText className="w-4 h-4 flex-shrink-0" />
+                                            <button
+                                              type="button"
+                                              onClick={() => window.open(fileUrl, "_blank")}
+                                              className="flex-1 truncate text-left"
+                                              title={fileName}
+                                            >
+                                              {fileName}
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => downloadFile({ url: fileUrl, name: fileName })}
+                                              className="p-1.5 rounded-full hover:bg-white/20 transition-colors"
+                                              title="Download"
+                                            >
+                                              <Download className="w-3 h-3" />
+                                            </button>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+          
+                                  {msg.text && (
+                                    <p className="text-sm break-words leading-relaxed">{msg.text}</p>
+                                  )}
+                                  
+                                  <div className={`
+                                    text-[10px] mt-2 flex justify-end
                                     ${msg.sender === "agent"
-                                      ? "bg-blue-700 text-white"
-                                      : isDark ? "bg-gray-700 text-gray-300" : "bg-gray-100 text-gray-700"
+                                      ? 'text-blue-200'
+                                      : isDark ? 'text-gray-400' : 'text-gray-500'
                                     }
-                                  `}
-                                >
-                                  <FileText className="w-4 h-4" />
-                                  <button
-                                    type="button"
-                                    onClick={() => window.open(fileUrl, "_blank")}
-                                    className="flex-1 truncate text-left"
-                                    title={fileName}
-                                  >
-                                    {fileName}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => downloadFile({ url: fileUrl, name: fileName })}
-                                    className="p-1.5 rounded-full hover:bg-white/10"
-                                    title="Download"
-                                  >
-                                    <Download className="w-3 h-3" />
-                                  </button>
+                                  `}>
+                                    {msg.time}
+                                  </div>
                                 </div>
-                              );
-                            })}
-                          </div>
-                        )}
-
-                        {msg.text && (
-                          <p className="text-sm break-words">{msg.text}</p>
-                        )}
-                        
-                        <div className={`
-                          text-[10px] mt-1 flex justify-end
-                          ${msg.sender === "agent"
-                            ? 'text-blue-200'
-                            : isDark ? 'text-gray-400' : 'text-gray-500'
-                          }
-                        `}>
-                          {msg.time}
+                              </div>
+                            ))}
                         </div>
-                      </div>
-                    </div>
-                  ))
+                     )
+                  })
                 )}
                 <div ref={messageEndRef} />
               </div>
 
-              {/* Message Input */}
-              {activeChat.status !== "CLOSED" && (
+              {/* Message Input Bottom Area */}
+              {activeChatStatus === "CLOSED" ? (
+                 <div className={`p-4 border-t flex flex-col items-center justify-center gap-1.5 transition-all duration-500 relative z-20 ${
+                    isDark
+                      ? "border-emerald-900/40 bg-gray-900"
+                      : "border-emerald-200 bg-white"
+                  }`}>
+                    <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border ${
+                      isDark
+                        ? "bg-emerald-900/30 border-emerald-700/40 text-emerald-300"
+                        : "bg-emerald-100 border-emerald-300 text-emerald-700"
+                    }`}>
+                      <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                      <span className="text-sm font-semibold">This active ticket is closed — select an open ticket to reply</span>
+                    </div>
+                  </div>
+              ) : (
                 <div className={`p-4 border-t ${
                   isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'
                 }`}>
+                  {/* Dropdown for Context Selection */}
+                  <div className="mb-3 flex items-center gap-2">
+                     <span className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Replying To:</span>
+                     <div className="relative">
+                        <select
+                           value={activeTicketId || ""}
+                           onChange={(e) => setActiveTicketId(e.target.value)}
+                           className={`
+                             text-xs px-2.5 py-1.5 pl-7 rounded-md border outline-none
+                             transition-all focus:ring-1 focus:ring-blue-500 appearance-none
+                             ${isDark
+                               ? 'bg-gray-800 border-gray-700 text-white'
+                               : 'bg-white border-gray-300 text-gray-900'
+                             }
+                           `}
+                        >
+                           {activeUser.tickets.map(t => (
+                              <option key={t.id} value={t.id} disabled={t.status === "CLOSED"}>
+                                 Ticket #{t.ticketId} ({t.status})
+                              </option>
+                           ))}
+                        </select>
+                        <ListFilter className={`absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                        <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                     </div>
+                  </div>
+
                   <div className="flex gap-2 items-center">
                     <input
                       value={input}
@@ -811,8 +973,8 @@ console.log("franchise admin")
                       onKeyDown={(e) => e.key === "Enter" && handleSend()}
                       placeholder="Type your message..."
                       className={`
-                        flex-1 px-3 py-2 rounded-md border text-sm
-                        transition-all focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none
+                        flex-1 px-4 py-2.5 rounded-xl border text-sm
+                        transition-all focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none
                         ${isDark
                           ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500'
                           : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400'
@@ -832,7 +994,7 @@ console.log("franchise admin")
                     <button
                       onClick={() => fileRef.current.click()}
                       className={`
-                        p-2 rounded-md border transition
+                        p-2.5 rounded-xl border transition
                         ${isDark
                           ? 'border-gray-700 text-gray-400 hover:bg-gray-800 hover:text-gray-300'
                           : 'border-gray-300 text-gray-600 hover:bg-gray-100'
@@ -840,25 +1002,25 @@ console.log("franchise admin")
                       `}
                       title="Attach file"
                     >
-                      <Paperclip size={16} />
+                      <Paperclip size={18} />
                     </button>
                     
                     <button
                       onClick={handleSend}
                       disabled={!input.trim()}
                       className={`
-                        p-2 rounded-md transition
+                        p-2.5 rounded-xl transition
                         ${input.trim()
                           ? isDark
-                            ? 'bg-blue-600 text-white hover:bg-blue-700'
-                            : 'bg-blue-500 text-white hover:bg-blue-600'
+                            ? 'bg-blue-600 text-white hover:bg-blue-700 hover:scale-105'
+                            : 'bg-blue-500 text-white hover:bg-blue-600 hover:scale-105'
                           : isDark
                             ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
                             : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                         }
                       `}
                     >
-                      <Send size={16} />
+                      <Send size={18} />
                     </button>
                   </div>
                 </div>
@@ -866,14 +1028,14 @@ console.log("franchise admin")
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center">
-              <div className={`text-center p-6 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                <div className={`w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4 ${
-                  isDark ? 'bg-gray-800' : 'bg-gray-100'
+              <div className={`text-center p-8 rounded-2xl max-w-sm w-full mx-4 border shadow-xl ${isDark ? 'bg-gray-800/50 border-gray-800 text-gray-400' : 'bg-white border-gray-100 text-gray-500'}`}>
+                <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${
+                  isDark ? 'bg-gray-800/80' : 'bg-blue-50'
                 }`}>
-                  <MessageSquare className={`w-8 h-8 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
+                  <MessageSquare className={`w-10 h-10 ${isDark ? 'text-gray-600' : 'text-blue-400'}`} />
                 </div>
-                <p className="text-sm font-medium mb-1">No ticket selected</p>
-                <p className="text-xs">Select a ticket from the sidebar to start chatting</p>
+                <p className={`text-xl font-bold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>No user selected</p>
+                <p className="text-sm">Select a user from the sidebar to view their support history</p>
               </div>
             </div>
           )}
@@ -884,7 +1046,7 @@ console.log("franchise admin")
       {showSidebar && (
         <div
           onClick={() => setShowSidebar(false)}
-          className="md:hidden fixed inset-0 bg-black/20 z-30 transition-opacity"
+          className="md:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-30 transition-opacity"
         />
       )}
 
@@ -909,26 +1071,18 @@ console.log("franchise admin")
           animation: fade-in 0.3s ease-out forwards;
         }
         
-        /* Custom Scrollbar */
-        .overflow-y-auto {
-          scrollbar-width: thin;
+        .premium-scrollbar { scrollbar-width: thin; }
+        .premium-scrollbar::-webkit-scrollbar { width: 6px; }
+        .premium-scrollbar::-webkit-scrollbar-track {
+          background: transparent !important;
+          background-color: transparent !important;
         }
-        
-        .overflow-y-auto::-webkit-scrollbar {
-          width: 4px;
+        .premium-scrollbar::-webkit-scrollbar-thumb {
+          background: ${isDark ? "#4b5563" : "#d1d5db"};
+          border-radius: 3px;
         }
-        
-        .overflow-y-auto::-webkit-scrollbar-track {
-          background: ${isDark ? '#1f2937' : '#f3f4f6'};
-        }
-        
-        .overflow-y-auto::-webkit-scrollbar-thumb {
-          background: ${isDark ? '#4b5563' : '#d1d5db'};
-          border-radius: 2px;
-        }
-        
-        .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-          background: ${isDark ? '#6b7280' : '#9ca3af'};
+        .premium-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: ${isDark ? "#6b7280" : "#9ca3af"};
         }
       `}</style>
     </div>

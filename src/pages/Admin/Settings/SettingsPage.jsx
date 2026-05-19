@@ -4,19 +4,20 @@ import SettingsTabs from "./SettingsTabs";
 import { useTheme } from "../../../context/ThemeContext";
 import Lottie from "lottie-react";
 import settingsAnimation from "../../../animations/Desktop and smartphone app development (1).json";
-import { 
-  Settings, 
-  ChevronRight, 
+import {
+  Settings,
+  ChevronRight,
   Sparkles,
   Shield,
-  Zap,
-  Layers
+  Layers,
+  Image,
 } from "lucide-react";
 
 // Lazy load components for better performance
 const GeneralSettings = lazy(() => import("./GeneralSettings"));
 const CannedResponses = lazy(() => import("../Settings/CannedResponses/CannedResponses"));
 const ApiKeys = lazy(() => import("./ApiKeys"));
+const Banners = lazy(() => import("./Banners"));
 
 // Enhanced Loading fallback component
 const LoadingFallback = ({ isDark }) => (
@@ -40,24 +41,30 @@ const SettingsPage = () => {
 
   // Tab configuration with metadata
   const tabConfig = useMemo(() => ({
-    general: { 
-      name: "General", 
-      icon: Settings, 
+    general: {
+      name: "General",
+      icon: Settings,
       description: "Manage company information and basic settings",
-      color: "purple"
+      color: "purple",
     },
-    canned: { 
-      name: "Canned Responses", 
-      icon: Layers, 
+    canned: {
+      name: "Canned Responses",
+      icon: Layers,
       description: "Create and manage pre-written responses",
-      color: "blue"
+      color: "blue",
     },
-    api: { 
-      name: "API Keys", 
-      icon: Shield, 
+    api: {
+      name: "API Keys",
+      icon: Shield,
       description: "Manage API authentication and access keys",
-      color: "green"
-    }
+      color: "green",
+    },
+    banners: {
+      name: "Banners",
+      icon: Image,
+      description: "Upload and manage promotional image & video banners",
+      color: "orange",
+    },
   }), []);
 
   const currentTab = tabConfig[activeTab];
@@ -67,11 +74,12 @@ const SettingsPage = () => {
     const components = {
       general: GeneralSettings,
       canned: CannedResponses,
-      api: ApiKeys,
+      api:    ApiKeys,
+      banners: Banners,
     };
-    
+
     const Component = components[activeTab];
-    
+
     return Component ? (
       <Suspense fallback={<LoadingFallback isDark={isDark} />}>
         <Component showHeader={false} />
@@ -124,8 +132,9 @@ const SettingsPage = () => {
   const getTabGradient = () => {
     const gradients = {
       purple: "from-purple-500 to-pink-500",
-      blue: "from-blue-500 to-cyan-500",
-      green: "from-green-500 to-emerald-500"
+      blue:   "from-blue-500 to-cyan-500",
+      green:  "from-green-500 to-emerald-500",
+      orange: "from-orange-500 to-amber-500",
     };
     return gradients[currentTab?.color] || gradients.purple;
   };

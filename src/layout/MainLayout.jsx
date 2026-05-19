@@ -19,7 +19,6 @@ import ThemeToggle from "../components/ThemeToggle";
 import Lottie from "lottie-react";
 import sidebarWifiAnimation from "../animations/SidebarWifi.json";
 
-
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 
@@ -68,13 +67,22 @@ const MainLayout = () => {
       const role = user.role?.toLowerCase();
 
       if (location.pathname === "/" || location.pathname === "/dashboard") {
-        if ((role === 'franchise' || role === 'franchise_admin') && location.pathname !== '/franchise-dashboard') {
-          navigate('/franchise-dashboard', { replace: true });
+        if (
+          (role === "franchise" || role === "franchise_admin") &&
+          location.pathname !== "/franchise-dashboard"
+        ) {
+          navigate("/franchise-dashboard", { replace: true });
         }
-      } else if (location.pathname === "/customers" && (role === 'franchise' || role === 'franchise_admin')) {
-        navigate('/my-customers', { replace: true });
-      } else if (location.pathname === "/tickets" && (role === 'franchise' || role === 'franchise_admin')) {
-        navigate('/Zone-tickets', { replace: true });
+      } else if (
+        location.pathname === "/customers" &&
+        (role === "franchise" || role === "franchise_admin")
+      ) {
+        navigate("/my-customers", { replace: true });
+      } else if (
+        location.pathname === "/tickets" &&
+        (role === "franchise" || role === "franchise_admin")
+      ) {
+        navigate("/Zone-tickets", { replace: true });
       }
     }
   }, [user, location.pathname, navigate]);
@@ -145,13 +153,16 @@ const MainLayout = () => {
     }
   };
 
-
   const sidebarItemsMap = {
     admin: adminSidebarItems,
     super_admin: adminSidebarItems,
     // Filter out the 'Local Staff' item for franchise roles
-    franchise: franchiseSidebarItems.filter(item => item.paths[0] !== '/local-staff'),
-    franchise_admin: franchiseSidebarItems.filter(item => item.paths[0] !== '/local-staff'),
+    franchise: franchiseSidebarItems.filter(
+      (item) => item.paths[0] !== "/local-staff",
+    ),
+    franchise_admin: franchiseSidebarItems.filter(
+      (item) => item.paths[0] !== "/local-staff",
+    ),
     staff: staffSidebarItems,
     admin_staff: staffSidebarItems,
   };
@@ -164,20 +175,24 @@ const MainLayout = () => {
   return (
     <div
       className={`flex min-h-screen transition-all duration-500 ease-out
-      ${isDark 
-        ? "bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100" 
-        : "bg-gradient-to-br from-gray-50 via-white to-gray-50 text-gray-900"}`}
+      ${
+        isDark
+          ? "bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100"
+          : "bg-gradient-to-br from-gray-50 via-white to-gray-50 text-gray-900"
+      }`}
     >
       {/* GLOW EFFECTS */}
       {!isMobile && (
         <>
-          <div className={`fixed top-0 left-0 w-96 h-96 rounded-full blur-3xl opacity-10 animate-pulse
-            ${isDark ? 'bg-blue-500' : 'bg-purple-300'}`}
-            style={{ transform: 'translate(-30%, -30%)' }}
+          <div
+            className={`fixed top-0 left-0 w-96 h-96 rounded-full blur-3xl opacity-10 animate-pulse
+            ${isDark ? "bg-blue-500" : "bg-purple-300"}`}
+            style={{ transform: "translate(-30%, -30%)" }}
           />
-          <div className={`fixed bottom-0 right-0 w-96 h-96 rounded-full blur-3xl opacity-10 animate-pulse delay-1000
-            ${isDark ? 'bg-emerald-500' : 'bg-emerald-300'}`}
-            style={{ transform: 'translate(30%, 30%)' }}
+          <div
+            className={`fixed bottom-0 right-0 w-96 h-96 rounded-full blur-3xl opacity-10 animate-pulse delay-1000
+            ${isDark ? "bg-emerald-500" : "bg-emerald-300"}`}
+            style={{ transform: "translate(30%, 30%)" }}
           />
         </>
       )}
@@ -192,7 +207,7 @@ const MainLayout = () => {
 
       {/* SIDEBAR */}
       <aside
-        className={`fixed md:sticky top-0 left-0 z-50 h-screen
+        className={` fixed md:sticky top-0 left-0 z-50 h-screen
         ${sidebarCollapsed ? "w-24" : "w-80"}
         transition-all duration-500 ease-out
         ${sidebarOpen ? "translate-x-0 animate-in slide-in-from-left-80" : "-translate-x-full md:translate-x-0"}
@@ -205,6 +220,7 @@ const MainLayout = () => {
       >
         {/* LOGO */}
         <div
+          onClick={() => setSidebarCollapsed((p) => !p)}
           className={`h-24 flex items-center border-b
           ${sidebarCollapsed ? "justify-center" : "justify-between px-6"}
           ${isDark ? "border-slate-800/50" : "border-gray-200/50"} transition-all duration-300`}
@@ -213,35 +229,42 @@ const MainLayout = () => {
 
           {!isMobile && (
             <button
-              onClick={() => setSidebarCollapsed((p) => !p)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSidebarCollapsed((p) => !p);
+              }}
               className={`p-2.5 rounded-xl transition-all duration-300 transform hover:scale-110
-                ${isDark 
-                  ? "hover:bg-slate-800/80 shadow-lg shadow-slate-800/50" 
-                  : "hover:bg-gray-100 shadow-lg shadow-gray-200/50"}`}
+                ${
+                  isDark
+                    ? "hover:bg-slate-800/80 shadow-lg shadow-slate-800/50"
+                    : "hover:bg-gray-100 shadow-lg shadow-gray-200/50"
+                }`}
             >
-              {sidebarCollapsed ? (
-                <ChevronRight size={20} className={isDark ? "text-slate-400" : "text-gray-600"} />
-              ) : (
-                <ChevronLeft size={20} className={isDark ? "text-slate-400" : "text-gray-600"} />
+              {!sidebarCollapsed && (
+                <ChevronLeft
+                  size={20}
+                  className={isDark ? "text-slate-400" : "text-gray-600"}
+                />
               )}
             </button>
           )}
 
           {isMobile && (
-            <button 
+            <button
               onClick={() => setSidebarOpen(false)}
               className={`p-2.5 rounded-xl transition-all duration-300
-                ${isDark 
-                  ? "hover:bg-slate-800/80" 
-                  : "hover:bg-gray-100"}`}
+                ${isDark ? "hover:bg-slate-800/80" : "hover:bg-gray-100"}`}
             >
-              <X size={20} className={isDark ? "text-slate-400" : "text-gray-600"} />
+              <X
+                size={20}
+                className={isDark ? "text-slate-400" : "text-gray-600"}
+              />
             </button>
           )}
         </div>
 
         {/* NAV */}
-        <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-transparent hover:scrollbar-thumb-gray-400/20">
+        <nav className="hide-scrollbar flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
           {sidebarItems.map((item) => (
             <SidebarItem
               key={item.key}
@@ -270,62 +293,84 @@ const MainLayout = () => {
               onClick={() => setIsUserMenuOpen((p) => !p)}
               className={`w-full flex items-center gap-3 p-3 rounded-xl
                 transition-all duration-300 transform hover:scale-[1.02] group
-                ${isDark 
-                  ? "hover:bg-slate-800/70 shadow-lg shadow-slate-900/30" 
-                  : "hover:bg-gray-100 shadow-lg shadow-gray-200/30"}`}
+                ${
+                  isDark
+                    ? "hover:bg-slate-800/70 shadow-lg shadow-slate-900/30"
+                    : "hover:bg-gray-100 shadow-lg shadow-gray-200/30"
+                }`}
             >
               <div className="relative">
-                <div className={`w-10 h-10 rounded-full bg-gradient-to-br 
-                  ${isDark 
-                    ? "from-blue-500 to-purple-600" 
-                    : "from-indigo-500 to-purple-600"
+                <div
+                  className={`w-10 h-10 rounded-full bg-gradient-to-br 
+                  ${
+                    isDark
+                      ? "from-blue-500 to-purple-600"
+                      : "from-indigo-500 to-purple-600"
                   } text-white flex items-center justify-center font-bold text-lg`}
                 >
                   {user?.name?.[0]?.toUpperCase()}
                 </div>
-                <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 
+                <div
+                  className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 
                   ${isDark ? "border-slate-900" : "border-white"}
-                  ${["admin", "super_admin"].includes(user?.role?.toLowerCase()) 
-                    ? "bg-emerald-500" 
-                    : ["franchise", "franchise_admin"].includes(user?.role?.toLowerCase())
-                    ? "bg-orange-500"
-                    : "bg-blue-500"}`}
+                  ${
+                    ["admin", "super_admin"].includes(user?.role?.toLowerCase())
+                      ? "bg-emerald-500"
+                      : ["franchise", "franchise_admin"].includes(
+                            user?.role?.toLowerCase(),
+                          )
+                        ? "bg-orange-500"
+                        : "bg-blue-500"
+                  }`}
                 />
               </div>
               <div className="text-left">
                 <p className="text-base font-semibold group-hover:text-purple-600 dark:group-hover:text-blue-400 transition-colors">
                   {user?.name}
                 </p>
-                <p className={`text-xs uppercase tracking-wider font-medium
-                  ${isDark ? "text-slate-400" : "text-gray-500"}`}>
-                  {user?.role?.replace('_', ' ')}
+                <p
+                  className={`text-xs uppercase tracking-wider font-medium
+                  ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                >
+                  {user?.role?.replace("_", " ")}
                 </p>
               </div>
             </button>
 
             {isUserMenuOpen && (
-              <div className={`mt-2 rounded-xl overflow-hidden shadow-xl animate-in fade-in slide-in-from-top-2 duration-300
-                ${isDark 
-                  ? "bg-slate-800/80 border border-slate-700/50 backdrop-blur-lg" 
-                  : "bg-white border border-gray-200/50 backdrop-blur-lg"}`}
+              <div
+                className={`mt-2 rounded-xl overflow-hidden shadow-xl animate-in fade-in slide-in-from-top-2 duration-300
+                ${
+                  isDark
+                    ? "bg-slate-800/80 border border-slate-700/50 backdrop-blur-lg"
+                    : "bg-white border border-gray-200/50 backdrop-blur-lg"
+                }`}
               >
                 <button
                   onClick={() => navigate("/profile")}
                   className={`w-full px-4 py-3 flex items-center gap-3 text-lg font-medium
                     transition-all duration-300 hover:pl-5
-                    ${isDark 
-                      ? "hover:bg-slate-700/50 text-slate-300" 
-                      : "hover:bg-gray-100 text-gray-700"}`}
+                    ${
+                      isDark
+                        ? "hover:bg-slate-700/50 text-slate-300"
+                        : "hover:bg-gray-100 text-gray-700"
+                    }`}
                 >
-                  <User size={18} className="text-purple-500 dark:text-blue-400" /> Profile
+                  <User
+                    size={18}
+                    className="text-purple-500 dark:text-blue-400"
+                  />{" "}
+                  Profile
                 </button>
                 <button
                   onClick={handleLogout}
                   className={`w-full px-4 py-3 flex items-center gap-3 text-lg font-medium
                     transition-all duration-300 hover:pl-5
-                    ${isDark 
-                      ? "text-red-400 hover:bg-red-500/10" 
-                      : "text-red-500 hover:bg-red-50"}`}
+                    ${
+                      isDark
+                        ? "text-red-400 hover:bg-red-500/10"
+                        : "text-red-500 hover:bg-red-50"
+                    }`}
                 >
                   <LogOut size={18} /> Logout
                 </button>
@@ -348,29 +393,31 @@ const MainLayout = () => {
                 : "bg-white/80 border-gray-200/50 shadow-gray-200/30"
             }`}
         >
-          <button 
-            onClick={() => setSidebarOpen(true)} 
+          <button
+            onClick={() => setSidebarOpen(true)}
             className="md:hidden p-2.5 rounded-xl transition-all duration-300 transform hover:scale-110"
           >
-            <Menu size={24} className={isDark ? "text-slate-400" : "text-gray-600"} />
+            <Menu
+              size={24}
+              className={isDark ? "text-slate-400" : "text-gray-600"}
+            />
           </button>
 
-        <div className="m-0 p-0">
-  <div className="flex items-center m-0 p-0">
+          <div className="m-0 p-0">
+            <div className="flex items-center m-0 p-0">
+              {/* Animation (absolute trim technique) */}
+              <div className="hidden md:flex w-14 h-14 items-center justify-center shrink-0 m-0 p-0">
+                <Lottie
+                  animationData={sidebarWifiAnimation}
+                  loop
+                  className="block w-full h-full m-0 p-0"
+                  style={{ marginLeft: "-2px" }} // trims SVG whitespace if present
+                />
+              </div>
 
-    {/* Animation (absolute trim technique) */}
-    <div className="hidden md:flex w-14 h-14 items-center justify-center shrink-0 m-0 p-0">
-      <Lottie
-        animationData={sidebarWifiAnimation}
-        loop
-        className="block w-full h-full m-0 p-0"
-        style={{ marginLeft: "-2px" }}   // trims SVG whitespace if present
-      />
-    </div>
-
-    {/* Heading */}
-    <h1
-      className="
+              {/* Heading */}
+              <h1
+                className="
         m-0 p-0
         text-2xl md:text-3xl font-bold tracking-tight
         bg-gradient-to-r
@@ -379,37 +426,37 @@ const MainLayout = () => {
         bg-clip-text text-transparent
         leading-tight
       "
-    >
-      Welcome back,{" "}
-      <span className="whitespace-nowrap">
-        {user?.name?.split(" ")[0] || "User"}
-      </span>
-    </h1>
+              >
+                Welcome back,{" "}
+                <span className="whitespace-nowrap">
+                  {user?.name?.split(" ")[0] || "User"}
+                </span>
+              </h1>
+            </div>
 
-  </div>
-
-  {/* Subtitle */}
-  <p
-    className={`
+            {/* Subtitle */}
+            <p
+              className={`
       m-0 mt-1
       text-sm md:text-base
       leading-normal
       ${isDark ? "text-slate-400" : "text-gray-600"}
     `}
-  >
-    Manage your dashboard & activities efficiently
-  </p>
-</div>
-
+            >
+              Manage your dashboard & activities efficiently
+            </p>
+          </div>
 
           <div className="ml-auto flex items-center gap-4">
             {/* Theme Toggle Enhanced */}
             <button
               onClick={toggleTheme}
               className={`p-2.5 rounded-xl transition-all duration-300 transform hover:scale-110 shadow-lg
-                ${isDark 
-                  ? "bg-slate-800/50 hover:bg-slate-700/50 shadow-slate-900/50" 
-                  : "bg-gray-100 hover:bg-gray-200 shadow-gray-200/50"}`}
+                ${
+                  isDark
+                    ? "bg-slate-800/50 hover:bg-slate-700/50 shadow-slate-900/50"
+                    : "bg-gray-100 hover:bg-gray-200 shadow-gray-200/50"
+                }`}
             >
               {isDark ? (
                 <Sun size={20} className="text-yellow-400" />
@@ -424,16 +471,23 @@ const MainLayout = () => {
               onFocus={prefetchNotifications}
               onTouchStart={prefetchNotifications}
               className={`relative p-2.5 rounded-xl transition-all duration-300 transform hover:scale-110 shadow-lg
-                ${isDark 
-                  ? "hover:bg-slate-800/80 shadow-slate-900/50" 
-                  : "hover:bg-gray-100 shadow-gray-200/50"}`}
+                ${
+                  isDark
+                    ? "hover:bg-slate-800/80 shadow-slate-900/50"
+                    : "hover:bg-gray-100 shadow-gray-200/50"
+                }`}
             >
-              <Bell size={22} className={isDark ? "text-slate-300" : "text-gray-700"} />
+              <Bell
+                size={22}
+                className={isDark ? "text-slate-300" : "text-gray-700"}
+              />
               {notificationCount > 0 && (
                 <>
                   <span className="absolute top-2 right-2 h-3 w-3 bg-red-500 rounded-full animate-ping" />
                   <span className="absolute top-2 right-2 h-3 w-3 bg-red-500 rounded-full flex items-center justify-center">
-                    <span className="text-[10px] font-bold text-white">{notificationCount}</span>
+                    <span className="text-[10px] font-bold text-white">
+                      {notificationCount}
+                    </span>
                   </span>
                 </>
               )}
@@ -443,22 +497,31 @@ const MainLayout = () => {
 
         {/* CONTENT */}
         <div className="flex-1 p-6 md:p-8 overflow-y-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-400/20">
-          <div className={`rounded-2xl p-6 md:p-8 transition-all duration-500
-            ${isDark 
-              ? "bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 shadow-2xl shadow-slate-900/20" 
-              : "bg-white backdrop-blur-sm border border-gray-200/50 shadow-2xl shadow-gray-200/20"}`}
+          <div
+            className={`rounded-2xl p-6 md:p-8 transition-all duration-500
+            ${
+              isDark
+                ? "bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 shadow-2xl shadow-slate-900/20"
+                : "bg-white backdrop-blur-sm border border-gray-200/50 shadow-2xl shadow-gray-200/20"
+            }`}
           >
             <Outlet />
           </div>
         </div>
 
         {/* FOOTER */}
-        <footer className={`py-4 px-6 border-t text-center text-sm transition-colors duration-500
-          ${isDark 
-            ? "border-slate-800/50 text-slate-500" 
-            : "border-gray-200/50 text-gray-500"}`}
+        <footer
+          className={`py-4 px-6 border-t text-center text-sm transition-colors duration-500
+          ${
+            isDark
+              ? "border-slate-800/50 text-slate-500"
+              : "border-gray-200/50 text-gray-500"
+          }`}
         >
-          <p>© {new Date().getFullYear()} Activline Dashboard. All rights reserved.</p>
+          <p>
+            © {new Date().getFullYear()} Activline Dashboard. All rights
+            reserved.
+          </p>
           <p className="text-xs mt-1">v2.0.0 • Enhanced with modern UI</p>
         </footer>
       </main>

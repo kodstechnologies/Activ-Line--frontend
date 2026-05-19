@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
@@ -49,8 +48,10 @@ const AssignedTickets = () => {
   const { isDark } = useTheme();
   const { token } = useAuth();
 
-  const [rooms, setRooms] = useState([]);
-  const [activeRoomId, setActiveRoomId] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [activeUserId, setActiveUserId] = useState(null);
+  const [activeTicketId, setActiveTicketId] = useState(null);
+  
   const [messages, setMessages] = useState([]);
   const [search, setSearch] = useState("");
   const [loadingRooms, setLoadingRooms] = useState(true);
@@ -62,7 +63,8 @@ const AssignedTickets = () => {
   const [resolvedCount, setResolvedCount] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  const activeRoom = rooms.find((r) => r._id === activeRoomId);
+  const activeUser = users.find((u) => u.customerId === activeUserId);
+  const activeTicket = activeUser?.tickets?.find(t => t._id === activeTicketId) || activeUser?.tickets?.[0];
 
   const ALLOWED_STATUS_TRANSITIONS = {
     OPEN: ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"],
@@ -71,6 +73,7 @@ const AssignedTickets = () => {
     RESOLVED: ["RESOLVED", "OPEN", "IN_PROGRESS", "CLOSED"],
     CLOSED: ["CLOSED"],
   };
+  
   const updateTicketStatus = async (roomId, status) => {
     try {
       const res = await api.patch("/api/chat/admin/status", { roomId, status });
@@ -82,13 +85,19 @@ const AssignedTickets = () => {
   };
 
   const handleStatusChange = async (newStatus) => {
-    if (!activeRoom) return;
+    if (!activeTicket) return;
     try {
-      const updatedRoom = await updateTicketStatus(activeRoom._id, newStatus);
-      setRooms((prev) =>
-        prev.map((r) =>
-          r._id === updatedRoom._id ? { ...r, status: updatedRoom.status } : r,
-        ),
+      const updatedRoom = await updateTicketStatus(activeTicket._id, newStatus);
+      setUsers((prev) =>
+        prev.map((u) => {
+          if (u.tickets.some(t => t._id === activeTicket._id)) {
+             return {
+               ...u,
+               tickets: u.tickets.map(t => t._id === activeTicket._id ? { ...t, status: updatedRoom.status } : t)
+             };
+          }
+          return u;
+        })
       );
     } catch {}
   };
@@ -101,15 +110,52 @@ const AssignedTickets = () => {
     api
       .get("/api/chat/staff/rooms")
       .then((res) => {
-        const data = res.data.data || [];
-        setRooms(data);
-        if (data.length > 0 && !activeRoomId) {
-          setActiveRoomId(data[0]._id);
+        const mapped = res.data.data || [];
+        
+        const groupedUsers = [];
+        const userMap = new Map();
+
+        mapped.forEach(r => {
+          const cid = r.customer?._id || r.customer?.userName || "unknown";
+          if(!userMap.has(cid)) {
+             userMap.set(cid, {
+               customerId: cid,
+               customerName: r.customer?.userName || "Unknown Customer",
+               customerEmail: r.customer?.emailId,
+               customerPhone: r.customer?.phoneNumber,
+               latestTicketId: r._id.slice(-6).toUpperCase(),
+               latestMessageTime: r.lastMessageAt || r.createdAt,
+               unreadCount: 0,
+               tickets: []
+             });
+             groupedUsers.push(userMap.get(cid));
+          }
+          const u = userMap.get(cid);
+          const t = {
+            _id: r._id,
+            ticketId: r._id.slice(-6).toUpperCase(),
+            issue: r.issue || "Customer Support",
+            status: r.status,
+            createdAt: r.createdAt
+          };
+          u.tickets.push(t);
+          u.unreadCount += (r.unreadCount || 0);
+          if (new Date(r.lastMessageAt || 0) > new Date(u.latestMessageTime || 0)) {
+             u.latestMessageTime = r.lastMessageAt;
+             u.latestTicketId = t.ticketId;
+          }
+        });
+
+        groupedUsers.sort((a,b) => new Date(b.latestMessageTime || 0) - new Date(a.latestMessageTime || 0));
+        setUsers(groupedUsers);
+        
+        if (groupedUsers.length > 0 && !activeUserId) {
+          setActiveUserId(groupedUsers[0].customerId);
         }
       })
-      .catch(() => setRooms([]))
+      .catch(() => setUsers([]))
       .finally(() => setLoadingRooms(false));
-  }, [token, activeRoomId]);
+  }, [token]);
 
   // Load ticket counts
   useEffect(() => {
@@ -133,30 +179,51 @@ const AssignedTickets = () => {
       });
   }, [token]);
 
+  // SET DEFAULT ACTIVE TICKET
+  useEffect(() => {
+    if (activeUser && activeUser.tickets.length > 0) {
+       if (!activeUser.tickets.some(t => t._id === activeTicketId)) {
+          const openTicket = activeUser.tickets.find(t => ["OPEN", "IN_PROGRESS"].includes(t.status));
+          setActiveTicketId(openTicket ? openTicket._id : activeUser.tickets[0]._id);
+       }
+    }
+  }, [activeUser, activeTicketId]);
+
+
   // Load messages + socket
   useEffect(() => {
-    if (!activeRoomId || !token) return;
+    if (!activeUser || !token) return;
 
     setMessages([]); 
     setLoadingMessages(true);
+    
+    const fetchPromises = activeUser.tickets.map(t => 
+       api.get(`/api/chat/staff/messages/${t._id}`)
+         .then(res => (res.data.data || []).map(msg => ({ ...normalizeMessageForChat(msg), roomId: t._id })))
+         .catch(() => [])
+    );
 
-    api
-      .get(`/api/chat/staff/messages/${activeRoomId}`)
-      .then((res) => {
-        const normalized = (res.data.data || []).map(normalizeMessageForChat);
-        setMessages(sortMessagesByCreatedAt(normalized));
-      })
-      .catch(() => setMessages([]))
-      .finally(() => setLoadingMessages(false));
+    Promise.all(fetchPromises).then(results => {
+       const allMsgs = results.flat();
+       setMessages(sortMessagesByCreatedAt(allMsgs));
+    }).finally(() => {
+       setLoadingMessages(false);
+    });
 
     socket.auth = { token };
     if (!socket.connected) socket.connect();
-    socket.emit("join-room", activeRoomId);
+    
+    activeUser.tickets.forEach(t => {
+      socket.emit("join-room", t._id);
+    });
 
     const onNewMessage = (msg) => {
+      const normalized = normalizeMessageForChat(msg);
+      // Ensure roomId is attached so Chat.jsx can group it and apply zig-zag backgrounds
+      normalized.roomId = msg.roomId || activeTicketId;
       setMessages((prev) => {
         if (prev.some((m) => m._id === msg._id)) return prev;
-        return sortMessagesByCreatedAt([...prev, normalizeMessageForChat(msg)]);
+        return sortMessagesByCreatedAt([...prev, normalized]);
       });
     };
 
@@ -164,30 +231,37 @@ const AssignedTickets = () => {
 
     return () => {
       socket.off("new-message", onNewMessage);
+      activeUser.tickets.forEach(t => {
+        socket.emit("leave-room", t._id);
+      });
     };
-  }, [activeRoomId, token]);
+  }, [activeUser?.customerId, token]);
 
-  const sendMessage = (text) => {
-    if (!text.trim() || !activeRoomId) return;
+  const sendMessage = ({ message, attachments }) => {
+    if ((!message || !message.trim()) && (!attachments || attachments.length === 0)) return;
+    if (!activeTicket) return;
+    
     socket.emit("send-message", {
-      roomId: activeRoomId,
-      message: text,
+      roomId: activeTicket._id,
+      ticketId: activeTicket.ticketId,
+      message,
+      attachments
     });
   };
 
-  const filteredRooms = useMemo(() => {
-    let result = rooms.filter(
-      (r) =>
-        r.customer?.userName?.toLowerCase().includes(search.toLowerCase()) ||
-        r._id?.toLowerCase().includes(search.toLowerCase()),
+  const filteredUsers = useMemo(() => {
+    let result = users.filter(
+      (u) =>
+        u.customerName?.toLowerCase().includes(search.toLowerCase()) ||
+        u.latestTicketId?.toLowerCase().includes(search.toLowerCase()),
     );
 
     if (statusFilter !== "all") {
-      result = result.filter((r) => r.status === statusFilter);
+      result = result.filter((u) => u.tickets.some(t => t.status === statusFilter));
     }
 
     return result;
-  }, [rooms, search, statusFilter]);
+  }, [users, search, statusFilter]);
 
   const getStatusStyles = (status) => {
     const base =
@@ -237,7 +311,7 @@ const AssignedTickets = () => {
   };
 
   const statusFilters = [
-    { key: "all", label: "All Tickets", count: rooms.length, icon: ListFilter },
+    { key: "all", label: "All Tickets", count: users.reduce((acc, u) => acc + u.tickets.length, 0), icon: ListFilter },
     { key: "OPEN", label: "Open", count: openCount, color: "blue" },
     {
       key: "IN_PROGRESS",
@@ -319,7 +393,7 @@ const AssignedTickets = () => {
                     : "bg-blue-100 text-blue-700"
                 }`}
               >
-                {rooms.length}
+                {users.length}
               </span>
             </div>
 
@@ -421,8 +495,8 @@ const AssignedTickets = () => {
           </div>
 
           {/* Rooms List */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {filteredRooms.length === 0 ? (
+          <div className="flex-1 overflow-y-auto premium-scrollbar p-3 space-y-2">
+            {filteredUsers.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6">
                 <MessageSquare
                   className={`w-12 h-12 mb-4 ${isDark ? "text-gray-600" : "text-gray-400"}`}
@@ -441,17 +515,39 @@ const AssignedTickets = () => {
                 </p>
               </div>
             ) : (
-              filteredRooms.map((room) => (
+              filteredUsers.map((u) => {
+                // Show zig-zag when ALL tickets are RESOLVED or CLOSED (no active tickets)
+                const allDone = u.tickets.every((t) =>
+                  ["RESOLVED", "CLOSED"].includes(t.status),
+                );
+                const isActive = activeUserId === u.customerId;
+                const closedStyle = allDone
+                  ? isActive
+                    ? {
+                        backgroundImage: isDark
+                          ? `repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(16, 185, 129, 0.15) 8px, rgba(16, 185, 129, 0.15) 16px)`
+                          : `repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(16, 185, 129, 0.18) 8px, rgba(16, 185, 129, 0.18) 16px)`,
+                      }
+                    : {
+                        backgroundColor: isDark
+                          ? "rgba(16, 185, 129, 0.06)"
+                          : "rgba(209, 250, 229, 0.75)",
+                        backgroundImage: isDark
+                          ? `repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(16, 185, 129, 0.12) 8px, rgba(16, 185, 129, 0.12) 16px)`
+                          : `repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(16, 185, 129, 0.20) 8px, rgba(16, 185, 129, 0.20) 16px)`,
+                      }
+                  : {};
+                return (
                 <div
-                  key={room._id}
+                  key={u.customerId}
                   onClick={() => {
-                    setActiveRoomId(room._id);
+                    setActiveUserId(u.customerId);
                     if (window.innerWidth < 1024) setIsSidebarOpen(false);
                   }}
                   className={`
                     group relative p-4 rounded-xl cursor-pointer transition-all duration-200
                     ${
-                      activeRoomId === room._id
+                      isActive
                         ? isDark
                           ? "bg-gradient-to-r from-blue-900/40 to-blue-800/20 border border-blue-700/50 shadow-lg"
                           : "bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 shadow-sm"
@@ -460,8 +556,9 @@ const AssignedTickets = () => {
                           : "hover:bg-gray-50 border border-transparent"
                     }
                   `}
+                  style={closedStyle}
                 >
-                  {activeRoomId === room._id && (
+                  {activeUserId === u.customerId && (
                     <div
                       className={`absolute -left-px top-0 bottom-0 w-1 rounded-r-full ${isDark ? "bg-blue-500" : "bg-blue-600"}`}
                     />
@@ -471,10 +568,10 @@ const AssignedTickets = () => {
                     <div
                       className={`
                         flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-white font-medium
-                        ${activeRoomId === room._id ? "bg-blue-600" : isDark ? "bg-gray-700" : "bg-gray-300"}
+                        ${activeUserId === u.customerId ? "bg-blue-600" : isDark ? "bg-gray-700" : "bg-gray-300"}
                       `}
                     >
-                      {(room.customer?.userName?.[0] || "?").toUpperCase()}
+                      {(u.customerName?.[0] || "?").toUpperCase()}
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -482,17 +579,17 @@ const AssignedTickets = () => {
                         <h4
                           className={`font-semibold truncate ${isDark ? "text-white" : "text-gray-900"}`}
                         >
-                          {room.customer?.userName || "Unknown Customer"}
+                          {u.customerName || "Unknown Customer"}
                         </h4>
-                        {room.lastMessageAt && (
+                        {u.latestMessageTime && (
                           <span
                             className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"}`}
                           >
-                            {new Date(room.lastMessageAt).toLocaleTimeString(
+                            {new Date(u.latestMessageTime).toLocaleDateString(
                               [],
                               {
-                                hour: "2-digit",
-                                minute: "2-digit",
+                                month: "short",
+                                day: "numeric",
                               },
                             )}
                           </span>
@@ -500,39 +597,31 @@ const AssignedTickets = () => {
                       </div>
 
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className={getStatusStyles(room.status)}>
-                          {getStatusIcon(room.status)}
-                          {room.status?.toLowerCase() || "open"}
+                        <span className={`text-sm px-1.5 py-0.5 rounded-full ${isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-200 text-gray-700'} flex items-center gap-1`}>
+                            {u.tickets.length} Tickets
                         </span>
                         <span
                           className={`text-xs font-mono opacity-70 ${isDark ? "text-gray-500" : "text-gray-500"}`}
                         >
-                          #{room._id.slice(-6)}
+                          Latest: #{u.latestTicketId}
                         </span>
                       </div>
-
-                      {room.lastMessage && (
-                        <p
-                          className={`text-sm truncate ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                        >
-                          {room.lastMessage}
-                        </p>
-                      )}
                     </div>
 
-                    {room.unreadCount > 0 && (
+                    {u.unreadCount > 0 && (
                       <span
                         className={`
                           flex-shrink-0 min-w-[1.5rem] h-6 px-2 rounded-full flex items-center justify-center text-xs font-bold
                           ${isDark ? "bg-blue-600 text-white" : "bg-blue-600 text-white"}
                         `}
                       >
-                        {room.unreadCount}
+                        {u.unreadCount}
                       </span>
                     )}
                   </div>
-                </div>
-              ))
+                  </div>
+                );
+              })
             )}
           </div>
         </aside>
@@ -547,7 +636,7 @@ const AssignedTickets = () => {
             />
           )}
 
-          {activeRoom ? (
+          {activeUser ? (
             loadingMessages ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center space-y-4">
@@ -565,15 +654,17 @@ const AssignedTickets = () => {
             ) : (
               <Chat
                 ticket={{
-                  ticketId: activeRoom._id.slice(-6),
-                  issue: activeRoom.issue || "Customer Support",
-                  customerName: activeRoom.customer?.userName,
-                  customerEmail: activeRoom.customer?.emailId,
-                  customerPhone: activeRoom.customer?.phoneNumber,
-                  status: activeRoom.status,
-                  createdAt: activeRoom.createdAt,
-                  _id: activeRoom._id,
+                  ticketId: activeTicket?.ticketId,
+                  issue: activeTicket?.issue || "Customer Support",
+                  customerName: activeUser.customerName,
+                  customerEmail: activeUser.customerEmail,
+                  customerPhone: activeUser.customerPhone,
+                  status: activeTicket?.status,
+                  createdAt: activeTicket?.createdAt,
+                  _id: activeTicket?._id,
                 }}
+                userTickets={activeUser.tickets}
+                onTicketSelect={(tId) => setActiveTicketId(tId)}
                 messages={messages}
                 onSendMessage={sendMessage}
                 showAssignment={false}
@@ -603,8 +694,7 @@ const AssignedTickets = () => {
                   <p
                     className={`mt-3 ${isDark ? "text-gray-400" : "text-gray-600"}`}
                   >
-                    Select a conversation from the sidebar to start helping
-                    customers
+                    Select a user from the sidebar to start helping
                   </p>
                 </div>
 
@@ -629,24 +719,40 @@ const AssignedTickets = () => {
                     <div className="w-3 h-3 rounded-full bg-blue-500" />
                     <span>In Progress: {inProgressCount}</span>
                   </div>
-                                    <div
-                                      className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                                        isDark
-                                          ? "bg-gray-800 text-emerald-300"
-                                          : "bg-emerald-50 text-emerald-700"
-                                      }`}
-                                    >
-                                      <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                                      <span>Resolved: {resolvedCount}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </main>
-                        </div>
-                      </div>
-                    );
-                  };
-                  
-                  export default AssignedTickets;
+                  <div
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                      isDark
+                        ? "bg-gray-800 text-emerald-300"
+                        : "bg-emerald-50 text-emerald-700"
+                    }`}
+                  >
+                    <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                    <span>Resolved: {resolvedCount}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+      {/* CSS Animations */}
+      <style>{`
+        .premium-scrollbar { scrollbar-width: thin; }
+        .premium-scrollbar::-webkit-scrollbar { width: 6px; }
+        .premium-scrollbar::-webkit-scrollbar-track {
+          background: transparent !important;
+          background-color: transparent !important;
+        }
+        .premium-scrollbar::-webkit-scrollbar-thumb {
+          background: ${isDark ? "#4b5563" : "#d1d5db"};
+          border-radius: 3px;
+        }
+        .premium-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: ${isDark ? "#6b7280" : "#9ca3af"};
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default AssignedTickets;

@@ -1,11 +1,12 @@
 import { useMemo } from "react";
 import { useTheme } from "../../../context/ThemeContext";
-import { Settings, MessageSquare, Key, ChevronRight } from "lucide-react";
+import { Settings, MessageSquare, Key, Image } from "lucide-react";
 
 const tabs = [
-  { id: "general", label: "General", icon: Settings, color: "purple" },
-  { id: "canned", label: "Canned Responses", icon: MessageSquare, color: "blue" },
-  { id: "api", label: "API Keys", icon: Key, color: "green" },
+  { id: "general",  label: "General",          icon: Settings,      color: "purple" },
+  { id: "canned",   label: "Canned Responses",  icon: MessageSquare, color: "blue"   },
+  { id: "api",      label: "API Keys",          icon: Key,           color: "green"  },
+  { id: "banners",  label: "Banners",           icon: Image,         color: "orange" },
 ];
 
 const SettingsTabs = ({ activeTab, setActiveTab }) => {
@@ -16,8 +17,9 @@ const SettingsTabs = ({ activeTab, setActiveTab }) => {
     
     const colors = {
       purple: isDark ? "from-purple-600 to-purple-500" : "from-purple-500 to-indigo-600",
-      blue: isDark ? "from-blue-600 to-blue-500" : "from-blue-500 to-cyan-600",
-      green: isDark ? "from-green-600 to-green-500" : "from-green-500 to-emerald-600",
+      blue:   isDark ? "from-blue-600 to-blue-500"     : "from-blue-500 to-cyan-600",
+      green:  isDark ? "from-green-600 to-green-500"   : "from-green-500 to-emerald-600",
+      orange: isDark ? "from-orange-500 to-amber-500"  : "from-orange-500 to-amber-600",
     };
     return colors[color] || colors.purple;
   };

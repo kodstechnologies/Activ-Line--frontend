@@ -1,6 +1,4 @@
-
-
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { 
   Send, 
   User, 
@@ -44,17 +42,17 @@ import {
   Rocket,
   Feather,
   X,
-  Upload
+  Upload,
+  ListFilter
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
-// import EmojiPicker from "emoji-picker-react";
 import api from "../../api/axios";
-// import { socket } from "../../socket/socket";
 import { socket } from "../../socket/socket";
-// import { socket } from "../../socket/socket";
 
 const Chat = ({
-  ticket,
+  ticket, // active selected ticket
+  userTickets = [], // all tickets for dropdown
+  onTicketSelect, // handle dropdown change
   messages = [],
   onSendMessage,
   showAssignment,
@@ -74,15 +72,12 @@ const Chat = ({
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const inputRef = useRef(null);
-  // const [showEmoji, setShowEmoji] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const fileInputRef = useRef(null);
-  // const [activeReactions, setActiveReactions] = useState({});
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [pinnedMessages, setPinnedMessages] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   
-  const [showQuickActions, setShowQuickActions] = useState(false);
   const [messageStats, setMessageStats] = useState({
     total: 0,
     agent: 0,
@@ -91,68 +86,58 @@ const Chat = ({
 
   const [previewUrls, setPreviewUrls] = useState([]);
 
-useEffect(() => {
-  const urls = selectedFiles.map(file => ({
-    file,
-    url: URL.createObjectURL(file)
-  }));
+  useEffect(() => {
+    const urls = selectedFiles.map(file => ({
+      file,
+      url: URL.createObjectURL(file)
+    }));
 
-  setPreviewUrls(urls);
+    setPreviewUrls(urls);
 
-  // 🔥 CLEANUP (VERY IMPORTANT)
-  return () => {
-    urls.forEach(p => URL.revokeObjectURL(p.url));
-  };
-}, [selectedFiles]);
+    return () => {
+      urls.forEach(p => URL.revokeObjectURL(p.url));
+    };
+  }, [selectedFiles]);
 
+  const handleFileSelect = (e) => {
+    if (!e.target.files || e.target.files.length === 0) return;
 
-const handleFileSelect = (e) => {
-  if (!e.target.files || e.target.files.length === 0) return;
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
-  const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    const files = Array.from(e.target.files).filter(file => {
+      if (file.size > MAX_SIZE) {
+        alert(`${file.name} is too large (max 5MB)`);
+        return false;
+      }
+      return true;
+    });
 
-  const files = Array.from(e.target.files).filter(file => {
-    if (file.size > MAX_SIZE) {
-      alert(`${file.name} is too large (max 5MB)`);
-      return false;
+    if (files.length > 0) {
+      setSelectedFiles(prev => [...prev, ...files]);
     }
-    return true;
-  });
 
-  if (files.length > 0) {
-    setSelectedFiles(prev => [...prev, ...files]);
-  }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
-  if (fileInputRef.current) {
-    fileInputRef.current.value = "";
-  }
-};
+  const openFile = (file) => {
+    window.open(file.url, "_blank");
+  };
 
+  const downloadFile = (file) => {
+    const downloadUrl = file.url.replace(
+      "/upload/",
+      "/upload/fl_attachment/"
+    );
 
-const openFile = (file) => {
-  // Always preview with ORIGINAL URL
-  window.open(file.url, "_blank");
-};
-
-const downloadFile = (file) => {
-  const downloadUrl = file.url.replace(
-    "/upload/",
-    "/upload/fl_attachment/"
-  );
-
-  const a = document.createElement("a");
-  a.href = downloadUrl;
-  a.download = file.name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-};
-
-
-
-
-
-
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
 
   const removeFile = (index) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
@@ -198,55 +183,48 @@ const downloadFile = (file) => {
     }
   };
 
-  // const quickReactions = ["👍", "❤️", "😄", "🎉", "🔥", "🚀", "⭐", "👏"];
-
   useEffect(() => {
     scrollToBottom();
-    const agentMsgs = messages.filter(m => ["ADMIN", "ADMIN_STAFF"].includes(m.senderRole)).length;
-    const customerMsgs = messages.filter(m => !["ADMIN", "ADMIN_STAFF", "SYSTEM"].includes(m.senderRole)).length;
+    const agentMsgs = messages.filter(m => ["ADMIN", "ADMIN_STAFF", "SUPER_ADMIN"].includes(m.senderRole)).length;
+    const customerMsgs = messages.filter(m => !["ADMIN", "ADMIN_STAFF", "SUPER_ADMIN", "SYSTEM"].includes(m.senderRole)).length;
     setMessageStats({
       total: messages.length,
       agent: agentMsgs,
       customer: customerMsgs
     });
-  }, [messages]);
+  }, [messages, ticket]);
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ 
-      behavior: "smooth",
-      block: "nearest"
-    });
+    setTimeout(() => {
+       messagesEndRef.current?.scrollIntoView({ 
+         behavior: "smooth",
+         block: "nearest"
+       });
+    }, 100);
   }, []);
 
-const send = useCallback(async () => {
-  if ((!inputMsg.trim() && selectedFiles.length === 0) || !ticket?._id) return;
+  const send = useCallback(async () => {
+    if ((!inputMsg.trim() && selectedFiles.length === 0) || !ticket?._id) return;
 
- // In send() function – replace the attachments mapping
-const attachments = await Promise.all(
-  selectedFiles.map(async (file) => {
-    const arrayBuffer = await file.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    
-    return {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      // Send as normal array – much more reliable over socket.io
-      buffer: Array.from(uint8Array),
-    };
-  })
-);
+    const attachments = await Promise.all(
+      selectedFiles.map(async (file) => {
+        const arrayBuffer = await file.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        
+        return {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          buffer: Array.from(uint8Array),
+        };
+      })
+    );
 
-  socket.emit("send-message", {
-    roomId: ticket._id,
-    message: inputMsg || "",
-    attachments,
-  });
+    onSendMessage({ message: inputMsg || "", attachments });
 
-  setInputMsg("");
-  setSelectedFiles([]);
-}, [inputMsg, selectedFiles, ticket?._id]);
-
+    setInputMsg("");
+    setSelectedFiles([]);
+  }, [inputMsg, selectedFiles, ticket?._id, onSendMessage]);
 
   const handleKeyPress = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -269,7 +247,8 @@ const attachments = await Promise.all(
     if (darkMode) {
       switch(status?.toLowerCase()) {
         case 'open': return `${base} bg-gradient-to-r from-blue-500/20 via-blue-600/20 to-cyan-500/20 text-blue-300 border border-blue-500/40 shadow-lg shadow-blue-500/20`;
-        case 'pending': return `${base} bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 text-amber-300 border border-amber-500/40 shadow-lg shadow-amber-500/20`;
+        case 'pending': 
+        case 'in_progress': return `${base} bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 text-amber-300 border border-amber-500/40 shadow-lg shadow-amber-500/20`;
         case 'resolved': return `${base} bg-gradient-to-r from-emerald-500/20 via-green-500/20 to-teal-500/20 text-emerald-300 border border-emerald-500/40 shadow-lg shadow-emerald-500/20`;
         case 'closed': return `${base} bg-gradient-to-r from-gray-800 via-gray-900 to-gray-950 text-gray-300 border border-gray-700 shadow-lg shadow-gray-900/30`;
         default: return `${base} bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-rose-500/20 text-purple-300 border border-purple-500/40`;
@@ -277,7 +256,8 @@ const attachments = await Promise.all(
     } else {
       switch(status?.toLowerCase()) {
         case 'open': return `${base} bg-gradient-to-r from-blue-50 via-blue-100 to-cyan-50 text-blue-700 border border-blue-300 shadow-lg shadow-blue-500/20`;
-        case 'pending': return `${base} bg-gradient-to-r from-amber-50 via-orange-50 to-red-50 text-amber-700 border border-amber-300 shadow-lg shadow-amber-500/20`;
+        case 'pending':
+        case 'in_progress': return `${base} bg-gradient-to-r from-amber-50 via-orange-50 to-red-50 text-amber-700 border border-amber-300 shadow-lg shadow-amber-500/20`;
         case 'resolved': return `${base} bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 text-emerald-700 border border-emerald-300 shadow-lg shadow-emerald-500/20`;
         case 'closed': return `${base} bg-gradient-to-r from-gray-50 via-gray-100 to-gray-150 text-gray-700 border border-gray-300 shadow-lg shadow-gray-500/10`;
         default: return `${base} bg-gradient-to-r from-purple-50 via-pink-50 to-rose-50 text-purple-700 border border-purple-300`;
@@ -289,8 +269,10 @@ const attachments = await Promise.all(
     const iconClass = "w-3.5 h-3.5";
     switch(status?.toLowerCase()) {
       case 'open': return <AlertCircle className={iconClass} />;
-      case 'pending': return <Clock className={iconClass} />;
+      case 'pending': 
+      case 'in_progress': return <Clock className={iconClass} />;
       case 'resolved': return <CheckCircle className={iconClass} />;
+      case 'closed': return <CheckCircle className={iconClass} />;
       default: return <AlertCircle className={iconClass} />;
     }
   };
@@ -298,34 +280,14 @@ const attachments = await Promise.all(
   const formatTime = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
-    const hours = date.getHours();
-    // const emoji = hours < 12 ? "🌅" : hours < 18 ? "☀️" : "🌙";
-    // return `${emoji} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
-    const options = { 
-      month: 'short', 
-      day: 'numeric',
-      year: 'numeric'
-    };
-    return date.toLocaleDateString([], options);
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
   };
-
-  // const onEmojiClick = (emojiData) => {
-  //   setInputMsg(prev => prev + emojiData.emoji);
-  // };
-
-  // const addReaction = (messageId, emoji) => {
-  //   setActiveReactions(prev => ({
-  //     ...prev,
-  //     [messageId]: [...(prev[messageId] || []), { emoji, timestamp: Date.now() }]
-  //   }));
-  // };
 
   const togglePinMessage = (messageId) => {
     setPinnedMessages(prev => 
@@ -342,6 +304,40 @@ const attachments = await Promise.all(
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
+
+  /* ----- GROUP AND REORDER MESSAGES ----- */
+  const orderedMessageGroups = useMemo(() => {
+    const groups = {};
+    messages.forEach(m => {
+       if (!groups[m.roomId]) groups[m.roomId] = [];
+       groups[m.roomId].push(m);
+    });
+
+    // 1. Get all non-active groups and sort them by their LATEST message
+    const nonActiveGroups = Object.keys(groups)
+      .filter(id => id !== ticket?._id)
+      .map(id => ({
+         roomId: id,
+         messages: groups[id].sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt))
+      }));
+
+    nonActiveGroups.sort((a, b) => {
+      const aLatest = new Date(a.messages[a.messages.length - 1].createdAt);
+      const bLatest = new Date(b.messages[b.messages.length - 1].createdAt);
+      return aLatest - bLatest;
+    });
+
+    // 2. Pin the ACTIVE ticket to the absolute bottom
+    const result = [...nonActiveGroups];
+    if (ticket?._id && groups[ticket._id]) {
+       result.push({
+          roomId: ticket._id,
+          messages: groups[ticket._id].sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt))
+       });
+    }
+
+    return result;
+  }, [messages, ticket?._id]);
 
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50' : 'h-full'} flex flex-col overflow-hidden transition-all duration-700 ${
@@ -372,7 +368,7 @@ const attachments = await Promise.all(
         </div>
       )}
 
-      {/* HEADER - Responsive */}
+      {/* HEADER */}
       <div className={`p-4 sm:p-5 border-b flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 sm:gap-4 relative z-20 ${
         darkMode 
           ? "border-gray-800/50 bg-gradient-to-r from-gray-900/90 via-gray-950/90 to-black/90 backdrop-blur-xl" 
@@ -561,14 +557,11 @@ const attachments = await Promise.all(
 
       <div 
         ref={messagesContainerRef}
-        className={`flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 sm:space-y-8 overscroll-contain scroll-smooth relative z-10 transition-all duration-500 ${
-          ticket?.status === "CLOSED"
-            ? darkMode
-              ? "bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950/50"
-              : "bg-gradient-to-b from-emerald-50 via-green-50 to-emerald-100/80"
-            : ""
-        }`}
+        className={`flex-1 flex flex-col overflow-y-auto premium-scrollbar p-4 sm:p-6 space-y-6 sm:space-y-8 overscroll-contain scroll-smooth relative z-10 transition-all duration-500`}
       >
+        {/* Spacer to push messages to the bottom */}
+        <div className="flex-1 min-h-[0px]"></div>
+
         {messages.length === 0 && (
           <div className="h-full flex flex-col items-center justify-center p-4 sm:p-6 text-center">
             <div className={`p-6 sm:p-8 rounded-2xl sm:rounded-3xl mb-6 sm:mb-8 transition-all duration-700 hover:scale-[1.02] relative overflow-hidden ${
@@ -609,110 +602,93 @@ const attachments = await Promise.all(
                     <p className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Secure & Encrypted</p>
                   </div>
                 </div>
-                
-                <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap">
-                  <div className="flex items-center gap-1.5">
-                    <TrendingUp className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${darkMode ? 'text-green-400' : 'text-green-500'}`} />
-                    <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>99% Satisfaction</span>
-                  </div>
-                  <div className="hidden sm:block h-4 w-px bg-gray-600/30"></div>
-                  <div className="flex items-center gap-1.5">
-                    <Coffee className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${darkMode ? 'text-amber-400' : 'text-amber-500'}`} />
-                    <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>24/7 Support</span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
         )}
 
-        {messages.map((msg, index) => {
-          const isAgent = ["ADMIN", "ADMIN_STAFF","SUPER_ADMIN"].includes(msg.senderRole);
-          const isSystem = msg.senderRole === "SYSTEM";
-          const isPinned = pinnedMessages.includes(msg._id);
-          const showDate = index === 0 || 
-            new Date(msg.createdAt).toDateString() !== 
-            new Date(messages[index - 1]?.createdAt).toDateString();
+        {orderedMessageGroups.map((group, groupIndex) => {
+           const groupTicket = userTickets.find(t => t._id === group.roomId);
+           const displayTicketId = groupTicket?.ticketId || group.roomId.slice(-6);
+           const isGroupDone = ["RESOLVED", "CLOSED"].includes(groupTicket?.status);
 
-          if (showDate) {
-            return (
-              <React.Fragment key={`date-${msg._id}`}>
-                <div className="flex justify-center my-6 sm:my-8">
-                  <div className={`text-xs sm:text-sm px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-full backdrop-blur-xl border transition-all duration-500 hover:scale-105 ${
-                    darkMode 
-                      ? 'bg-gray-900/60 border-gray-800 text-gray-300 hover:bg-gray-900' 
-                      : 'bg-white/80 border-gray-300 text-gray-600 hover:bg-white'
-                  } shadow-lg flex items-center gap-2 sm:gap-3`}>
-                    <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    {formatDate(msg.createdAt)}
-                    <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </div>
-                </div>
-                
-                {isSystem ? (
-                  <div key={msg._id} className="flex justify-center">
-                    <div className={`text-xs sm:text-sm px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl border flex items-center gap-3 sm:gap-4 max-w-full sm:max-w-md backdrop-blur-xl ${
-                      darkMode 
-                        ? 'bg-gradient-to-r from-gray-900/60 to-gray-950/60 border-gray-800 text-gray-300' 
-                        : 'bg-gradient-to-r from-gray-100/80 to-white/80 border-gray-300 text-gray-600'
-                    } shadow-2xl transition-all duration-500 hover:scale-[1.02]`}>
-                      <div className={`p-1.5 sm:p-2 rounded-md sm:rounded-lg ${darkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
-                        <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
+           // Zig-zag background applied per-group when that ticket is RESOLVED or CLOSED
+           const groupClosedStyle = isGroupDone
+             ? {
+                 backgroundColor: darkMode
+                   ? "rgba(16, 185, 129, 0.04)"
+                   : "rgba(209, 250, 229, 0.60)",
+                 backgroundImage: darkMode
+                   ? `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(16, 185, 129, 0.10) 10px, rgba(16, 185, 129, 0.10) 20px)`
+                   : `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(16, 185, 129, 0.18) 10px, rgba(16, 185, 129, 0.18) 20px)`,
+               }
+             : {};
+
+           return (
+             <div
+               key={`group-${group.roomId}`}
+               className={`space-y-6 sm:space-y-8 rounded-2xl transition-all duration-500 ${
+                 isGroupDone ? "p-3 sm:p-4" : ""
+               }`}
+               style={groupClosedStyle}
+             >
+               <div className="flex justify-center my-6 sm:my-8 sticky top-4 z-20">
+                 <div className={`text-xs sm:text-sm px-4 sm:px-6 py-2 sm:py-3 rounded-full backdrop-blur-xl border transition-all duration-500 hover:scale-105 shadow-lg flex items-center gap-3 ${
+                   group.roomId === ticket?._id
+                     ? darkMode 
+                         ? 'bg-blue-900/80 border-blue-500 text-blue-200 shadow-blue-500/20' 
+                         : 'bg-blue-100 border-blue-400 text-blue-800 shadow-blue-500/20'
+                     : darkMode
+                         ? 'bg-gray-900/90 border-gray-700 text-gray-300'
+                         : 'bg-white/90 border-gray-300 text-gray-600'
+                 }`}>
+                   <Tag className="w-4 h-4" />
+                   <span className="font-bold">Ticket #{displayTicketId}</span>
+                   <span className="opacity-50">|</span>
+                   <Calendar className="w-4 h-4" />
+                   <span>{formatDate(group.messages[0]?.createdAt || new Date())}</span>
+                 </div>
+               </div>
+
+               {group.messages.map((msg, index) => {
+                  const isAgent = ["ADMIN", "ADMIN_STAFF", "SUPER_ADMIN"].includes(msg.senderRole);
+                  const isSystem = msg.senderRole === "SYSTEM";
+                  const isPinned = pinnedMessages.includes(msg._id);
+
+                  if (isSystem) {
+                    return (
+                      <div key={msg._id} className="flex justify-center">
+                        <div className={`text-xs sm:text-sm px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl border flex items-center gap-3 sm:gap-4 max-w-full sm:max-w-md backdrop-blur-xl ${
+                          darkMode 
+                            ? 'bg-gradient-to-r from-gray-900/60 to-gray-950/60 border-gray-800 text-gray-300' 
+                            : 'bg-gradient-to-r from-gray-100/80 to-white/80 border-gray-300 text-gray-600'
+                        } shadow-2xl transition-all duration-500 hover:scale-[1.02]`}>
+                          <div className={`p-1.5 sm:p-2 rounded-md sm:rounded-lg ${darkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
+                            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
+                          </div>
+                          <span className="flex-1 text-sm sm:text-base">{msg.message}</span>
+                          <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
+                        </div>
                       </div>
-                      <span className="flex-1 text-sm sm:text-base">{msg.message}</span>
-                      <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
-                    </div>
-                  </div>
-                ) : (
-                  <MessageBubble 
-                    key={msg._id}
-                    msg={msg}
-                    isAgent={isAgent}
-                    isPinned={isPinned}
-                    darkMode={darkMode}
-                    formatTime={formatTime}
-                    togglePinMessage={togglePinMessage}
-                    copyToClipboard={copyToClipboard}
-                    downloadFile={downloadFile}
-                  />
-                  
-                )}
+                    );
+                  }
 
-              </React.Fragment>
-            );
-          }
-
-          if (isSystem) {
-            return (
-              <div key={msg._id} className="flex justify-center">
-                <div className={`text-xs sm:text-sm px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl border flex items-center gap-3 sm:gap-4 max-w-full sm:max-w-md backdrop-blur-xl ${
-                  darkMode 
-                    ? 'bg-gradient-to-r from-gray-900/60 to-gray-950/60 border-gray-800 text-gray-300' 
-                    : 'bg-gradient-to-r from-gray-100/80 to-white/80 border-gray-300 text-gray-600'
-                } shadow-2xl transition-all duration-500 hover:scale-[1.02]`}>
-                  <div className={`p-1.5 sm:p-2 rounded-md sm:rounded-lg ${darkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
-                    <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
-                  </div>
-                  <span className="flex-1 text-sm sm:text-base">{msg.message}</span>
-                  <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
-                </div>
-              </div>
-            );
-          }
-
-          return (
-            <MessageBubble 
-              key={msg._id}
-              msg={msg}
-              isAgent={isAgent}
-              isPinned={isPinned}
-              darkMode={darkMode}
-              formatTime={formatTime}
-              togglePinMessage={togglePinMessage}
-              copyToClipboard={copyToClipboard}
-              downloadFile={downloadFile}
-            />
-          );
+                  return (
+                    <MessageBubble 
+                      key={msg._id}
+                      msg={msg}
+                      isAgent={isAgent}
+                      isPinned={isPinned}
+                      darkMode={darkMode}
+                      formatTime={formatTime}
+                      togglePinMessage={togglePinMessage}
+                      copyToClipboard={copyToClipboard}
+                      downloadFile={downloadFile}
+                    />
+                  );
+               })}
+             </div>
+           );
         })}
         
         {isTyping && (
@@ -739,167 +715,174 @@ const attachments = await Promise.all(
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      {/* ─── BOTTOM BAR: read-only banner when CLOSED, normal input otherwise ─── */}
-      {ticket?.status === "CLOSED" ? (
+      {/* ─── BOTTOM BAR: DROPDOWN & INPUT ─── */}
+      <div className={`p-4 sm:p-5 border-t transition-all duration-500 relative z-20 ${
+        darkMode
+          ? "border-gray-800/50 bg-gradient-to-t from-gray-900/95 via-gray-950/95 to-black/95 backdrop-blur-xl"
+          : "border-gray-200/50 bg-gradient-to-t from-white/95 via-blue-50/95 to-white/95 backdrop-blur-xl"
+      } shadow-2xl`}>
 
-        /* ── CLOSED: Read-only banner ── */
-        <div className={`p-4 sm:p-5 border-t flex flex-col items-center justify-center gap-1.5 transition-all duration-500 relative z-20 ${
-          darkMode
-            ? "border-emerald-900/40 bg-gradient-to-t from-emerald-950/80 via-gray-950/95 to-black/95 backdrop-blur-xl"
-            : "border-emerald-200 bg-gradient-to-t from-emerald-50/95 via-white/95 to-white/95 backdrop-blur-xl"
-        } shadow-2xl`}>
+        {/* ACTIVE TICKET DROPDOWN - ALWAYS VISIBLE */}
+        {userTickets && userTickets.length > 0 && onTicketSelect && (
+          <div className="mb-3 flex items-center justify-between">
+            <span className={`text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Replying To:
+            </span>
+            <div className="relative group w-2/3 max-w-sm">
+              <select
+                value={ticket?._id || ""}
+                onChange={(e) => onTicketSelect(e.target.value)}
+                className={`appearance-none pl-9 pr-8 py-2 text-sm rounded-lg border transition-all w-full ${
+                  darkMode 
+                    ? "bg-gray-800 border-gray-700 text-white hover:bg-gray-700" 
+                    : "bg-white border-gray-300 text-gray-900 hover:bg-gray-50"
+                } focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer shadow-sm`}
+              >
+                {userTickets.filter(t => ["OPEN", "IN_PROGRESS"].includes(t.status)).map(t => (
+                  <option key={t._id} value={t._id} className={`${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+                    Ticket #{t.ticketId} ({t.status.replace("_", " ")})
+                  </option>
+                ))}
+                {userTickets.filter(t => !["OPEN", "IN_PROGRESS"].includes(t.status)).map(t => (
+                  <option key={t._id} value={t._id} disabled className={`${darkMode ? 'bg-gray-800 text-gray-500' : 'bg-gray-100 text-gray-400'}`}>
+                    Ticket #{t.ticketId} ({t.status}) - Closed
+                  </option>
+                ))}
+              </select>
+              <ListFilter className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${
+                darkMode ? 'text-blue-400' : 'text-blue-500'
+              }`} />
+              <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-transform ${
+                darkMode ? 'text-gray-400' : 'text-gray-500'
+              } group-hover:rotate-180`} />
+            </div>
+          </div>
+        )}
+
+        {ticket?.status === "CLOSED" ? (
           <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border ${
             darkMode
               ? "bg-emerald-900/30 border-emerald-700/40 text-emerald-300"
               : "bg-emerald-100 border-emerald-300 text-emerald-700"
           }`}>
             <CheckCircle className="w-4 h-4 flex-shrink-0" />
-            <span className="text-sm font-semibold">This ticket is closed — chat is read-only</span>
+            <span className="text-sm font-semibold">This active ticket is closed — select an open ticket to reply</span>
           </div>
-          <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-            Chat history is retained for 90 days from the closing date.
-          </p>
-        </div>
-
-      ) : (
-
-        /* ── OPEN / IN_PROGRESS / etc: Normal input — unchanged ── */
-        <div className={`p-4 sm:p-5 border-t transition-all duration-500 relative z-20 ${
-          darkMode
-            ? "border-gray-800/50 bg-gradient-to-t from-gray-900/95 via-gray-950/95 to-black/95 backdrop-blur-xl"
-            : "border-gray-200/50 bg-gradient-to-t from-white/95 via-blue-50/95 to-white/95 backdrop-blur-xl"
-        } shadow-2xl`}>
-
-          {/* Preview Area */}
-          {selectedFiles.length > 0 && (
-            <div className={`-mx-4 sm:-mx-5 px-4 sm:px-5 pb-4 mb-4 border-b ${darkMode ? 'border-gray-800/50' : 'border-gray-200/50'} animate-in slide-in-from-bottom-2 duration-200`}>
-              <div className="flex gap-3 overflow-x-auto scrollbar-hide">
-                {selectedFiles.map((file, idx) => (
-                  <div
-                    key={idx}
-                    className={`relative flex-shrink-0 w-24 h-24 rounded-xl border overflow-hidden group/preview shadow-sm ${
-                      darkMode ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"
-                    }`}
-                  >
-                    {previewUrls[idx]?.file.type.startsWith("image/") ? (
-                      <img src={previewUrls[idx].url} alt="preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center">
-                        <FileText className="w-8 h-8 text-blue-500 mb-1.5" />
-                        <span className={`text-[10px] leading-tight line-clamp-2 w-full break-all ${
-                          darkMode ? "text-gray-300" : "text-gray-600"
-                        }`}>
-                          {previewUrls[idx]?.file.name}
-                        </span>
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => removeFile(idx)}
-                      className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1.5 opacity-0 group-hover/preview:opacity-100 transition-opacity hover:bg-red-500 backdrop-blur-sm"
+        ) : (
+          <>
+            {/* Preview Area */}
+            {selectedFiles.length > 0 && (
+              <div className={`-mx-4 sm:-mx-5 px-4 sm:px-5 pb-4 mb-4 border-b ${darkMode ? 'border-gray-800/50' : 'border-gray-200/50'} animate-in slide-in-from-bottom-2 duration-200`}>
+                <div className="flex gap-3 overflow-x-auto scrollbar-hide">
+                  {selectedFiles.map((file, idx) => (
+                    <div
+                      key={idx}
+                      className={`relative flex-shrink-0 w-24 h-24 rounded-xl border overflow-hidden group/preview shadow-sm ${
+                        darkMode ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"
+                      }`}
                     >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
+                      {previewUrls[idx]?.file.type.startsWith("image/") ? (
+                        <img src={previewUrls[idx].url} alt="preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center">
+                          <FileText className="w-8 h-8 text-blue-500 mb-1.5" />
+                          <span className={`text-[10px] leading-tight line-clamp-2 w-full break-all ${
+                            darkMode ? "text-gray-300" : "text-gray-600"
+                          }`}>
+                            {previewUrls[idx]?.file.name}
+                          </span>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeFile(idx)}
+                        className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1.5 opacity-0 group-hover/preview:opacity-100 transition-opacity hover:bg-red-500 backdrop-blur-sm"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          <form
-            onSubmit={(e) => { e.preventDefault(); send(); }}
-            className="flex items-end gap-3"
-          >
-            {/* INPUT WRAPPER */}
-            <div className="flex-1 relative">
-              {/* ATTACH BUTTON (LEFT INSIDE INPUT) */}
+            <form
+              onSubmit={(e) => { e.preventDefault(); send(); }}
+              className="flex items-end gap-3"
+            >
+              <div className="flex-1 relative">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current.click()}
+                  className={`absolute left-3 bottom-3 p-1.5 rounded-lg transition ${
+                    darkMode
+                      ? "text-gray-400 hover:text-blue-400"
+                      : "text-gray-500 hover:text-blue-600"
+                  }`}
+                >
+                  <Paperclip className="w-4 h-4" />
+                </button>
+
+                <textarea
+                  ref={inputRef}
+                  value={inputMsg}
+                  onChange={(e) => setInputMsg(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  onPaste={handlePaste}
+                  placeholder={selectedFiles.length > 0 ? "Add a caption..." : "Type your message..."}
+                  rows={1}
+                  className={`w-full pl-12 pr-4 py-3 rounded-xl resize-none transition-all duration-300 ${
+                    darkMode
+                      ? "bg-gray-900 text-white placeholder-gray-500 border border-gray-800"
+                      : "bg-white text-gray-900 placeholder-gray-400 border border-gray-300"
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  style={{ maxHeight: "120px", minHeight: "48px" }}
+                  onInput={(e) => {
+                    e.target.style.height = "auto";
+                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                  }}
+                />
+              </div>
+
               <button
-                type="button"
-                onClick={() => fileInputRef.current.click()}
-                className={`absolute left-3 bottom-3 p-1.5 rounded-lg transition ${
-                  darkMode
-                    ? "text-gray-400 hover:text-blue-400"
-                    : "text-gray-500 hover:text-blue-600"
+                type="submit"
+                disabled={!inputMsg.trim() && selectedFiles.length === 0}
+                className={`p-3 rounded-xl transition-all ${
+                  inputMsg.trim() || selectedFiles.length > 0
+                    ? "bg-blue-600 text-white hover:scale-110"
+                    : "bg-gray-300 text-gray-400 cursor-not-allowed"
                 }`}
               >
-                <Paperclip className="w-4 h-4" />
+                <Send className="w-5 h-5" />
               </button>
 
-              {/* TEXTAREA */}
-              <textarea
-                ref={inputRef}
-                value={inputMsg}
-                onChange={(e) => setInputMsg(e.target.value)}
-                onKeyDown={handleKeyPress}
-                onPaste={handlePaste}
-                placeholder={selectedFiles.length > 0 ? "Add a caption..." : "Type your message..."}
-                rows={1}
-                className={`w-full pl-12 pr-12 py-3 rounded-xl resize-none transition-all duration-300 ${
-                  darkMode
-                    ? "bg-gray-900 text-white placeholder-gray-500 border border-gray-800"
-                    : "bg-white text-gray-900 placeholder-gray-400 border border-gray-300"
-                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                style={{ maxHeight: "120px", minHeight: "48px" }}
-                onInput={(e) => {
-                  e.target.style.height = "auto";
-                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
-                }}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,application/pdf"
+                hidden
+                onChange={handleFileSelect}
               />
+            </form>
 
-              {/* EMOJI BUTTON (RIGHT INSIDE INPUT) */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-3 sm:mt-4 text-xs gap-2 sm:gap-0">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <span className={`flex items-center gap-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                  <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Press Enter to send
+                </span>
+                <span className={`hidden sm:block ${darkMode ? 'text-gray-600' : 'text-gray-300'}`}>•</span>
+                <span className={`flex items-center gap-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                  <Feather className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Shift + Enter for new line
+                </span>
+              </div>
             </div>
-
-            {/* SEND BUTTON */}
-            <button
-              type="submit"
-              disabled={!inputMsg.trim() && selectedFiles.length === 0}
-              className={`p-3 rounded-xl transition-all ${
-                inputMsg.trim() || selectedFiles.length > 0
-                  ? "bg-blue-600 text-white hover:scale-110"
-                  : "bg-gray-300 text-gray-400 cursor-not-allowed"
-              }`}
-            >
-              <Send className="w-5 h-5" />
-            </button>
-
-            {/* FILE INPUT */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/*,application/pdf"
-              hidden
-              onChange={handleFileSelect}
-            />
-          </form>
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-3 sm:mt-4 text-xs gap-2 sm:gap-0">
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-              <span className={`flex items-center gap-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Press Enter to send
-              </span>
-              <span className={`hidden sm:block ${darkMode ? 'text-gray-600' : 'text-gray-300'}`}>•</span>
-              <span className={`flex items-center gap-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                <Feather className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Shift + Enter for new line
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className={`flex items-center gap-1 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
-                <Rocket className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Premium
-              </span>
-              <span className={`hidden sm:block ${darkMode ? 'text-gray-600' : 'text-gray-300'}`}>•</span>
-              <span className={`flex items-center gap-1 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                <Shield className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Secure
-              </span>
-            </div>
-          </div>
-
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 };
-
 
 const MessageBubble = ({ 
   msg, 
@@ -928,18 +911,6 @@ const MessageBubble = ({
           flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-500`}>
           <button
             type="button"
-            onClick={() => togglePinMessage(msg._id)}
-            className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all duration-300 hover:scale-125 hover:rotate-12 ${
-              darkMode 
-                ? 'bg-gray-900 text-gray-400 hover:text-amber-400 hover:bg-gray-800' 
-                : 'bg-white text-gray-600 hover:text-amber-600 hover:bg-amber-50'
-            } shadow-lg`}
-            title={isPinned ? "Unpin message" : "Pin message"}
-          >
-            <Pin className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isPinned ? 'fill-current' : ''}`} />
-          </button>
-          <button
-            type="button"
             onClick={() => copyToClipboard(msg.message)}
             className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all duration-300 hover:scale-125 hover:rotate-12 ${
               darkMode 
@@ -952,7 +923,7 @@ const MessageBubble = ({
           </button>
         </div>
 
-        {/* Attachments (WhatsApp Style: Images First) */}
+        {/* Attachments */}
         {msg.attachments?.length > 0 && (
           <div className={`grid grid-cols-1 gap-2 ${msg.message ? 'mb-2' : ''}`}>
             {msg.attachments.map((file, idx) => (
@@ -963,7 +934,7 @@ const MessageBubble = ({
                       src={file.url}
                       alt={file.name}
                       className="rounded-lg max-h-60 w-full object-cover cursor-pointer border border-gray-200 dark:border-gray-700"
-                      onClick={() => openFile(file)}
+                      onClick={() => window.open(file.url, "_blank")}
                     />
                     <button
                       onClick={(e) => {
@@ -987,7 +958,7 @@ const MessageBubble = ({
                     <div className="p-2 bg-red-500/10 rounded-lg">
                       <FileText className="w-5 h-5 text-red-500 flex-shrink-0" />
                     </div>
-                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => openFile(file)}>
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => window.open(file.url, "_blank")}>
                       <p className={`text-sm font-medium truncate ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
                         {file.name}
                       </p>
@@ -1011,25 +982,13 @@ const MessageBubble = ({
           </div>
         )}
 
-        {/* Message Text (Caption) */}
+        {/* Message Text */}
         {msg.message && (
           <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-sm sm:text-base">
             {msg.message}
           </p>
         )}
         
-        {/* {messageReactions.length > 0 && (
-          <div className="flex flex-wrap gap-1 sm:gap-1.5 mt-2 sm:mt-3">
-            {messageReactions.map((reaction, idx) => (
-              <span key={idx} className={`text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full transition-all duration-300 hover:scale-110 ${
-                darkMode ? 'bg-white/10' : 'bg-black/5'
-              }`}>
-                {reaction.emoji}
-              </span>
-            ))}
-          </div>
-        )} */}
-
         <div className={`text-xs mt-3 sm:mt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 ${
           isAgent 
             ? "text-blue-200/80" 
@@ -1045,11 +1004,23 @@ const MessageBubble = ({
               </span>
             )}
           </div>
-          
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-500">
-          </div>
         </div>
       </div>
+      <style>{`
+        .premium-scrollbar { scrollbar-width: thin; }
+        .premium-scrollbar::-webkit-scrollbar { width: 6px; }
+        .premium-scrollbar::-webkit-scrollbar-track {
+          background: transparent !important;
+          background-color: transparent !important;
+        }
+        .premium-scrollbar::-webkit-scrollbar-thumb {
+          background: ${darkMode ? "#4b5563" : "#d1d5db"};
+          border-radius: 3px;
+        }
+        .premium-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: ${darkMode ? "#6b7280" : "#9ca3af"};
+        }
+      `}</style>
     </div>
   );
 };
