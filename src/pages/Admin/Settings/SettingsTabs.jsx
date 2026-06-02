@@ -6,7 +6,7 @@ const tabs = [
   { id: "general",  label: "General",          icon: Settings,      color: "purple" },
   { id: "canned",   label: "Canned Responses",  icon: MessageSquare, color: "blue"   },
   { id: "api",      label: "API Keys",          icon: Key,           color: "green"  },
-  { id: "banners",  label: "Banners",           icon: Image,         color: "orange" },
+  { id: "banners",  label: "Others",            icon: Image,         color: "orange" },
 ];
 
 const SettingsTabs = ({ activeTab, setActiveTab }) => {

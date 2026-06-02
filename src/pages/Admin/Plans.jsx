@@ -20,21 +20,36 @@ import {
   Shield,
   Package,
 } from "lucide-react";
+import api from "../../api/axios";
 
 // ─── Shimmer Components ──────────────────────────────────────────────────────
 
 const FranchiseCardShimmer = ({ isDark }) => (
   <div className="animate-pulse">
-    <div className={`rounded-2xl border p-5 ${isDark ? "bg-slate-800/50 border-slate-700" : "bg-white border-gray-200"}`}>
+    <div
+      className={`rounded-2xl border p-5 ${isDark ? "bg-slate-800/50 border-slate-700" : "bg-white border-gray-200"}`}
+    >
       <div className="flex items-start justify-between mb-3">
-        <div className={`w-12 h-12 rounded-xl ${isDark ? "bg-slate-700" : "bg-gray-200"}`}></div>
-        <div className={`w-16 h-6 rounded-full ${isDark ? "bg-slate-700" : "bg-gray-200"}`}></div>
+        <div
+          className={`w-12 h-12 rounded-xl ${isDark ? "bg-slate-700" : "bg-gray-200"}`}
+        ></div>
+        <div
+          className={`w-16 h-6 rounded-full ${isDark ? "bg-slate-700" : "bg-gray-200"}`}
+        ></div>
       </div>
-      <div className={`h-5 w-3/4 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded mb-2`}></div>
-      <div className={`h-3 w-1/2 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded mb-1`}></div>
-      <div className={`h-3 w-2/3 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded`}></div>
+      <div
+        className={`h-5 w-3/4 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded mb-2`}
+      ></div>
+      <div
+        className={`h-3 w-1/2 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded mb-1`}
+      ></div>
+      <div
+        className={`h-3 w-2/3 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded`}
+      ></div>
       <div className="mt-4 flex items-center gap-1.5">
-        <div className={`h-3 w-20 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded`}></div>
+        <div
+          className={`h-3 w-20 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded`}
+        ></div>
       </div>
     </div>
   </div>
@@ -42,18 +57,35 @@ const FranchiseCardShimmer = ({ isDark }) => (
 
 const GroupCardShimmer = ({ isDark }) => (
   <div className="animate-pulse">
-    <div className={`rounded-2xl border p-5 ${isDark ? "bg-slate-800/50 border-slate-700" : "bg-white border-gray-200"}`}>
+    <div
+      className={`rounded-2xl border p-5 ${isDark ? "bg-slate-800/50 border-slate-700" : "bg-white border-gray-200"}`}
+    >
       <div className="flex items-start justify-between mb-3">
-        <div className={`w-12 h-12 rounded-xl ${isDark ? "bg-slate-700" : "bg-gray-200"}`}></div>
-        <div className={`w-20 h-6 rounded-full ${isDark ? "bg-slate-700" : "bg-gray-200"}`}></div>
+        <div
+          className={`w-12 h-12 rounded-xl ${isDark ? "bg-slate-700" : "bg-gray-200"}`}
+        ></div>
+        <div
+          className={`w-20 h-6 rounded-full ${isDark ? "bg-slate-700" : "bg-gray-200"}`}
+        ></div>
       </div>
-      <div className={`h-5 w-3/4 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded mb-2`}></div>
-      <div className={`h-3 w-2/3 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded mb-3`}></div>
+      <div
+        className={`h-5 w-3/4 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded mb-2`}
+      ></div>
+      <div
+        className={`h-3 w-2/3 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded mb-3`}
+      ></div>
       <div className="mt-3 grid grid-cols-3 gap-2">
         {[1, 2, 3].map((i) => (
-          <div key={i} className={`rounded-lg p-2 ${isDark ? "bg-slate-700/50" : "bg-gray-100"}`}>
-            <div className={`h-6 w-full ${isDark ? "bg-slate-600" : "bg-gray-200"} rounded mb-1`}></div>
-            <div className={`h-2 w-full ${isDark ? "bg-slate-600" : "bg-gray-200"} rounded`}></div>
+          <div
+            key={i}
+            className={`rounded-lg p-2 ${isDark ? "bg-slate-700/50" : "bg-gray-100"}`}
+          >
+            <div
+              className={`h-6 w-full ${isDark ? "bg-slate-600" : "bg-gray-200"} rounded mb-1`}
+            ></div>
+            <div
+              className={`h-2 w-full ${isDark ? "bg-slate-600" : "bg-gray-200"} rounded`}
+            ></div>
           </div>
         ))}
       </div>
@@ -62,29 +94,49 @@ const GroupCardShimmer = ({ isDark }) => (
 );
 
 const StatsCardShimmer = ({ isDark }) => (
-  <div className={`rounded-2xl p-6 animate-pulse ${isDark ? "bg-slate-800/50" : "bg-gray-100"}`}>
+  <div
+    className={`rounded-2xl p-6 animate-pulse ${isDark ? "bg-slate-800/50" : "bg-gray-100"}`}
+  >
     <div className="flex items-center justify-between">
       <div className="flex-1">
-        <div className={`h-8 w-20 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded mb-2`}></div>
-        <div className={`h-4 w-24 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded`}></div>
+        <div
+          className={`h-8 w-20 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded mb-2`}
+        ></div>
+        <div
+          className={`h-4 w-24 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded`}
+        ></div>
       </div>
-      <div className={`w-8 h-8 rounded-full ${isDark ? "bg-slate-700" : "bg-gray-200"}`}></div>
+      <div
+        className={`w-8 h-8 rounded-full ${isDark ? "bg-slate-700" : "bg-gray-200"}`}
+      ></div>
     </div>
   </div>
 );
 
 const DetailRowShimmer = ({ isDark }) => (
   <div className="flex items-center justify-between px-6 py-3 animate-pulse">
-    <div className={`h-4 w-32 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded`}></div>
-    <div className={`h-4 w-48 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded`}></div>
+    <div
+      className={`h-4 w-32 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded`}
+    ></div>
+    <div
+      className={`h-4 w-48 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded`}
+    ></div>
   </div>
 );
 
 const SectionCardShimmer = ({ isDark }) => (
-  <div className={`rounded-2xl border overflow-hidden ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-200"}`}>
-    <div className={`flex items-center gap-3 px-6 py-4 border-b ${isDark ? "border-slate-800" : "border-slate-100"}`}>
-      <div className={`w-5 h-5 rounded ${isDark ? "bg-slate-700" : "bg-gray-200"}`}></div>
-      <div className={`h-4 w-32 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded`}></div>
+  <div
+    className={`rounded-2xl border overflow-hidden ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-200"}`}
+  >
+    <div
+      className={`flex items-center gap-3 px-6 py-4 border-b ${isDark ? "border-slate-800" : "border-slate-100"}`}
+    >
+      <div
+        className={`w-5 h-5 rounded ${isDark ? "bg-slate-700" : "bg-gray-200"}`}
+      ></div>
+      <div
+        className={`h-4 w-32 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded`}
+      ></div>
     </div>
     <div className="divide-y">
       {[1, 2, 3, 4].map((i) => (
@@ -119,8 +171,16 @@ const ErrorMsg = ({ message, isDark = false }) => (
     className="flex items-center justify-center py-20"
   >
     <div className="text-center">
-      <div className={`text-6xl mb-4 ${isDark ? "text-rose-400" : "text-rose-500"}`}>⚠️</div>
-      <p className={`text-sm font-medium ${isDark ? "text-rose-300" : "text-rose-500"}`}>{message}</p>
+      <div
+        className={`text-6xl mb-4 ${isDark ? "text-rose-400" : "text-rose-500"}`}
+      >
+        ⚠️
+      </div>
+      <p
+        className={`text-sm font-medium ${isDark ? "text-rose-300" : "text-rose-500"}`}
+      >
+        {message}
+      </p>
     </div>
   </motion.div>
 );
@@ -145,7 +205,9 @@ const Badge = ({ children, color = "slate", icon = null }) => {
       : "bg-slate-100 text-slate-600 border-slate-200",
   };
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${colors[color]}`}>
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${colors[color]}`}
+    >
       {icon && <span className="text-xs">{icon}</span>}
       {children}
     </span>
@@ -158,7 +220,11 @@ const Breadcrumb = ({ steps }) => {
     <nav className="flex items-center flex-wrap gap-1.5 text-sm mb-6">
       {steps.map((step, i) => (
         <div key={i} className="flex items-center gap-1.5">
-          {i > 0 && <ChevronRight className={`w-3 h-3 ${isDark ? "text-slate-600" : "text-slate-300"}`} />}
+          {i > 0 && (
+            <ChevronRight
+              className={`w-3 h-3 ${isDark ? "text-slate-600" : "text-slate-300"}`}
+            />
+          )}
           <span
             className={`transition-colors ${
               i === steps.length - 1
@@ -166,8 +232,8 @@ const Breadcrumb = ({ steps }) => {
                   ? "text-blue-400 font-semibold"
                   : "text-blue-600 font-semibold"
                 : isDark
-                ? "text-slate-500"
-                : "text-slate-400"
+                  ? "text-slate-500"
+                  : "text-slate-400"
             }`}
           >
             {step}
@@ -178,13 +244,19 @@ const Breadcrumb = ({ steps }) => {
   );
 };
 
-const SectionCard = ({ title, icon, children, gradient = false, loading = false }) => {
+const SectionCard = ({
+  title,
+  icon,
+  children,
+  gradient = false,
+  loading = false,
+}) => {
   const { isDark } = useTheme();
-  
+
   if (loading) {
     return <SectionCardShimmer isDark={isDark} />;
   }
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -194,13 +266,15 @@ const SectionCard = ({ title, icon, children, gradient = false, loading = false 
         gradient && !isDark
           ? "bg-gradient-to-br from-white to-indigo-50/30"
           : isDark
-          ? "bg-slate-900/60 border-slate-800"
-          : "bg-white border-slate-200"
+            ? "bg-slate-900/60 border-slate-800"
+            : "bg-white border-slate-200"
       }`}
     >
       <div
         className={`flex items-center gap-3 px-6 py-4 border-b ${
-          isDark ? "border-slate-800 bg-slate-900/40" : "border-slate-100 bg-slate-50/50"
+          isDark
+            ? "border-slate-800 bg-slate-900/40"
+            : "border-slate-100 bg-slate-50/50"
         }`}
       >
         <span className="text-lg">{icon}</span>
@@ -212,7 +286,11 @@ const SectionCard = ({ title, icon, children, gradient = false, loading = false 
           {title}
         </h3>
       </div>
-      <div className={isDark ? "divide-y divide-slate-800" : "divide-y divide-slate-100"}>
+      <div
+        className={
+          isDark ? "divide-y divide-slate-800" : "divide-y divide-slate-100"
+        }
+      >
         {children}
       </div>
     </motion.div>
@@ -228,7 +306,9 @@ const DetailRow = ({ property, value, highlight = false }) => {
         isDark ? "hover:bg-slate-800/40" : "hover:bg-slate-50"
       } ${highlight ? (isDark ? "bg-blue-500/5" : "bg-blue-50/30") : ""}`}
     >
-      <span className={`text-sm font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+      <span
+        className={`text-sm font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}
+      >
         {property}
       </span>
       <span
@@ -238,8 +318,8 @@ const DetailRow = ({ property, value, highlight = false }) => {
               ? "text-blue-400"
               : "text-blue-600"
             : isDark
-            ? "text-slate-200"
-            : "text-slate-700"
+              ? "text-slate-200"
+              : "text-slate-700"
         }`}
       >
         {String(value)}
@@ -271,7 +351,7 @@ const StepProgress = ({ current, isDark = false }) => {
     { name: "Groups", icon: Users },
     { name: "Profile", icon: Shield },
   ];
-  
+
   return (
     <div className="hidden sm:flex items-center gap-2">
       {steps.map((step, i) => {
@@ -279,11 +359,13 @@ const StepProgress = ({ current, isDark = false }) => {
         const isDone = current > n;
         const isActive = current === n;
         const Icon = step.icon;
-        
+
         return (
           <div key={step.name} className="flex items-center gap-2">
             {i > 0 && (
-              <div className={`w-8 h-px ${isDone ? "bg-blue-400" : isDark ? "bg-slate-700" : "bg-slate-200"}`} />
+              <div
+                className={`w-8 h-px ${isDone ? "bg-blue-400" : isDark ? "bg-slate-700" : "bg-slate-200"}`}
+              />
             )}
             <div
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
@@ -292,12 +374,12 @@ const StepProgress = ({ current, isDark = false }) => {
                     ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
                     : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
                   : isDone
-                  ? isDark
-                    ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
-                    : "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                  : isDark
-                  ? "bg-slate-800 text-slate-500"
-                  : "bg-slate-100 text-slate-400"
+                    ? isDark
+                      ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+                      : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                    : isDark
+                      ? "bg-slate-800 text-slate-500"
+                      : "bg-slate-100 text-slate-400"
               }`}
             >
               {isDone ? (
@@ -332,7 +414,11 @@ const FranchiseList = ({ onSelect }) => {
         }
       })
       .catch((err) =>
-        setError(err?.response?.data?.message || err?.message || "Network error. Is the server running?")
+        setError(
+          err?.response?.data?.message ||
+            err?.message ||
+            "Network error. Is the server running?",
+        ),
       )
       .finally(() => setLoading(false));
   }, []);
@@ -342,8 +428,12 @@ const FranchiseList = ({ onSelect }) => {
       <div>
         <Breadcrumb steps={["Franchises"]} />
         <div className="mb-6">
-          <div className={`h-8 w-64 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse mb-2`}></div>
-          <div className={`h-4 w-96 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse`}></div>
+          <div
+            className={`h-8 w-64 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse mb-2`}
+          ></div>
+          <div
+            className={`h-4 w-96 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse`}
+          ></div>
         </div>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
@@ -353,7 +443,7 @@ const FranchiseList = ({ onSelect }) => {
       </div>
     );
   }
-  
+
   if (error) return <ErrorMsg message={error} isDark={isDark} />;
 
   return (
@@ -364,11 +454,15 @@ const FranchiseList = ({ onSelect }) => {
     >
       <Breadcrumb steps={["Franchises"]} />
       <div className="mb-6">
-        <h2 className={`text-2xl font-bold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-800"}`}>
+        <h2
+          className={`text-2xl font-bold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-800"}`}
+        >
           <Building2 className="w-6 h-6" />
           Select a Franchise
         </h2>
-        <p className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+        <p
+          className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+        >
           Choose an account to view its group plans and configurations
         </p>
       </div>
@@ -392,7 +486,9 @@ const FranchiseList = ({ onSelect }) => {
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
                 {f.companyName?.[0]?.toUpperCase() || "F"}
               </div>
-              <Badge color="slate" icon="📋">{f.accountId}</Badge>
+              <Badge color="slate" icon="📋">
+                {f.accountId}
+              </Badge>
             </div>
             <p
               className={`font-bold text-base transition-colors ${
@@ -403,23 +499,334 @@ const FranchiseList = ({ onSelect }) => {
             >
               {f.companyName}
             </p>
-            <p className={`text-xs mt-1 flex items-center gap-1 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+            <p
+              className={`text-xs mt-1 flex items-center gap-1 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+            >
               <Building2 className="w-3 h-3" />
               Parent:{" "}
-              <span className={`font-medium ${isDark ? "text-slate-300" : "text-slate-500"}`}>
+              <span
+                className={`font-medium ${isDark ? "text-slate-300" : "text-slate-500"}`}
+              >
                 {f.parentAccountId}
               </span>
             </p>
-            <p className={`text-xs mt-0.5 flex items-center gap-1 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+            <p
+              className={`text-xs mt-0.5 flex items-center gap-1 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+            >
               <Calendar className="w-3 h-3" />
               Created: {new Date(f.dateCreated).toLocaleDateString()}
             </p>
-            <div className={`mt-4 flex items-center gap-1.5 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity ${isDark ? "text-blue-300" : "text-blue-500"}`}>
+            <div
+              className={`mt-4 flex items-center gap-1.5 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity ${isDark ? "text-blue-300" : "text-blue-500"}`}
+            >
               View Groups →
             </div>
           </motion.button>
         ))}
       </div>
+    </motion.div>
+  );
+};
+
+// ─── Step 2.5: Tariff Form Component ──────────────────────────────────────────
+const TariffForm = ({ franchise, onClose, isDark }) => {
+  const [tariffType, setTariffType] = useState("FIXED");
+  const [tariffValue, setTariffValue] = useState("");
+  const [isActive, setIsActive] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    api
+      .get(`/api/admin/tariff/${franchise.accountId}`)
+      .then((res) => {
+        if (res.data?.success && res.data?.data) {
+          const tariff = res.data.data;
+          setTariffType(tariff.tariffType || "FIXED");
+          setTariffValue(
+            tariff.tariffValue !== undefined ? String(tariff.tariffValue) : "",
+          );
+          setIsActive(tariff.isActive !== undefined ? tariff.isActive : true);
+        }
+      })
+      .catch((err) => {
+        if (err.response?.status !== 404) {
+          console.error("Error fetching tariff:", err);
+          setError("Failed to fetch existing tariff settings.");
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [franchise.accountId]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setMessage(null);
+
+    if (tariffValue === "") {
+      setError("Tariff value is required");
+      return;
+    }
+
+    const valueNum = Number(tariffValue);
+    if (isNaN(valueNum) || valueNum < 0) {
+      setError("Tariff value must be a non-negative number");
+      return;
+    }
+
+    if (tariffType === "PERCENTAGE" && valueNum > 100) {
+      setError("Percentage tariff cannot exceed 100%");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const response = await api.post("/api/admin/tariff", {
+        franchiseId: franchise.accountId,
+        tariffType,
+        tariffValue: valueNum,
+        isActive,
+      });
+
+      if (response.data?.success) {
+        setMessage("Tariff configuration updated successfully!");
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } else {
+        setError(
+          response.data?.message || "Failed to update tariff configuration",
+        );
+      }
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "An error occurred while saving the tariff.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="relative w-10 h-10">
+          <div
+            className={`absolute inset-0 rounded-full border-4 ${isDark ? "border-slate-700" : "border-slate-200"}`}
+          />
+          <div className="absolute inset-0 rounded-full border-4 border-t-indigo-500 animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -15 }}
+      className={`rounded-2xl border p-6 lg:p-8 max-w-4xl mx-auto shadow-xl ${
+        isDark
+          ? "bg-slate-900/80 border-slate-800"
+          : "bg-white border-slate-200"
+      }`}
+    >
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-dashed border-slate-700/50">
+        <div>
+          <h3
+            className={`text-lg font-bold ${isDark ? "text-white" : "text-slate-800"}`}
+          >
+            Configure Franchise Tariff
+          </h3>
+          <p
+            className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+          >
+            Configure custom plan tariff for{" "}
+            <span className="font-semibold text-indigo-400">
+              {franchise.companyName}
+            </span>
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className={`p-1.5 rounded-lg transition-colors ${
+            isDark
+              ? "hover:bg-slate-800 text-slate-400 hover:text-white"
+              : "hover:bg-slate-100 text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+      </div>
+
+      {error && (
+        <div className="mb-5 p-3.5 rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-300 text-xs font-semibold flex items-center gap-2">
+          <span>⚠️</span> {error}
+        </div>
+      )}
+
+      {message && (
+        <div className="mb-5 p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-300 text-xs font-semibold flex items-center gap-2">
+          <span>✅</span> {message}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label
+            className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? "text-slate-300" : "text-slate-600"}`}
+          >
+            Tariff Rule Type
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              {
+                type: "FIXED",
+                label: "Fixed Amount",
+                desc: "Adds a set currency fee",
+              },
+              {
+                type: "PERCENTAGE",
+                label: "Percentage Tariff",
+                desc: "Adds percentage of plan price",
+              },
+            ].map(({ type, label, desc }) => {
+              const active = tariffType === type;
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setTariffType(type)}
+                  className={`text-left p-3 rounded-xl border-2 transition-all flex flex-col ${
+                    active
+                      ? "border-indigo-500 bg-indigo-500/10 shadow-lg shadow-indigo-500/5"
+                      : isDark
+                        ? "border-slate-800 bg-slate-900/40 hover:border-slate-700"
+                        : "border-slate-200 bg-slate-50 hover:border-slate-300"
+                  }`}
+                >
+                  <span
+                    className={`text-sm font-bold ${active ? "text-indigo-400" : isDark ? "text-slate-200" : "text-slate-800"}`}
+                  >
+                    {label}
+                  </span>
+                  <span
+                    className={`text-[10px] mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+                  >
+                    {desc}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <label
+            className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? "text-slate-300" : "text-slate-600"}`}
+          >
+            Tariff Value
+          </label>
+          <div className="relative rounded-xl shadow-sm">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span
+                className={`text-sm font-bold ${isDark ? "text-slate-500" : "text-slate-400"}`}
+              >
+                {tariffType === "PERCENTAGE" ? "%" : "₹"}
+              </span>
+            </div>
+            <input
+              type="number"
+              step="any"
+              value={tariffValue}
+              onChange={(e) => setTariffValue(e.target.value)}
+              placeholder="0.00"
+              className={`block w-full pl-8 pr-4 py-2.5 rounded-xl border text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
+                isDark
+                  ? "bg-slate-950/80 border-slate-800 text-white placeholder-slate-600"
+                  : "bg-white border-slate-200 text-slate-800 placeholder-slate-400"
+              }`}
+            />
+          </div>
+          <p
+            className={`text-[10px] mt-1.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+          >
+            {tariffType === "PERCENTAGE"
+              ? "Calculated dynamically as a percentage of the purchased plan's base amount."
+              : "A flat currency amount applied directly to any plan purchase."}
+          </p>
+        </div>
+
+        <div
+          className={`flex items-center justify-between p-3.5 rounded-xl border ${
+            isDark
+              ? "bg-slate-950/40 border-slate-800/80"
+              : "bg-slate-50/50 border-slate-200/80"
+          }`}
+        >
+          <div>
+            <span
+              className={`text-sm font-bold block ${isDark ? "text-slate-200" : "text-slate-800"}`}
+            >
+              Tariff Rule Enabled
+            </span>
+            <span
+              className={`text-[10px] ${isDark ? "text-slate-500" : "text-slate-400"}`}
+            >
+              Toggle to enable or temporarily suspend this rule
+            </span>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div
+              className={`w-11 h-6 rounded-full peer transition-all duration-300 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${
+                isDark
+                  ? "bg-slate-800 peer-focus:ring-indigo-800 peer-checked:bg-indigo-600 peer-checked:after:translate-x-full"
+                  : "bg-slate-200 peer-focus:ring-indigo-300 peer-checked:bg-indigo-600 peer-checked:after:translate-x-full"
+              }`}
+            />
+          </label>
+        </div>
+
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className={`flex-1 py-2.5 rounded-xl border text-sm font-bold transition-all ${
+              isDark
+                ? "border-slate-800 hover:bg-slate-800/50 text-slate-300"
+                : "border-slate-200 hover:bg-slate-50 text-slate-600"
+            }`}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {saving ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save Configuration"
+            )}
+          </button>
+        </div>
+      </form>
     </motion.div>
   );
 };
@@ -430,14 +837,16 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showTariffForm, setShowTariffForm] = useState(false);
 
   useEffect(() => {
     fetchGroupDetails(franchise.accountId)
       .then((res) => {
-        const list =
-          Array.isArray(res?.data?.data)  ? res.data.data  :
-          Array.isArray(res?.data)        ? res.data       :
-          [];
+        const list = Array.isArray(res?.data?.data)
+          ? res.data.data
+          : Array.isArray(res?.data)
+            ? res.data
+            : [];
 
         if (!res?.success && list.length === 0) {
           setError("Failed to load group details.");
@@ -446,7 +855,11 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
         }
       })
       .catch((err) =>
-        setError(err?.response?.data?.message || err?.message || "Network error while loading groups.")
+        setError(
+          err?.response?.data?.message ||
+            err?.message ||
+            "Network error while loading groups.",
+        ),
       )
       .finally(() => setLoading(false));
   }, [franchise]);
@@ -465,10 +878,16 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
         <Breadcrumb steps={["Franchises", franchise.companyName, "Groups"]} />
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <div>
-            <div className={`h-8 w-48 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse mb-2`}></div>
-            <div className={`h-4 w-64 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse`}></div>
+            <div
+              className={`h-8 w-48 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse mb-2`}
+            ></div>
+            <div
+              className={`h-4 w-64 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse`}
+            ></div>
           </div>
-          <div className={`w-20 h-9 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse`}></div>
+          <div
+            className={`w-20 h-9 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse`}
+          ></div>
         </div>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -478,8 +897,32 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
       </div>
     );
   }
-  
+
   if (error) return <ErrorMsg message={error} isDark={isDark} />;
+
+  if (showTariffForm) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Breadcrumb
+          steps={[
+            "Franchises",
+            franchise.companyName,
+            "Groups",
+            "Configure Tariff",
+          ]}
+        />
+        <TariffForm
+          franchise={franchise}
+          onClose={() => setShowTariffForm(false)}
+          isDark={isDark}
+        />
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -490,15 +933,31 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
       <Breadcrumb steps={["Franchises", franchise.companyName, "Groups"]} />
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <div>
-          <h2 className={`text-2xl font-bold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-800"}`}>
+          <h2
+            className={`text-2xl font-bold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-800"}`}
+          >
             <Users className="w-6 h-6" />
             Group Plans
           </h2>
-          <p className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-            {franchise.companyName} · {groups.length} group{groups.length !== 1 ? "s" : ""}
+          <p
+            className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+          >
+            {franchise.companyName} · {groups.length} group
+            {groups.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <BackButton onClick={onBack} isDark={isDark} />
+        <div className="flex items-center gap-3">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowTariffForm(true)}
+            className="flex items-center gap-2 text-sm font-semibold transition-all px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25 border border-blue-500/10 focus:outline-none"
+          >
+            <Settings className="w-4 h-4" />
+            Configure Tariff
+          </motion.button>
+          <BackButton onClick={onBack} isDark={isDark} />
+        </div>
       </div>
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {groups.map((g, index) => (
@@ -520,7 +979,10 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
                 {g.Group_name?.[0]?.toUpperCase()}
               </div>
-              <Badge color={activeBadgeColor(g.Active_Users, g.Total_Users)} icon="👥">
+              <Badge
+                color={activeBadgeColor(g.Active_Users, g.Total_Users)}
+                icon="👥"
+              >
                 {g.Active_Users}/{g.Total_Users} active
               </Badge>
             </div>
@@ -533,18 +995,37 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
             >
               {g.Group_name}
             </p>
-            <p className={`text-xs mt-1 flex items-center gap-1 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+            <p
+              className={`text-xs mt-1 flex items-center gap-1 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+            >
               <Package className="w-3 h-3" />
               Profile:{" "}
-              <span className={`font-medium ${isDark ? "text-slate-300" : "text-slate-500"}`}>
+              <span
+                className={`font-medium ${isDark ? "text-slate-300" : "text-slate-500"}`}
+              >
                 {g.Profile_Name}
               </span>
             </p>
             <div className="mt-3 grid grid-cols-3 gap-2">
               {[
-                { label: "Total", val: g.Total_Users, icon: "👥", color: isDark ? "text-slate-200" : "text-slate-700" },
-                { label: "Active", val: g.Active_Users, icon: "✅", color: isDark ? "text-emerald-300" : "text-emerald-600" },
-                { label: "Online", val: g.Online_Users, icon: "🟢", color: isDark ? "text-blue-300" : "text-blue-600" },
+                {
+                  label: "Total",
+                  val: g.Total_Users,
+                  icon: "👥",
+                  color: isDark ? "text-slate-200" : "text-slate-700",
+                },
+                {
+                  label: "Active",
+                  val: g.Active_Users,
+                  icon: "✅",
+                  color: isDark ? "text-emerald-300" : "text-emerald-600",
+                },
+                {
+                  label: "Online",
+                  val: g.Online_Users,
+                  icon: "🟢",
+                  color: isDark ? "text-blue-300" : "text-blue-600",
+                },
               ].map(({ label, val, icon, color }) => (
                 <div
                   key={label}
@@ -553,14 +1034,18 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
                   }`}
                 >
                   <p className={`text-lg font-bold ${color}`}>{val}</p>
-                  <p className={`text-[10px] font-medium flex items-center justify-center gap-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                  <p
+                    className={`text-[10px] font-medium flex items-center justify-center gap-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+                  >
                     <span>{icon}</span>
                     {label}
                   </p>
                 </div>
               ))}
             </div>
-            <div className={`mt-4 flex items-center gap-1.5 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity ${isDark ? "text-indigo-300" : "text-indigo-500"}`}>
+            <div
+              className={`mt-4 flex items-center gap-1.5 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity ${isDark ? "text-indigo-300" : "text-indigo-500"}`}
+            >
               View Profile Details →
             </div>
           </motion.button>
@@ -593,7 +1078,11 @@ const ProfileDetails = ({ franchise, group, onBack }) => {
         }
       })
       .catch((err) =>
-        setError(err?.response?.data?.message || err?.message || "Network error while loading profile details.")
+        setError(
+          err?.response?.data?.message ||
+            err?.message ||
+            "Network error while loading profile details.",
+        ),
       )
       .finally(() => setLoading(false));
   }, [franchise, group]);
@@ -601,13 +1090,27 @@ const ProfileDetails = ({ franchise, group, onBack }) => {
   if (loading) {
     return (
       <div>
-        <Breadcrumb steps={["Franchises", franchise.companyName, "Groups", group.Group_name, "Profile"]} />
+        <Breadcrumb
+          steps={[
+            "Franchises",
+            franchise.companyName,
+            "Groups",
+            group.Group_name,
+            "Profile",
+          ]}
+        />
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <div>
-            <div className={`h-8 w-64 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse mb-2`}></div>
-            <div className={`h-4 w-48 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse`}></div>
+            <div
+              className={`h-8 w-64 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse mb-2`}
+            ></div>
+            <div
+              className={`h-4 w-48 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse`}
+            ></div>
           </div>
-          <div className={`w-20 h-9 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse`}></div>
+          <div
+            className={`w-20 h-9 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse`}
+          ></div>
         </div>
 
         {/* Stats Row Shimmer */}
@@ -624,15 +1127,20 @@ const ProfileDetails = ({ franchise, group, onBack }) => {
         </div>
 
         {/* Footer Shimmer */}
-        <div className={`mt-8 rounded-xl px-6 py-4 flex flex-wrap gap-6 ${isDark ? "bg-slate-800/30" : "bg-slate-50"}`}>
+        <div
+          className={`mt-8 rounded-xl px-6 py-4 flex flex-wrap gap-6 ${isDark ? "bg-slate-800/30" : "bg-slate-50"}`}
+        >
           {[1, 2, 3].map((i) => (
-            <div key={i} className={`h-8 w-48 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded animate-pulse`}></div>
+            <div
+              key={i}
+              className={`h-8 w-48 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded animate-pulse`}
+            ></div>
           ))}
         </div>
       </div>
     );
   }
-  
+
   if (error) return <ErrorMsg message={error} isDark={isDark} />;
 
   return (
@@ -641,14 +1149,26 @@ const ProfileDetails = ({ franchise, group, onBack }) => {
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Breadcrumb steps={["Franchises", franchise.companyName, "Groups", group.Group_name, "Profile"]} />
+      <Breadcrumb
+        steps={[
+          "Franchises",
+          franchise.companyName,
+          "Groups",
+          group.Group_name,
+          "Profile",
+        ]}
+      />
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <div>
-          <h2 className={`text-2xl font-bold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-800"}`}>
+          <h2
+            className={`text-2xl font-bold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-800"}`}
+          >
             <Shield className="w-6 h-6" />
             {group.Profile_Name}
           </h2>
-          <p className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+          <p
+            className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+          >
             Full plan & billing configuration
           </p>
         </div>
@@ -658,9 +1178,27 @@ const ProfileDetails = ({ franchise, group, onBack }) => {
       {/* Stats Row - Full width gradient cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
         {[
-          { label: "Total Users", val: group.Total_Users, icon: Users, gradient: "from-slate-600 to-slate-800", color: "slate" },
-          { label: "Active Users", val: group.Active_Users, icon: UserCheck, gradient: "from-emerald-500 to-teal-600", color: "green" },
-          { label: "Online Now", val: group.Online_Users, icon: Wifi, gradient: "from-blue-500 to-indigo-600", color: "blue" },
+          {
+            label: "Total Users",
+            val: group.Total_Users,
+            icon: Users,
+            gradient: "from-slate-600 to-slate-800",
+            color: "slate",
+          },
+          {
+            label: "Active Users",
+            val: group.Active_Users,
+            icon: UserCheck,
+            gradient: "from-emerald-500 to-teal-600",
+            color: "green",
+          },
+          {
+            label: "Online Now",
+            val: group.Online_Users,
+            icon: Wifi,
+            gradient: "from-blue-500 to-indigo-600",
+            color: "blue",
+          },
         ].map(({ label, val, icon: Icon, gradient, color }) => (
           <motion.div
             key={label}
@@ -686,14 +1224,26 @@ const ProfileDetails = ({ franchise, group, onBack }) => {
         {details?.["profile Details"] && (
           <SectionCard title="Profile Details" icon="⚙️" gradient>
             {details["profile Details"].map((item, i) => (
-              <DetailRow key={i} property={item.property.trim()} value={item.value} />
+              <DetailRow
+                key={i}
+                property={item.property.trim()}
+                value={item.value}
+              />
             ))}
           </SectionCard>
         )}
         {details?.["billing Details"] && (
           <SectionCard title="Billing Details" icon="💳" gradient>
             {details["billing Details"].map((item, i) => (
-              <DetailRow key={i} property={item.property.trim()} value={item.value} highlight={item.property?.toLowerCase().includes("price") || item.property?.toLowerCase().includes("amount")} />
+              <DetailRow
+                key={i}
+                property={item.property.trim()}
+                value={item.value}
+                highlight={
+                  item.property?.toLowerCase().includes("price") ||
+                  item.property?.toLowerCase().includes("amount")
+                }
+              />
             ))}
           </SectionCard>
         )}
@@ -711,20 +1261,38 @@ const ProfileDetails = ({ franchise, group, onBack }) => {
         }`}
       >
         <div className="flex items-center gap-2">
-          <span className={`font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>Group ID:</span>
-          <code className={`font-mono px-2 py-1 rounded ${isDark ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600"}`}>
+          <span
+            className={`font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}
+          >
+            Group ID:
+          </span>
+          <code
+            className={`font-mono px-2 py-1 rounded ${isDark ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600"}`}
+          >
             {group.Group_id}
           </code>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>Profile ID:</span>
-          <code className={`font-mono px-2 py-1 rounded ${isDark ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600"}`}>
+          <span
+            className={`font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}
+          >
+            Profile ID:
+          </span>
+          <code
+            className={`font-mono px-2 py-1 rounded ${isDark ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600"}`}
+          >
             {group.Profile_id}
           </code>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>Account:</span>
-          <code className={`font-mono px-2 py-1 rounded ${isDark ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600"}`}>
+          <span
+            className={`font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}
+          >
+            Account:
+          </span>
+          <code
+            className={`font-mono px-2 py-1 rounded ${isDark ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600"}`}
+          >
             {franchise.accountId}
           </code>
         </div>
@@ -782,12 +1350,18 @@ export default function Plans() {
                 isDark ? "text-white" : "text-slate-900"
               }`}
             >
-              <div className={`p-2 rounded-xl ${isDark ? "bg-blue-500/20" : "bg-blue-100"}`}>
-                <Settings className={`w-6 h-6 ${isDark ? "text-blue-400" : "text-blue-600"}`} />
+              <div
+                className={`p-2 rounded-xl ${isDark ? "bg-blue-500/20" : "bg-blue-100"}`}
+              >
+                <Settings
+                  className={`w-6 h-6 ${isDark ? "text-blue-400" : "text-blue-600"}`}
+                />
               </div>
               Plans
             </h1>
-            <p className={`text-sm mt-2 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            <p
+              className={`text-sm mt-2 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+            >
               Franchise Management · Groups · Profile Details
             </p>
           </div>
@@ -800,15 +1374,18 @@ export default function Plans() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className={`w-full rounded-3xl border shadow-xl ${
-            isDark 
-              ? "bg-slate-900/40 border-slate-800/50 backdrop-blur-sm" 
+            isDark
+              ? "bg-slate-900/40 border-slate-800/50 backdrop-blur-sm"
               : "bg-white/80 border-slate-200/80 backdrop-blur-sm"
           }`}
         >
           <div className="p-6 lg:p-8">
             <AnimatePresence mode="wait">
               {step === 1 && (
-                <FranchiseList key="franchise" onSelect={handleSelectFranchise} />
+                <FranchiseList
+                  key="franchise"
+                  onSelect={handleSelectFranchise}
+                />
               )}
               {step === 2 && selectedFranchise && (
                 <GroupList

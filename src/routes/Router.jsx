@@ -46,10 +46,14 @@ const Reports = lazy(() => import("../pages/Admin/Reports"));
 const StaffReports = lazy(() => import("../pages/Staff/Staff Reports/StaffReports"));
 const Logs = lazy(() => import("../pages/Admin/Logs"));
 const Plans = lazy(() => import("../pages/Admin/Plans"));
+const OTT = lazy(() => import("../pages/Admin/OTT"));
 const Payments = lazy(() => import("../pages/Admin/Payments"));
 const OffersPage = lazy(() => import("../pages/Admin/OffersPage"));
 const Tickets = lazy(preloadTickets);
 const SettingsPage = lazy(() => import("../pages/Admin/Settings/SettingsPage"));
+const RelocationPage = lazy(() =>
+  import("../pages/Admin/Relocation/RelocationPage.jsx")
+);
 const Frenchiseadmin = lazy(() =>
   import("../pages/Admin/Frenchiseadmin/Frenchiseadmin")
 );
@@ -407,6 +411,26 @@ const Router = () => {
                 
                   <Plans />
                 
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="relocation"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "franchise", "franchise_admin"]}>
+                <Suspense fallback={<LoadingFallback />}>
+                  <RelocationPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ott"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN"]}>
+                <Suspense fallback={<LoadingFallback />}>
+                  <OTT />
+                </Suspense>
               </ProtectedRoute>
             }
           />

@@ -12,7 +12,8 @@ import {
   UserPlus,
   FileClock,
   LayoutGrid,
-  User
+  User,
+  Tv
 } from "lucide-react";
 import {
   preloadAssignedTickets,
@@ -39,6 +40,12 @@ export const adminSidebarItems = [
     label: "Customers",
     key: "Customers",
     paths: ["/customers"],
+  },
+  {
+    icon: MapPin,
+    label: "Relocation",
+    key: "Relocation",
+    paths: ["/relocation"],
   },
   // {
   //   icon: MapPin,
@@ -69,6 +76,12 @@ export const adminSidebarItems = [
     label: "Plans",
     key: "Plans",
     paths: ["/plans"],
+  },
+  {
+    icon: Tv,
+    label: "OTT Services",
+    key: "OTT",
+    paths: ["/ott"],
   },
   {
     icon: UserCog,
@@ -114,6 +127,12 @@ export const franchiseSidebarItems = [
     label: "Customers",
     key: "Customers",
     paths: ["/my-customers"],
+  },
+  {
+    icon: MapPin,
+    label: "Relocation",
+    key: "Relocation",
+    paths: ["/relocation"],
   },
   {
     icon: MapPin,

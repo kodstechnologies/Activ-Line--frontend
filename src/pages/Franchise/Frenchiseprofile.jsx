@@ -1,20 +1,46 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { 
-  Settings, Save, Loader2, Camera, User, Mail, Lock, 
-  AlertCircle, CheckCircle, Shield, Building2, Clock,
-  Sparkles, ChevronRight, Calendar, Image as ImageIcon,
-  Trash2, Edit2, X, Globe, Phone, MapPin, Award
+import {
+  Settings,
+  Save,
+  Loader2,
+  Camera,
+  User,
+  Mail,
+  Lock,
+  AlertCircle,
+  CheckCircle,
+  Shield,
+  Building2,
+  Clock,
+  Sparkles,
+  ChevronRight,
+  Calendar,
+  Image as ImageIcon,
+  Trash2,
+  Edit2,
+  X,
+  Globe,
+  Phone,
+  MapPin,
+  Award,
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
-import { getMyProfile, updateMyProfile } from "../../api/frenchise/franchiseprofile";
+import {
+  getMyProfile,
+  updateMyProfile,
+} from "../../api/frenchise/franchiseprofile";
 import {
   getAccountMaintenance,
   getMyAccountMaintenance,
   createAccountMaintenance,
   updateAccountMaintenance,
-  deleteAccountMaintenance
+  deleteAccountMaintenance,
 } from "../../api/customer.api";
+import {
+  getFranchiseAvailability,
+  updateFranchiseAvailability,
+} from "../../api/franchise.api";
 import GeneralSettings from "../Admin/Settings/GeneralSettings";
 import { toast } from "react-hot-toast";
 
@@ -42,8 +68,19 @@ const Profile = () => {
   const [maintenanceExists, setMaintenanceExists] = useState(false);
   const [maintenanceSnapshot, setMaintenanceSnapshot] = useState({
     lastDate: "",
-    endDate: ""
+    endDate: "",
   });
+
+  // Availability States
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [availabilitySaving, setAvailabilitySaving] = useState(false);
+  const [availabilityStartTime, setAvailabilityStartTime] = useState("09:00");
+  const [availabilityEndTime, setAvailabilityEndTime] = useState("21:00");
+  const [availabilitySnapshot, setAvailabilitySnapshot] = useState({
+    startTime: "09:00",
+    endTime: "21:00",
+  });
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
@@ -53,8 +90,24 @@ const Profile = () => {
 
   // Memoized values for performance
   const hasChanges = useMemo(() => {
-    return !!(form.name || form.email || form.phone || form.address || form.website || password || profileImageFile);
-  }, [form.name, form.email, form.phone, form.address, form.website, password, profileImageFile]);
+    return !!(
+      form.name ||
+      form.email ||
+      form.phone ||
+      form.address ||
+      form.website ||
+      password ||
+      profileImageFile
+    );
+  }, [
+    form.name,
+    form.email,
+    form.phone,
+    form.address,
+    form.website,
+    password,
+    profileImageFile,
+  ]);
 
   const isPasswordValid = useMemo(() => {
     if (!password) return true;
@@ -106,11 +159,11 @@ const Profile = () => {
             setForm((prev) => ({
               ...prev,
               maintenanceLastDate: data.firstDate || "",
-              maintenanceEndDate: data.endDate || ""
+              maintenanceEndDate: data.endDate || "",
             }));
             setMaintenanceSnapshot({
               lastDate: data.firstDate || "",
-              endDate: data.endDate || ""
+              endDate: data.endDate || "",
             });
             setMaintenanceExists(Boolean(data.firstDate || data.endDate));
           } catch (err) {
@@ -120,12 +173,13 @@ const Profile = () => {
               setForm((prev) => ({
                 ...prev,
                 maintenanceLastDate: "",
-                maintenanceEndDate: ""
+                maintenanceEndDate: "",
               }));
               setMaintenanceSnapshot({ lastDate: "", endDate: "" });
             } else {
               toast.error(
-                err.response?.data?.message || "Failed to load maintenance dates"
+                err.response?.data?.message ||
+                  "Failed to load maintenance dates",
               );
             }
           } finally {
@@ -150,11 +204,11 @@ const Profile = () => {
       setForm((prev) => ({
         ...prev,
         maintenanceLastDate: data.firstDate || "",
-        maintenanceEndDate: data.endDate || ""
+        maintenanceEndDate: data.endDate || "",
       }));
       setMaintenanceSnapshot({
         lastDate: data.firstDate || "",
-        endDate: data.endDate || ""
+        endDate: data.endDate || "",
       });
       setMaintenanceExists(Boolean(data.firstDate || data.endDate));
     } catch (err) {
@@ -164,18 +218,66 @@ const Profile = () => {
         setForm((prev) => ({
           ...prev,
           maintenanceLastDate: "",
-          maintenanceEndDate: ""
+          maintenanceEndDate: "",
         }));
         setMaintenanceSnapshot({ lastDate: "", endDate: "" });
       } else {
         toast.error(
-          err.response?.data?.message || "Failed to load maintenance dates"
+          err.response?.data?.message || "Failed to load maintenance dates",
         );
       }
     } finally {
       setMaintenanceLoading(false);
     }
   }, []);
+
+  // Time conversion helpers (12-hour AM/PM <-> 24-hour HH:MM)
+  const convert12to24 = useCallback((time12h) => {
+    if (!time12h) return "09:00";
+    const [time, modifier] = time12h.split(" ");
+    let [hours, minutes] = time.split(":");
+    if (hours === "12") {
+      hours = "00";
+    }
+    if (modifier === "PM") {
+      hours = parseInt(hours, 10) + 12;
+    }
+    return `${String(hours).padStart(2, "0")}:${minutes}`;
+  }, []);
+
+  const convert24to12 = useCallback((time24h) => {
+    if (!time24h) return "09:00 AM";
+    const [hoursStr, minutesStr] = time24h.split(":");
+    let hours = parseInt(hoursStr, 10);
+    const modifier = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${String(hours).padStart(2, "0")}:${minutesStr} ${modifier}`;
+  }, []);
+
+  const loadAvailability = useCallback(async () => {
+    if (!accountId) return;
+    setAvailabilityLoading(true);
+    try {
+      const res = await getFranchiseAvailability(accountId);
+      if (res.success) {
+        const start24 = convert12to24(res.data?.startTime || "09:00 AM");
+        const end24 = convert12to24(res.data?.endTime || "09:00 PM");
+        setAvailabilityStartTime(start24);
+        setAvailabilityEndTime(end24);
+        setAvailabilitySnapshot({
+          startTime: start24,
+          endTime: end24,
+        });
+      }
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message || "Failed to load franchise availability",
+      );
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  }, [accountId, convert12to24]);
 
   useEffect(() => {
     fetchProfile();
@@ -186,6 +288,12 @@ const Profile = () => {
       loadMaintenance();
     }
   }, [activeTab, loadMaintenance]);
+
+  useEffect(() => {
+    if (activeTab === "availability") {
+      loadAvailability();
+    }
+  }, [activeTab, loadAvailability]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -269,7 +377,7 @@ const Profile = () => {
     setSaving(true);
 
     const formData = new FormData();
-    
+
     if (form.name?.trim()) formData.append("name", form.name.trim());
     if (form.email?.trim()) formData.append("email", form.email.trim());
     if (form.phone?.trim()) formData.append("phone", form.phone.trim());
@@ -286,9 +394,9 @@ const Profile = () => {
             <CheckCircle className="w-5 h-5" />
             <span>Profile updated successfully!</span>
           </div>,
-          { duration: 4000 }
+          { duration: 4000 },
         );
-        
+
         setForm(res.data.data);
         setPassword("");
         setConfirmPassword("");
@@ -331,7 +439,7 @@ const Profile = () => {
     try {
       const payload = {
         lastDate: form.maintenanceLastDate || null,
-        endDate: form.maintenanceEndDate || null
+        endDate: form.maintenanceEndDate || null,
       };
       if (maintenanceExists) {
         await updateAccountMaintenance(accountId, payload);
@@ -341,12 +449,12 @@ const Profile = () => {
       setMaintenanceExists(true);
       setMaintenanceSnapshot({
         lastDate: payload.lastDate || "",
-        endDate: payload.endDate || ""
+        endDate: payload.endDate || "",
       });
       toast.success("Maintenance dates saved.");
     } catch (err) {
       toast.error(
-        err.response?.data?.message || "Failed to save maintenance dates"
+        err.response?.data?.message || "Failed to save maintenance dates",
       );
     } finally {
       setMaintenanceSaving(false);
@@ -357,7 +465,7 @@ const Profile = () => {
     setForm((prev) => ({
       ...prev,
       maintenanceLastDate: maintenanceSnapshot.lastDate || "",
-      maintenanceEndDate: maintenanceSnapshot.endDate || ""
+      maintenanceEndDate: maintenanceSnapshot.endDate || "",
     }));
     setErrors((prev) => ({ ...prev, maintenanceEndDate: undefined }));
     toast.success("Maintenance changes discarded");
@@ -376,18 +484,53 @@ const Profile = () => {
       setForm((prev) => ({
         ...prev,
         maintenanceLastDate: "",
-        maintenanceEndDate: ""
+        maintenanceEndDate: "",
       }));
       toast.success("Maintenance dates deleted.");
     } catch (err) {
       toast.error(
-        err.response?.data?.message || "Failed to delete maintenance dates"
+        err.response?.data?.message || "Failed to delete maintenance dates",
       );
     } finally {
       setMaintenanceDeleting(false);
     }
   };
 
+  const handleSaveAvailability = async () => {
+    if (!accountId) {
+      toast.error("Account ID not found.");
+      return;
+    }
+    setAvailabilitySaving(true);
+    try {
+      const payload = {
+        startTime: convert24to12(availabilityStartTime),
+        endTime: convert24to12(availabilityEndTime),
+      };
+      const res = await updateFranchiseAvailability(accountId, payload);
+      if (res.success) {
+        setAvailabilitySnapshot({
+          startTime: availabilityStartTime,
+          endTime: availabilityEndTime,
+        });
+        toast.success("Franchise availability saved.");
+      } else {
+        toast.error(res.message || "Failed to save availability");
+      }
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message || "Failed to save franchise availability",
+      );
+    } finally {
+      setAvailabilitySaving(false);
+    }
+  };
+
+  const handleCancelAvailability = () => {
+    setAvailabilityStartTime(availabilitySnapshot.startTime);
+    setAvailabilityEndTime(availabilitySnapshot.endTime);
+    toast.success("Availability changes discarded");
+  };
 
   if (loading) {
     return (
@@ -397,7 +540,9 @@ const Profile = () => {
             <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
             <Sparkles className="w-6 h-6 text-blue-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
           </div>
-          <p className={`text-lg font-medium ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+          <p
+            className={`text-lg font-medium ${isDark ? "text-slate-300" : "text-slate-600"}`}
+          >
             Loading profile...
           </p>
         </div>
@@ -406,34 +551,52 @@ const Profile = () => {
   }
 
   return (
-    <div className={`min-h-screen transition-all duration-300 ${
-      isDark ? "bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" : "bg-gradient-to-br from-blue-50 via-indigo-50/30 to-blue-50"
-    }`}>
+    <div
+      className={`min-h-screen transition-all duration-300 ${
+        isDark
+          ? "bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950"
+          : "bg-gradient-to-br from-blue-50 via-indigo-50/30 to-blue-50"
+      }`}
+    >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 max-w-7xl">
-
         {/* Header with glass morphism effect */}
-        <div className={`mb-8 p-6 rounded-2xl backdrop-blur-sm transition-all duration-300 ${
-          isDark ? "bg-slate-800/50 border border-slate-700 shadow-xl" : "bg-white/70 border border-blue-100 shadow-lg"
-        }`}>
+        <div
+          className={`mb-8 p-6 rounded-2xl backdrop-blur-sm transition-all duration-300 ${
+            isDark
+              ? "bg-slate-800/50 border border-slate-700 shadow-xl"
+              : "bg-white/70 border border-blue-100 shadow-lg"
+          }`}
+        >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className={`text-3xl md:text-4xl font-bold bg-gradient-to-r ${
-                isDark ? "from-blue-400 via-cyan-400 to-blue-300" : "from-blue-600 via-indigo-600 to-blue-600"
-              } bg-clip-text text-transparent flex items-center gap-3`}>
+              <h1
+                className={`text-3xl md:text-4xl font-bold bg-gradient-to-r ${
+                  isDark
+                    ? "from-blue-400 via-cyan-400 to-blue-300"
+                    : "from-blue-600 via-indigo-600 to-blue-600"
+                } bg-clip-text text-transparent flex items-center gap-3`}
+              >
                 <Building2 className="w-8 h-8 text-blue-500" />
                 Franchise Dashboard
               </h1>
-              <p className={`mt-2 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
-                Manage your franchise profile, settings, and maintenance schedule
+              <p
+                className={`mt-2 ${isDark ? "text-slate-400" : "text-slate-600"}`}
+              >
+                Manage your franchise profile, settings, and maintenance
+                schedule
               </p>
             </div>
-            
+
             {lastUpdated && (
-              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg max-w-full ${
-                isDark ? "bg-slate-700/50" : "bg-blue-50"
-              }`}>
+              <div
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg max-w-full ${
+                  isDark ? "bg-slate-700/50" : "bg-blue-50"
+                }`}
+              >
                 <Clock className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                <span className={`text-sm break-words ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                <span
+                  className={`text-sm break-words ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                >
                   Last updated: {lastUpdated.toLocaleDateString()}
                 </span>
               </div>
@@ -446,8 +609,13 @@ const Profile = () => {
           {[
             { id: "profile", label: "Profile Information", icon: User },
             { id: "general", label: "General Settings", icon: Settings },
-            { id: "maintenance", label: "Maintenance Schedule", icon: Calendar },
-            { id: "security", label: "Security Settings", icon: Shield }
+            {
+              id: "maintenance",
+              label: "Maintenance Schedule",
+              icon: Calendar,
+            },
+            { id: "availability", label: "Availability Settings", icon: Clock },
+            { id: "security", label: "Security Settings", icon: Shield },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -458,8 +626,8 @@ const Profile = () => {
                     ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg"
                     : "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg"
                   : isDark
-                  ? "bg-slate-800/50 text-slate-400 hover:bg-slate-700/50 hover:text-slate-200"
-                  : "bg-white/50 text-slate-600 hover:bg-white hover:text-slate-900"
+                    ? "bg-slate-800/50 text-slate-400 hover:bg-slate-700/50 hover:text-slate-200"
+                    : "bg-white/50 text-slate-600 hover:bg-white hover:text-slate-900"
               }`}
             >
               <tab.icon className="w-5 h-5" />
@@ -469,27 +637,35 @@ const Profile = () => {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-
           {/* Left – Avatar & Quick Info */}
           <div className="lg:w-1/3">
-            <div className={`sticky top-6 rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 hover:shadow-2xl ${
-              isDark 
-                ? "bg-slate-800/90 border border-slate-700" 
-                : "bg-white/90 border border-blue-100 shadow-xl"
-            }`}>
-              <div className={`h-32 bg-gradient-to-r ${isDark ? "from-blue-600 to-cyan-600" : "from-blue-600 to-indigo-600"} relative overflow-hidden`}>
+            <div
+              className={`sticky top-6 rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 hover:shadow-2xl ${
+                isDark
+                  ? "bg-slate-800/90 border border-slate-700"
+                  : "bg-white/90 border border-blue-100 shadow-xl"
+              }`}
+            >
+              <div
+                className={`h-32 bg-gradient-to-r ${isDark ? "from-blue-600 to-cyan-600" : "from-blue-600 to-indigo-600"} relative overflow-hidden`}
+              >
                 <div className="absolute inset-0 bg-black/20"></div>
                 <Sparkles className="absolute top-4 right-4 w-8 h-8 text-white/30 animate-pulse" />
               </div>
-              
+
               <div className="px-6 pb-6 -mt-16">
                 <div className="relative mb-4 flex justify-center">
                   <div className="relative group">
-                    <div className={`w-28 h-28 rounded-2xl overflow-hidden border-4 ${
-                      isDark ? "border-slate-800" : "border-white"
-                    } shadow-xl transition-transform duration-300 group-hover:scale-105`}>
+                    <div
+                      className={`w-28 h-28 rounded-2xl overflow-hidden border-4 ${
+                        isDark ? "border-slate-800" : "border-white"
+                      } shadow-xl transition-transform duration-300 group-hover:scale-105`}
+                    >
                       <img
-                        src={form.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(form.name || "Franchise")}&background=3b82f6&color=fff&bold=true&size=128&rounded=true`}
+                        src={
+                          form.profileImage ||
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(form.name || "Franchise")}&background=3b82f6&color=fff&bold=true&size=128&rounded=true`
+                        }
                         alt="Franchise Logo"
                         className="w-full h-full object-cover"
                       />
@@ -512,19 +688,27 @@ const Profile = () => {
                 </div>
 
                 <div className="text-center">
-                  <h2 className={`text-2xl font-bold mb-2 ${isDark ? "text-white" : "text-slate-900"}`}>
+                  <h2
+                    className={`text-2xl font-bold mb-2 ${isDark ? "text-white" : "text-slate-900"}`}
+                  >
                     {form.name || "Franchise Name"}
                   </h2>
                   <div className="flex items-center justify-center gap-2 text-sm">
-                    <Mail className={`w-4 h-4 ${isDark ? "text-slate-400" : "text-slate-500"}`} />
+                    <Mail
+                      className={`w-4 h-4 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                    />
                     <p className={isDark ? "text-slate-400" : "text-slate-600"}>
                       {form.email || "—"}
                     </p>
                   </div>
                   {form.phone && (
                     <div className="flex items-center justify-center gap-2 text-sm mt-1">
-                      <Phone className={`w-4 h-4 ${isDark ? "text-slate-400" : "text-slate-500"}`} />
-                      <p className={isDark ? "text-slate-400" : "text-slate-600"}>
+                      <Phone
+                        className={`w-4 h-4 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                      />
+                      <p
+                        className={isDark ? "text-slate-400" : "text-slate-600"}
+                      >
                         {form.phone}
                       </p>
                     </div>
@@ -533,25 +717,39 @@ const Profile = () => {
 
                 {/* Quick stats */}
                 <div className="mt-6 space-y-3">
-                  <div className={`p-3 rounded-xl ${
-                    isDark ? "bg-slate-700/50" : "bg-blue-50"
-                  }`}>
+                  <div
+                    className={`p-3 rounded-xl ${
+                      isDark ? "bg-slate-700/50" : "bg-blue-50"
+                    }`}
+                  >
                     <div className="flex items-center gap-3 text-sm">
-                      <Shield className={`w-5 h-5 ${isDark ? "text-blue-400" : "text-blue-600"}`} />
-                      <span className={isDark ? "text-slate-300" : "text-slate-700"}>
+                      <Shield
+                        className={`w-5 h-5 ${isDark ? "text-blue-400" : "text-blue-600"}`}
+                      />
+                      <span
+                        className={isDark ? "text-slate-300" : "text-slate-700"}
+                      >
                         Security: {password ? "Pending changes" : "Active"}
                       </span>
                     </div>
                   </div>
-                  
+
                   {form.website && (
-                    <div className={`p-3 rounded-xl ${
-                      isDark ? "bg-slate-700/50" : "bg-blue-50"
-                    }`}>
+                    <div
+                      className={`p-3 rounded-xl ${
+                        isDark ? "bg-slate-700/50" : "bg-blue-50"
+                      }`}
+                    >
                       <div className="flex items-center gap-3 text-sm">
-                        <Globe className={`w-5 h-5 ${isDark ? "text-blue-400" : "text-blue-600"}`} />
-                        <a href={form.website} target="_blank" rel="noopener noreferrer" 
-                           className={`hover:underline ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                        <Globe
+                          className={`w-5 h-5 ${isDark ? "text-blue-400" : "text-blue-600"}`}
+                        />
+                        <a
+                          href={form.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`hover:underline ${isDark ? "text-slate-300" : "text-slate-700"}`}
+                        >
                           Visit Website
                         </a>
                       </div>
@@ -564,24 +762,33 @@ const Profile = () => {
 
           {/* Right – Form Fields */}
           <div className="lg:w-2/3 space-y-6">
-            
             {/* Profile Information Tab */}
             {activeTab === "profile" && (
-              <div className={`rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${
-                isDark 
-                  ? "bg-slate-800/90 border border-slate-700" 
-                  : "bg-white/90 border border-blue-100 shadow-xl"
-              }`}>
-                <div className={`p-6 border-b ${
-                  isDark ? "border-slate-700" : "border-blue-100"
-                }`}>
-                  <h3 className={`text-xl font-semibold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-900"}`}>
+              <div
+                className={`rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${
+                  isDark
+                    ? "bg-slate-800/90 border border-slate-700"
+                    : "bg-white/90 border border-blue-100 shadow-xl"
+                }`}
+              >
+                <div
+                  className={`p-6 border-b ${
+                    isDark ? "border-slate-700" : "border-blue-100"
+                  }`}
+                >
+                  <h3
+                    className={`text-xl font-semibold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-900"}`}
+                  >
                     <User className="w-5 h-5 text-blue-500" />
                     Profile Information
                     {hasChanges && (
-                      <span className={`ml-auto text-sm font-normal px-3 py-1 rounded-full animate-pulse ${
-                        isDark ? "bg-yellow-500/20 text-yellow-400" : "bg-yellow-100 text-yellow-700"
-                      }`}>
+                      <span
+                        className={`ml-auto text-sm font-normal px-3 py-1 rounded-full animate-pulse ${
+                          isDark
+                            ? "bg-yellow-500/20 text-yellow-400"
+                            : "bg-yellow-100 text-yellow-700"
+                        }`}
+                      >
                         Unsaved changes
                       </span>
                     )}
@@ -591,13 +798,17 @@ const Profile = () => {
                 <div className="p-6 lg:p-8 space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className={`flex items-center text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                      <label
+                        className={`flex items-center text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}
+                      >
                         <User className="w-4 h-4 mr-2 text-blue-500" />
                         Franchise Name *
                       </label>
                       <input
                         value={form.name}
-                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        onChange={(e) =>
+                          setForm({ ...form, name: e.target.value })
+                        }
                         className={`w-full px-4 py-3 rounded-xl border transition-all duration-300 focus:outline-none ${
                           isDark
                             ? "bg-slate-700/50 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
@@ -608,14 +819,18 @@ const Profile = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <label className={`flex items-center text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                      <label
+                        className={`flex items-center text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}
+                      >
                         <Mail className="w-4 h-4 mr-2 text-blue-500" />
                         Contact Email *
                       </label>
                       <input
                         type="email"
                         value={form.email}
-                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        onChange={(e) =>
+                          setForm({ ...form, email: e.target.value })
+                        }
                         className={`w-full px-4 py-3 rounded-xl border transition-all duration-300 focus:outline-none ${
                           isDark
                             ? "bg-slate-700/50 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
@@ -630,9 +845,6 @@ const Profile = () => {
                         </p>
                       )}
                     </div>
-                
-
-                   
                   </div>
                 </div>
               </div>
@@ -640,43 +852,62 @@ const Profile = () => {
 
             {/* General Settings Tab */}
             {activeTab === "general" && (
-              <div className={`rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${
-                isDark 
-                  ? "bg-slate-800/90 border border-slate-700" 
-                  : "bg-white/90 border border-blue-100 shadow-xl"
-              }`}>
-                <div className={`p-6 border-b ${
-                  isDark ? "border-slate-700" : "border-blue-100"
-                }`}>
-                  <h3 className={`text-xl font-semibold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-900"}`}>
+              <div
+                className={`rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${
+                  isDark
+                    ? "bg-slate-800/90 border border-slate-700"
+                    : "bg-white/90 border border-blue-100 shadow-xl"
+                }`}
+              >
+                <div
+                  className={`p-6 border-b ${
+                    isDark ? "border-slate-700" : "border-blue-100"
+                  }`}
+                >
+                  <h3
+                    className={`text-xl font-semibold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-900"}`}
+                  >
                     <Settings className="w-5 h-5 text-blue-500" />
                     General Settings
                   </h3>
-                  <p className={`mt-2 text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                  <p
+                    className={`mt-2 text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                  >
                     Manage your company profile details
                   </p>
                 </div>
                 <div className="p-6 lg:p-8">
-                  <GeneralSettings showHeader={false} primaryActionLabel="Save All Changes" />
+                  <GeneralSettings
+                    showHeader={false}
+                    primaryActionLabel="Save All Changes"
+                  />
                 </div>
               </div>
             )}
 
             {/* Maintenance Schedule Tab */}
             {activeTab === "maintenance" && (
-              <div className={`rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${
-                isDark 
-                  ? "bg-slate-800/90 border border-slate-700" 
-                  : "bg-white/90 border border-blue-100 shadow-xl"
-              }`}>
-                <div className={`p-6 border-b ${
-                  isDark ? "border-slate-700" : "border-blue-100"
-                }`}>
-                  <h3 className={`text-xl font-semibold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-900"}`}>
+              <div
+                className={`rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${
+                  isDark
+                    ? "bg-slate-800/90 border border-slate-700"
+                    : "bg-white/90 border border-blue-100 shadow-xl"
+                }`}
+              >
+                <div
+                  className={`p-6 border-b ${
+                    isDark ? "border-slate-700" : "border-blue-100"
+                  }`}
+                >
+                  <h3
+                    className={`text-xl font-semibold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-900"}`}
+                  >
                     <Calendar className="w-5 h-5 text-blue-500" />
                     Maintenance Schedule
                   </h3>
-                  <p className={`mt-2 text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                  <p
+                    className={`mt-2 text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                  >
                     Set maintenance periods visible only to franchise users
                   </p>
                 </div>
@@ -688,54 +919,81 @@ const Profile = () => {
                   ) : (
                     <>
                       {!accountId && (
-                        <div className={`mb-6 p-4 rounded-xl border ${
-                          isDark
-                            ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-300"
-                            : "bg-yellow-50 border-yellow-200 text-yellow-800"
-                        }`}>
-                          Account ID not found, so maintenance data cannot be loaded.
+                        <div
+                          className={`mb-6 p-4 rounded-xl border ${
+                            isDark
+                              ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-300"
+                              : "bg-yellow-50 border-yellow-200 text-yellow-800"
+                          }`}
+                        >
+                          Account ID not found, so maintenance data cannot be
+                          loaded.
                         </div>
                       )}
 
-                      <div className={`mb-6 p-4 rounded-xl border ${
-                        isDark
-                          ? "bg-slate-700/40 border-slate-600"
-                          : "bg-slate-50 border-slate-200"
-                      }`}>
-                        <div className={`text-sm font-medium mb-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                      <div
+                        className={`mb-6 p-4 rounded-xl border ${
+                          isDark
+                            ? "bg-slate-700/40 border-slate-600"
+                            : "bg-slate-50 border-slate-200"
+                        }`}
+                      >
+                        <div
+                          className={`text-sm font-medium mb-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}
+                        >
                           Current Maintenance Schedule
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                           <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4 text-blue-500" />
-                            <span className={isDark ? "text-slate-400" : "text-slate-600"}>
-                              Start: {formatDisplayDate(maintenanceSnapshot.lastDate)}
+                            <span
+                              className={
+                                isDark ? "text-slate-400" : "text-slate-600"
+                              }
+                            >
+                              Start:{" "}
+                              {formatDisplayDate(maintenanceSnapshot.lastDate)}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4 text-blue-500" />
-                            <span className={isDark ? "text-slate-400" : "text-slate-600"}>
-                              End: {formatDisplayDate(maintenanceSnapshot.endDate)}
+                            <span
+                              className={
+                                isDark ? "text-slate-400" : "text-slate-600"
+                              }
+                            >
+                              End:{" "}
+                              {formatDisplayDate(maintenanceSnapshot.endDate)}
                             </span>
                           </div>
                         </div>
-                        {!maintenanceSnapshot.lastDate && !maintenanceSnapshot.endDate && (
-                          <div className={`mt-3 text-sm ${isDark ? "text-slate-500" : "text-slate-500"}`}>
-                            No maintenance scheduled.
-                          </div>
-                        )}
+                        {!maintenanceSnapshot.lastDate &&
+                          !maintenanceSnapshot.endDate && (
+                            <div
+                              className={`mt-3 text-sm ${isDark ? "text-slate-500" : "text-slate-500"}`}
+                            >
+                              No maintenance scheduled.
+                            </div>
+                          )}
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <label className={`flex items-center text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                          <label
+                            className={`flex items-center text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}
+                          >
                             <Clock className="w-4 h-4 mr-2 text-blue-500" />
                             Maintenance Start Date
                           </label>
                           <input
                             type="date"
                             value={form.maintenanceLastDate}
-                            onChange={(e) => setForm({ ...form, maintenanceLastDate: e.target.value })}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                maintenanceLastDate: e.target.value,
+                              })
+                            }
                             className={`w-full px-4 py-3 rounded-xl border transition-all duration-300 focus:outline-none ${
                               isDark
                                 ? "bg-slate-700/50 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
@@ -745,14 +1003,21 @@ const Profile = () => {
                         </div>
 
                         <div className="space-y-2">
-                          <label className={`flex items-center text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                          <label
+                            className={`flex items-center text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}
+                          >
                             <Clock className="w-4 h-4 mr-2 text-blue-500" />
                             Maintenance End Date
                           </label>
                           <input
                             type="date"
                             value={form.maintenanceEndDate}
-                            onChange={(e) => setForm({ ...form, maintenanceEndDate: e.target.value })}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                maintenanceEndDate: e.target.value,
+                              })
+                            }
                             className={`w-full px-4 py-3 rounded-xl border transition-all duration-300 focus:outline-none ${
                               isDark
                                 ? "bg-slate-700/50 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
@@ -767,7 +1032,7 @@ const Profile = () => {
                           )}
                         </div>
                       </div>
-                      
+
                       <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap gap-4">
                         <button
                           type="button"
@@ -805,7 +1070,8 @@ const Profile = () => {
                         >
                           Cancel
                         </button>
-                        {(form.maintenanceLastDate || form.maintenanceEndDate) && (
+                        {(form.maintenanceLastDate ||
+                          form.maintenanceEndDate) && (
                           <button
                             type="button"
                             onClick={handleDeleteMaintenance}
@@ -838,21 +1104,201 @@ const Profile = () => {
               </div>
             )}
 
+            {/* Availability Settings Tab */}
+            {activeTab === "availability" && (
+              <div
+                className={`rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${
+                  isDark
+                    ? "bg-slate-800/90 border border-slate-700"
+                    : "bg-white/90 border border-blue-100 shadow-xl"
+                }`}
+              >
+                <div
+                  className={`p-6 border-b ${
+                    isDark ? "border-slate-700" : "border-blue-100"
+                  }`}
+                >
+                  <h3
+                    className={`text-xl font-semibold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-900"}`}
+                  >
+                    <Clock className="w-5 h-5 text-blue-500" />
+                    Availability Settings
+                  </h3>
+                  <p
+                    className={`mt-2 text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                  >
+                    Set your franchise's operational start and end times
+                  </p>
+                </div>
+                <div className="p-6 lg:p-8">
+                  {availabilityLoading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                    </div>
+                  ) : (
+                    <>
+                      {!accountId && (
+                        <div
+                          className={`mb-6 p-4 rounded-xl border ${
+                            isDark
+                              ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-300"
+                              : "bg-yellow-50 border-yellow-200 text-yellow-800"
+                          }`}
+                        >
+                          Account ID not found, so availability data cannot be
+                          loaded.
+                        </div>
+                      )}
+
+                      <div
+                        className={`mb-6 p-4 rounded-xl border ${
+                          isDark
+                            ? "bg-slate-700/40 border-slate-600"
+                            : "bg-slate-50 border-slate-200"
+                        }`}
+                      >
+                        <div
+                          className={`text-sm font-medium mb-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}
+                        >
+                          Current Availability Hours
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-blue-500" />
+                            <span
+                              className={
+                                isDark ? "text-slate-400" : "text-slate-600"
+                              }
+                            >
+                              Start Time:{" "}
+                              {convert24to12(availabilitySnapshot.startTime)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-blue-500" />
+                            <span
+                              className={
+                                isDark ? "text-slate-400" : "text-slate-600"
+                              }
+                            >
+                              End Time:{" "}
+                              {convert24to12(availabilitySnapshot.endTime)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label
+                            className={`flex items-center text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}
+                          >
+                            <Clock className="w-4 h-4 mr-2 text-blue-500" />
+                            Availability Start Time
+                          </label>
+                          <input
+                            type="time"
+                            value={availabilityStartTime}
+                            onChange={(e) =>
+                              setAvailabilityStartTime(e.target.value)
+                            }
+                            className={`w-full px-4 py-3 rounded-xl border transition-all duration-300 focus:outline-none ${
+                              isDark
+                                ? "bg-slate-700/50 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                                : "bg-white border-blue-200 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                            }`}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label
+                            className={`flex items-center text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}
+                          >
+                            <Clock className="w-4 h-4 mr-2 text-blue-500" />
+                            Availability End Time
+                          </label>
+                          <input
+                            type="time"
+                            value={availabilityEndTime}
+                            onChange={(e) =>
+                              setAvailabilityEndTime(e.target.value)
+                            }
+                            className={`w-full px-4 py-3 rounded-xl border transition-all duration-300 focus:outline-none ${
+                              isDark
+                                ? "bg-slate-700/50 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                                : "bg-white border-blue-200 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                            }`}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap gap-4">
+                        <button
+                          type="button"
+                          onClick={handleSaveAvailability}
+                          disabled={availabilitySaving || !accountId}
+                          className={`w-full sm:w-auto flex-1 min-w-[200px] px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
+                            availabilitySaving || !accountId
+                              ? "bg-slate-400 cursor-not-allowed opacity-60"
+                              : `bg-gradient-to-r ${isDark ? "from-blue-600 to-cyan-600" : "from-blue-600 to-indigo-600"} hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl active:scale-95`
+                          }`}
+                        >
+                          {availabilitySaving ? (
+                            <>
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="w-5 h-5" />
+                              Save Availability
+                            </>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCancelAvailability}
+                          disabled={availabilityLoading}
+                          className={`w-full sm:w-auto min-w-[140px] px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
+                            availabilityLoading
+                              ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                              : isDark
+                                ? "bg-slate-700 hover:bg-slate-600 text-slate-300"
+                                : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                          } active:scale-95`}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Security Settings Tab */}
             {activeTab === "security" && (
-              <div className={`rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${
-                isDark 
-                  ? "bg-slate-800/90 border border-slate-700" 
-                  : "bg-white/90 border border-blue-100 shadow-xl"
-              }`}>
-                <div className={`p-6 border-b ${
-                  isDark ? "border-slate-700" : "border-blue-100"
-                }`}>
-                  <h3 className={`text-xl font-semibold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-900"}`}>
+              <div
+                className={`rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${
+                  isDark
+                    ? "bg-slate-800/90 border border-slate-700"
+                    : "bg-white/90 border border-blue-100 shadow-xl"
+                }`}
+              >
+                <div
+                  className={`p-6 border-b ${
+                    isDark ? "border-slate-700" : "border-blue-100"
+                  }`}
+                >
+                  <h3
+                    className={`text-xl font-semibold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-900"}`}
+                  >
                     <Lock className="w-5 h-5 text-blue-500" />
                     Security Settings
                   </h3>
-                  <p className={`mt-2 text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                  <p
+                    className={`mt-2 text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}
+                  >
                     Update your password to keep your account secure
                   </p>
                 </div>
@@ -860,7 +1306,9 @@ const Profile = () => {
                 <div className="p-6 lg:p-8 space-y-6">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className={`flex items-center text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                      <label
+                        className={`flex items-center text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}
+                      >
                         <Lock className="w-4 h-4 mr-2 text-blue-500" />
                         New Password
                       </label>
@@ -881,7 +1329,11 @@ const Profile = () => {
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                         >
-                          {showPassword ? <X className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+                          {showPassword ? (
+                            <X className="w-5 h-5" />
+                          ) : (
+                            <Lock className="w-5 h-5" />
+                          )}
                         </button>
                       </div>
                       {!isPasswordValid && password && (
@@ -890,14 +1342,19 @@ const Profile = () => {
                           Password must be at least 8 characters
                         </p>
                       )}
-                      <p className={`text-xs flex items-center gap-1 ${isDark ? "text-slate-500" : "text-slate-500"}`}>
+                      <p
+                        className={`text-xs flex items-center gap-1 ${isDark ? "text-slate-500" : "text-slate-500"}`}
+                      >
                         <Shield className="w-3 h-3" />
-                        Use at least 8 characters with a mix of letters, numbers & symbols
+                        Use at least 8 characters with a mix of letters, numbers
+                        & symbols
                       </p>
                     </div>
 
                     <div className="space-y-2">
-                      <label className={`flex items-center text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                      <label
+                        className={`flex items-center text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}
+                      >
                         <Lock className="w-4 h-4 mr-2 text-blue-500" />
                         Confirm Password
                       </label>
@@ -925,42 +1382,47 @@ const Profile = () => {
             )}
 
             {/* Action Buttons */}
-            {activeTab !== "maintenance" && activeTab !== "general" && (hasChanges || (activeTab === "security" && (password || confirmPassword))) && (
-              <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className={`flex-1 px-8 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-300 ${
-                    saving
-                      ? "bg-slate-400 cursor-not-allowed opacity-50"
-                      : `bg-gradient-to-r ${isDark ? "from-blue-600 to-cyan-600" : "from-blue-600 to-indigo-600"} hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl active:scale-95`
-                  }`}
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-5 h-5" />
-                      Save All Changes
-                    </>
-                  )}
-                </button>
+            {activeTab !== "maintenance" &&
+              activeTab !== "availability" &&
+              activeTab !== "general" &&
+              (hasChanges ||
+                (activeTab === "security" &&
+                  (password || confirmPassword))) && (
+                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className={`flex-1 px-8 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-300 ${
+                      saving
+                        ? "bg-slate-400 cursor-not-allowed opacity-50"
+                        : `bg-gradient-to-r ${isDark ? "from-blue-600 to-cyan-600" : "from-blue-600 to-indigo-600"} hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl active:scale-95`
+                    }`}
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-5 h-5" />
+                        Save All Changes
+                      </>
+                    )}
+                  </button>
 
-                <button
-                  onClick={handleCancel}
-                  className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
-                    isDark
-                      ? "bg-slate-700 hover:bg-slate-600 text-slate-300"
-                      : "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                  } active:scale-95`}
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
+                  <button
+                    onClick={handleCancel}
+                    className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
+                      isDark
+                        ? "bg-slate-700 hover:bg-slate-600 text-slate-300"
+                        : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                    } active:scale-95`}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
           </div>
         </div>
       </div>

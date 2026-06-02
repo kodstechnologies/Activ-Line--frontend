@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useTheme } from "../../../context/ThemeContext";
 import {
   Image,
@@ -13,6 +14,7 @@ import {
   Film,
   X,
   AlertTriangle,
+  MessageSquare,
 } from "lucide-react";
 import {
   getAllBanners,
@@ -20,6 +22,8 @@ import {
   updateBanner,
   toggleBanner,
   deleteBanner,
+  getReferalMessage,
+  createReferalMessage,
 } from "../../../api/banner.api";
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -385,6 +389,10 @@ const Banners = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [toast, setToast] = useState(null);
 
+  const [showReferralModal, setShowReferralModal] = useState(false);
+  const [referralMessageText, setReferralMessageText] = useState("");
+  const [savingMessage, setSavingMessage] = useState(false);
+
   const showToast = useCallback((type, message) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 3500);
@@ -413,7 +421,18 @@ const Banners = () => {
         setIsLoading(false);
       }
     };
+    const fetchReferralMessage = async () => {
+      try {
+        const res = await getReferalMessage();
+        if (res?.data?.message) {
+          setReferralMessageText(res.data.message);
+        }
+      } catch (err) {
+        console.error("Failed to load referral message:", err);
+      }
+    };
     fetchBanners();
+    fetchReferralMessage();
   }, [showToast]);
 
   // Upload
@@ -498,6 +517,23 @@ const Banners = () => {
     [showToast],
   );
 
+  const handleSaveReferralMessage = async () => {
+    if (!referralMessageText.trim()) return;
+    setSavingMessage(true);
+    try {
+      await createReferalMessage(referralMessageText);
+      showToast("success", "Referral message saved successfully");
+      setShowReferralModal(false);
+    } catch (err) {
+      showToast(
+        "error",
+        err?.response?.data?.message ?? "Failed to save message",
+      );
+    } finally {
+      setSavingMessage(false);
+    }
+  };
+
   // Replace
   const handleReplace = useCallback(
     async (id, file) => {
@@ -552,28 +588,39 @@ const Banners = () => {
       <Toast toast={toast} isDark={isDark} />
 
       {/* ── Section Header ── */}
-      <div className="flex items-center gap-3">
-        <div className={styles.iconWrap}>
-          <Image
-            className={`w-5 h-5 ${isDark ? "text-orange-400" : "text-orange-600"}`}
-          />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className={styles.iconWrap}>
+            <Image
+              className={`w-5 h-5 ${isDark ? "text-orange-400" : "text-orange-600"}`}
+            />
+          </div>
+          <div>
+            <h2
+              className={`text-2xl font-bold bg-gradient-to-r ${
+                isDark
+                  ? "from-orange-400 to-amber-400"
+                  : "from-orange-600 to-amber-600"
+              } bg-clip-text text-transparent`}
+            >
+              Banners Management
+            </h2>
+            <p
+              className={`text-sm mt-0.5 ${isDark ? "text-slate-400" : "text-gray-500"}`}
+            >
+              Upload and manage promotional banners, and configure referral
+              messages
+            </p>
+          </div>
         </div>
-        <div>
-          <h2
-            className={`text-2xl font-bold bg-gradient-to-r ${
-              isDark
-                ? "from-orange-400 to-amber-400"
-                : "from-orange-600 to-amber-600"
-            } bg-clip-text text-transparent`}
-          >
-            Banner Management
-          </h2>
-          <p
-            className={`text-sm mt-0.5 ${isDark ? "text-slate-400" : "text-gray-500"}`}
-          >
-            Upload and manage promotional image &amp; video banners
-          </p>
-        </div>
+
+        <button
+          onClick={() => setShowReferralModal(true)}
+          className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-white font-medium bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 shadow-md hover:scale-105 active:scale-95 transition-all duration-200"
+        >
+          <MessageSquare className="w-4 h-4" />
+          Referral Message
+        </button>
       </div>
 
       {/* ── Upload Card ── */}
@@ -788,6 +835,116 @@ const Banners = () => {
           </div>
         )}
       </div>
+
+      {/* ── Referral Message Modal (Portalized to document.body) ── */}
+      {showReferralModal &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              onClick={() => setShowReferralModal(false)}
+            />
+
+            {/* Modal Container */}
+            <div
+              className={`relative w-full max-w-lg rounded-2xl border overflow-hidden shadow-2xl animate-[slideDown_0.3s_ease-out] ${
+                isDark
+                  ? "bg-slate-800 border-slate-700/60"
+                  : "bg-white border-gray-200"
+              }`}
+            >
+              {/* Header */}
+              <div
+                className={`flex items-center justify-between p-5 border-b ${isDark ? "border-slate-700/50" : "border-gray-100"}`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className={`p-2 rounded-lg ${isDark ? "bg-purple-500/15" : "bg-purple-100"}`}
+                  >
+                    <MessageSquare
+                      className={`w-4 h-4 ${isDark ? "text-purple-400" : "text-purple-600"}`}
+                    />
+                  </div>
+                  <h3
+                    className={`font-bold text-lg ${isDark ? "text-slate-100" : "text-gray-800"}`}
+                  >
+                    Referral Message
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowReferralModal(false)}
+                  className={`p-1.5 rounded-lg transition ${isDark ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-100 text-gray-500"}`}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Form Content */}
+              <div className="p-6 space-y-4">
+                <p
+                  className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                >
+                  Configure the automated referral text sent to new signups when
+                  using a referral link. Use this template to customize their
+                  onboarding welcome message.
+                </p>
+
+                <div className="space-y-2">
+                  <label
+                    className={`text-xs font-semibold ${isDark ? "text-slate-300" : "text-gray-700"}`}
+                  >
+                    Message Content
+                  </label>
+                  <textarea
+                    value={referralMessageText}
+                    onChange={(e) => setReferralMessageText(e.target.value)}
+                    placeholder="Enter referral message template..."
+                    rows={5}
+                    className={`w-full text-sm px-4 py-3 rounded-xl border focus:outline-none transition ${
+                      isDark
+                        ? "bg-slate-900 border-slate-700 text-slate-200 focus:border-purple-500"
+                        : "bg-gray-50 border-gray-200 text-gray-800 focus:border-purple-600"
+                    }`}
+                  />
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div
+                className={`flex items-center justify-end gap-3 p-5 border-t ${isDark ? "border-slate-700/50" : "border-gray-100"}`}
+              >
+                <button
+                  onClick={() => setShowReferralModal(false)}
+                  className={`px-5 py-2.5 rounded-xl text-sm font-medium transition ${
+                    isDark
+                      ? "bg-slate-700 hover:bg-slate-600 text-slate-300"
+                      : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  }`}
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleSaveReferralMessage}
+                  disabled={savingMessage || !referralMessageText.trim()}
+                  className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-white font-medium transition ${
+                    savingMessage || !referralMessageText.trim()
+                      ? "opacity-50 cursor-not-allowed bg-purple-500"
+                      : "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 shadow-md shadow-purple-500/25 hover:scale-105 active:scale-95"
+                  }`}
+                >
+                  {savingMessage ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4" />
+                  )}
+                  {savingMessage ? "Saving..." : "Save Message"}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
 
       <style>{`
         @keyframes slideDown {

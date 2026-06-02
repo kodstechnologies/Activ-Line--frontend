@@ -60,9 +60,9 @@ const SettingsPage = () => {
       color: "green",
     },
     banners: {
-      name: "Banners",
+      name: "Others",
       icon: Image,
-      description: "Upload and manage promotional image & video banners",
+      description: "Upload and manage banners, and configure referral messages",
       color: "orange",
     },
   }), []);

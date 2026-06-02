@@ -54,3 +54,20 @@ export const deleteBanner = async (bannerId) => {
   const res = await api.delete(`${BASE}/banner/${bannerId}`);
   return res.data;
 };
+
+/**
+ * GET current referral message
+ */
+export const getReferalMessage = async () => {
+  const res = await api.get(`${BASE}/referal-message`);
+  return res.data;
+};
+
+/**
+ * POST — create or update the referral message
+ * @param {string} message
+ */
+export const createReferalMessage = async (message) => {
+  const res = await api.post(`${BASE}/referal-message`, { message });
+  return res.data;
+};

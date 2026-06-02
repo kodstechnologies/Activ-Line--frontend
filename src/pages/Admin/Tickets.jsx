@@ -49,11 +49,10 @@ const getStatusColor = (status, isDark) => {
 };
 
 const ALLOWED_STATUS_TRANSITIONS = {
-  OPEN: ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"],
-  ASSIGNED: ["IN_PROGRESS", "RESOLVED", "CLOSED", "OPEN"],
-  IN_PROGRESS: ["IN_PROGRESS", "RESOLVED", "CLOSED"],
-  RESOLVED: ["RESOLVED", "OPEN", "IN_PROGRESS", "CLOSED"],
-  CLOSED: ["CLOSED"],
+  OPEN: ["OPEN", "IN_PROGRESS", "RESOLVED"],
+  ASSIGNED: ["IN_PROGRESS", "RESOLVED", "OPEN"],
+  IN_PROGRESS: ["IN_PROGRESS", "RESOLVED"],
+  RESOLVED: ["RESOLVED", "OPEN", "IN_PROGRESS"],
 };
 
 const getStatusIcon = (status) => {
@@ -85,6 +84,7 @@ const Tickets = () => {
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   const [assignedRoomCount, setAssignedRoomCount] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [userPage, setUserPage] = useState(1);
@@ -115,6 +115,7 @@ const Tickets = () => {
     api
       .get("api/chat/admin/rooms")
       .then((res) => {
+        console.log(res);
         const mapped = res.data.data.map((r) => ({
           _id: r._id,
           ticketId: r._id.slice(-6).toUpperCase(),
@@ -209,6 +210,7 @@ const Tickets = () => {
       );
     } catch (err) {
       console.error("❌ Assign staff failed", err.response?.data || err);
+      throw err;
     }
   };
 
@@ -237,6 +239,7 @@ const Tickets = () => {
         "❌ Status update failed",
         err.response?.data || err.message,
       );
+      throw err;
     }
   };
 
@@ -253,6 +256,7 @@ const Tickets = () => {
     if (!activeUser || !token) return;
 
     setMessages([]);
+    setLoadingMessages(true);
 
     const fetchPromises = activeUser.tickets.map((t) =>
       api
@@ -261,11 +265,15 @@ const Tickets = () => {
         .catch(() => []),
     );
 
-    Promise.all(fetchPromises).then((results) => {
-      const allMsgs = results.flat();
-      allMsgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-      setMessages(allMsgs);
-    });
+    Promise.all(fetchPromises)
+      .then((results) => {
+        const allMsgs = results.flat();
+        allMsgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        setMessages(allMsgs);
+      })
+      .finally(() => {
+        setLoadingMessages(false);
+      });
 
     socket.auth = { token };
 
@@ -376,7 +384,6 @@ const Tickets = () => {
     if (userPage > userTotalPages) setUserPage(1);
   }, [userPage, userTotalPages]);
 
-  /* ---------- STATS ---------- */
   const stats = useMemo(() => {
     let total = 0,
       open = 0,
@@ -392,6 +399,44 @@ const Tickets = () => {
     });
     return { total, open, assigned: assignedRoomCount, resolved, closed };
   }, [users, assignedRoomCount]);
+
+  /* ---------- STAFF WORKLOAD STATS ---------- */
+  const staffStats = useMemo(() => {
+    const statsMap = {};
+    staffList.forEach((s) => {
+      statsMap[s._id] = {
+        totalActive: 0,
+        assignedToday: 0,
+        pendingPrevious: 0,
+      };
+    });
+
+    const todayStr = new Date().toDateString();
+
+    users.forEach((u) => {
+      u.tickets.forEach((t) => {
+        const staffId = t.assignedTo;
+        if (staffId && statsMap[staffId]) {
+          const isActive = ["OPEN", "ASSIGNED", "IN_PROGRESS"].includes(
+            t.status,
+          );
+          const isToday = new Date(t.createdAt).toDateString() === todayStr;
+
+          if (isActive) {
+            statsMap[staffId].totalActive++;
+          }
+          if (isToday) {
+            statsMap[staffId].assignedToday++;
+          }
+          if (isActive && !isToday) {
+            statsMap[staffId].pendingPrevious++;
+          }
+        }
+      });
+    });
+
+    return statsMap;
+  }, [users, staffList]);
 
   if (!token) {
     return (
@@ -526,14 +571,14 @@ const Tickets = () => {
                 <p
                   className={`text-base ${isDark ? "text-emerald-400" : "text-emerald-600"}`}
                 >
-                  Closed
+                  Resolved
                 </p>
                 {loading ? (
                   <div
                     className={`h-5 w-8 mx-auto rounded animate-pulse ${isDark ? "bg-emerald-800/40" : "bg-emerald-200"}`}
                   />
                 ) : (
-                  <p className="font-bold text-lg">{stats.closed}</p>
+                  <p className="font-bold text-lg">{stats.resolved}</p>
                 )}
               </div>
             </div>
@@ -557,7 +602,7 @@ const Tickets = () => {
               />
             </div>
 
-            <div className="relative mt-2 filter-container">
+            {/* <div className="relative mt-2 filter-container">
               <button
                 onClick={() => setIsFilterOpen((prev) => !prev)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium transition ${
@@ -582,7 +627,7 @@ const Tickets = () => {
                       : "bg-white border-gray-200"
                   }`}
                 >
-                  {["All", "OPEN", "ASSIGNED", "RESOLVED", "CLOSED"].map(
+                  {["All", "OPEN", "ASSIGNED", "RESOLVED"].map(
                     (status) => (
                       <button
                         key={status}
@@ -608,7 +653,7 @@ const Tickets = () => {
                   )}
                 </div>
               )}
-            </div>
+            </div> */}
           </div>
 
           <div className="flex-1 overflow-y-auto premium-scrollbar">
@@ -664,9 +709,9 @@ const Tickets = () => {
             ) : (
               <div className="p-2">
                 {paginatedUsers.map((u, index) => {
-                  // Show zig-zag when ALL tickets are RESOLVED or CLOSED (no active tickets)
+                  // Show zig-zag when ALL tickets are ASSIGNED or RESOLVED (no active tickets)
                   const allDone = u.tickets.every((t) =>
-                    ["RESOLVED", "CLOSED"].includes(t.status),
+                    ["ASSIGNED", "RESOLVED"].includes(t.status),
                   );
                   const isActive = activeUserId === u.customerId;
                   const closedStyle = allDone
@@ -802,7 +847,7 @@ const Tickets = () => {
               </div>
             )}
 
-            {!loading && filteredUsers.length > 0 && (
+            {!loading && filteredUsers.length > userPageSize && (
               <div
                 className={`p-2 border-t ${isDark ? "border-gray-800" : "border-gray-200"}`}
               >
@@ -878,6 +923,7 @@ const Tickets = () => {
                 onSendMessage={sendMessage}
                 showAssignment={true}
                 staffList={staffList}
+                staffStats={staffStats}
                 showStatus={true}
                 isDark={isDark}
                 allowedStatuses={
@@ -892,6 +938,8 @@ const Tickets = () => {
                 customerEmail={activeUser.customerEmail}
                 customerPhone={activeUser.customerPhone}
                 createdAt={activeUser.tickets?.[0]?.createdAt}
+                loading={loadingMessages}
+                zigzagStatuses={["ASSIGNED", "RESOLVED"]}
               />
             </div>
           ) : loading ? (

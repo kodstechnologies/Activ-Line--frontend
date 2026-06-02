@@ -61,6 +61,42 @@ const normalizeNotificationPayload = (payload) => {
   };
 };
 
+const playNotificationChime = () => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    if (ctx.state === "suspended") {
+      ctx.resume();
+    }
+
+    const playTone = (freq, startTime, duration, vol) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, startTime);
+
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(vol, startTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+
+    // Synthesize a beautiful premium two-tone chime (A5 -> C#6)
+    const now = ctx.currentTime;
+    playTone(880, now, 0.15, 0.12);
+    playTone(1109, now + 0.10, 0.35, 0.10);
+  } catch (synthErr) {
+    console.warn("Chime synthesis was blocked by browser autoplay policy:", synthErr);
+  }
+};
+
 const showIncomingNotification = (payload, lastNotificationRef) => {
   const { id, title, body, icon, type } = normalizeNotificationPayload(payload);
   const now = Date.now();
@@ -74,6 +110,8 @@ const showIncomingNotification = (payload, lastNotificationRef) => {
   }
 
   lastNotificationRef.current = { key: dedupeKey, ts: now };
+
+  playNotificationChime();
 
   toast.custom(() => (
     <NotificationToastCard title={title} body={body} />
