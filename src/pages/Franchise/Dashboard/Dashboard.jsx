@@ -1,16 +1,16 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import FullScreenLoader from '../../../components/loaders/FullscreenLoaderWithLogo';
-import { useTheme } from '../../../context/ThemeContext';
-import { useAuth } from '../../../context/AuthContext';
-import { getFranchiseReportSummary } from '../../../api/reportapi';
-import { getLatestFranchisePaymentHistory } from '../../../api/frenchise/paymanehistypapi';
+import FullScreenLoader from "../../../components/loaders/FullscreenLoaderWithLogo";
+import { useTheme } from "../../../context/ThemeContext";
+import { useAuth } from "../../../context/AuthContext";
+import { getFranchiseReportSummary } from "../../../api/reportapi";
+import { getLatestFranchisePaymentHistory } from "../../../api/frenchise/paymanehistypapi";
 import Lottie from "lottie-react";
 import telecomAnimation from "../../../animations/Activline-Dashboard.json";
-import { 
-  TrendingUp, 
-  Users, 
-  CheckCircle, 
+import {
+  TrendingUp,
+  Users,
+  CheckCircle,
   AlertCircle,
   Clock,
   UserCheck,
@@ -23,8 +23,8 @@ import {
   User,
   UserPlus,
   TicketCheck,
-  TicketX
-} from 'lucide-react';
+  TicketX,
+} from "lucide-react";
 
 // Dashboard Header Animation Component
 const DashboardHeaderAnimation = ({ isDark }) => {
@@ -47,48 +47,48 @@ const DashboardHeaderAnimation = ({ isDark }) => {
 };
 
 // Enhanced formatters with error handling
-const formatAmount = (value, currency = 'INR') => {
+const formatAmount = (value, currency = "INR") => {
   try {
     const amount = Number(value || 0);
-    if (Number.isNaN(amount)) return '₹0.00';
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
+    if (Number.isNaN(amount)) return "₹0.00";
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
       currency,
       maximumFractionDigits: 2,
       minimumFractionDigits: 2,
     }).format(amount);
   } catch {
-    return '₹0.00';
+    return "₹0.00";
   }
 };
 
 const formatDateTime = (value) => {
-  if (!value) return '--';
+  if (!value) return "--";
   try {
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '--';
-    return new Intl.DateTimeFormat('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
+    if (Number.isNaN(date.getTime())) return "--";
+    return new Intl.DateTimeFormat("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
     }).format(date);
   } catch {
-    return '--';
+    return "--";
   }
 };
 
 const getStatusClass = (status, isDark) => {
-  const statusStr = String(status || '').toUpperCase();
-  const color = ['SUCCESS', 'PAID'].includes(statusStr)
-    ? 'green'
-    : statusStr === 'PENDING'
-    ? 'amber'
-    : statusStr === 'FAILED'
-    ? 'red'
-    : 'gray';
+  const statusStr = String(status || "").toUpperCase();
+  const color = ["SUCCESS", "PAID"].includes(statusStr)
+    ? "green"
+    : statusStr === "PENDING"
+      ? "amber"
+      : statusStr === "FAILED"
+        ? "red"
+        : "gray";
 
   const colorClasses = {
     green: isDark
@@ -109,24 +109,28 @@ const getStatusClass = (status, isDark) => {
 };
 
 const StatusBadge = ({ status, isDark }) => (
-  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${getStatusClass(status, isDark)}`}>
-    <span className="text-xs font-medium">{String(status || 'Unknown')}</span>
+  <span
+    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${getStatusClass(status, isDark)}`}
+  >
+    <span className="text-xs font-medium">{String(status || "Unknown")}</span>
   </span>
 );
 
 const formatRelativeTime = (timestamp) => {
-  if (!timestamp) return '--';
+  if (!timestamp) return "--";
   try {
     const date = new Date(timestamp);
     const now = new Date();
     const diffInSeconds = Math.floor((now - date) / 1000);
-    
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+
+    if (diffInSeconds < 60) return "Just now";
+    if (diffInSeconds < 3600)
+      return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    if (diffInSeconds < 86400)
+      return `${Math.floor(diffInSeconds / 3600)} hours ago`;
     return `${Math.floor(diffInSeconds / 86400)} days ago`;
   } catch {
-    return '--';
+    return "--";
   }
 };
 
@@ -139,7 +143,7 @@ const KPI_CONFIGS = [
     color: "from-emerald-500 to-teal-500",
     bgColor: "bg-emerald-500/10",
     textColor: "text-emerald-500",
-    gradient: 'from-emerald-500 to-teal-500',
+    gradient: "from-emerald-500 to-teal-500",
   },
   {
     id: 2,
@@ -148,7 +152,7 @@ const KPI_CONFIGS = [
     color: "from-blue-500 to-indigo-500",
     bgColor: "bg-blue-500/10",
     textColor: "text-blue-500",
-    gradient: 'from-blue-500 to-indigo-500',
+    gradient: "from-blue-500 to-indigo-500",
   },
   {
     id: 3,
@@ -157,7 +161,7 @@ const KPI_CONFIGS = [
     color: "from-purple-500 to-pink-500",
     bgColor: "bg-purple-500/10",
     textColor: "text-purple-500",
-    gradient: 'from-purple-500 to-pink-500',
+    gradient: "from-purple-500 to-pink-500",
   },
   {
     id: 4,
@@ -166,8 +170,8 @@ const KPI_CONFIGS = [
     color: "from-amber-500 to-orange-500",
     bgColor: "bg-amber-500/10",
     textColor: "text-amber-500",
-    gradient: 'from-amber-500 to-orange-500',
-  }
+    gradient: "from-amber-500 to-orange-500",
+  },
 ];
 
 // Skeleton Components
@@ -200,64 +204,93 @@ const SkeletonCards = () => (
 const SkeletonTable = ({ isDark }) => (
   <div className="space-y-3 animate-pulse">
     {[1, 2, 3, 4, 5].map((i) => (
-      <div key={i} className={`h-12 rounded ${isDark ? "bg-gray-700/40" : "bg-gray-100"}`} />
+      <div
+        key={i}
+        className={`h-12 rounded ${isDark ? "bg-gray-700/40" : "bg-gray-100"}`}
+      />
     ))}
   </div>
 );
 
 const EmptyState = ({ icon: Icon, message, isDark }) => (
-  <div className={`py-12 text-center rounded-xl ${isDark ? "bg-gray-700/30" : "bg-gray-50"}`}>
-    <Icon className={`h-12 w-12 mx-auto mb-3 ${isDark ? "text-gray-600" : "text-gray-400"}`} />
-    <p className={`text-sm ${isDark ? "text-gray-500" : "text-gray-500"}`}>{message}</p>
+  <div
+    className={`py-12 text-center rounded-xl ${isDark ? "bg-gray-700/30" : "bg-gray-50"}`}
+  >
+    <Icon
+      className={`h-12 w-12 mx-auto mb-3 ${isDark ? "text-gray-600" : "text-gray-400"}`}
+    />
+    <p className={`text-sm ${isDark ? "text-gray-500" : "text-gray-500"}`}>
+      {message}
+    </p>
   </div>
 );
 
-const DataTable = ({ headers, data, renderRow, onViewAll, onRowAction, isDark }) => (
+const DataTable = ({
+  headers,
+  data,
+  renderRow,
+  onViewAll,
+  onRowAction,
+  isDark,
+}) => (
   <div className="h-full flex flex-col">
-    <div className="flex-1 overflow-x-auto">
-      <table className="w-full table-fixed">
-      <thead>
-        <tr className={`border-b ${isDark ? "border-gray-700" : "border-gray-200"}`}>
-          {headers.map((header, idx) => (
-            <th key={idx} className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              {header}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {data.slice(0, 5).map((item, idx) => (
+    <div className="flex-1 overflow-x-auto pb-4">
+      <table className="w-full min-w-[700px] table-fixed">
+        <thead>
           <tr
-            key={item?.ticketId || item?.paymentId || item?._id || idx}
-            className={`group transition-all duration-200 hover:bg-opacity-50 ${
-              isDark ? "hover:bg-gray-700/50 border-b border-gray-700/50" : "hover:bg-gray-50 border-b border-gray-100"
-            }`}
+            className={`border-b ${isDark ? "border-gray-700" : "border-gray-200"}`}
           >
-            {renderRow(item)}
-            {onRowAction && (
-              <td className="py-3 px-4 text-right">
-                <button
-                  onClick={() => onRowAction(item)}
-                  className={`p-1.5 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100 ${
-                    isDark ? "hover:bg-gray-700 text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </td>
-            )}
+            {headers.map((header, idx) => (
+              <th
+                key={idx}
+                className="py-3 px-2 sm:px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              >
+                {header}
+              </th>
+            ))}
           </tr>
-        ))}
-      </tbody>
+        </thead>
+        <tbody>
+          {data.slice(0, 5).map((item, idx) => (
+            <tr
+              key={item?.ticketId || item?.paymentId || item?._id || idx}
+              className={`group transition-all duration-200 hover:bg-opacity-50 ${
+                isDark
+                  ? "hover:bg-gray-700/50 border-b border-gray-700/50"
+                  : "hover:bg-gray-50 border-b border-gray-100"
+              }`}
+            >
+              {renderRow(item)}
+              {onRowAction && (
+                <td className="py-3 px-2 sm:px-4 text-right">
+                  <button
+                    onClick={() => onRowAction(item)}
+                    className={`p-1.5 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100 ${
+                      isDark
+                        ? "hover:bg-gray-700 text-gray-400 hover:text-white"
+                        : "hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+                    }`}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
       </table>
     </div>
 
     {onViewAll && (
-      <div className={`mt-4 pt-4 text-center border-t ${isDark ? "border-gray-700" : "border-gray-200"}`}>
+      <div
+        className={`mt-4 pt-4 text-center border-t ${isDark ? "border-gray-700" : "border-gray-200"}`}
+      >
         <button
           onClick={onViewAll}
           className={`inline-flex items-center gap-1 text-sm font-medium transition-all duration-200 hover:gap-2 ${
-            isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-500"
+            isDark
+              ? "text-blue-400 hover:text-blue-300"
+              : "text-blue-600 hover:text-blue-500"
           }`}
         >
           View All
@@ -285,13 +318,17 @@ const DashboardCard = ({
   onHover,
 }) => {
   // Calculate progress percentage for visual effect
-  const progressPercentage = title === "Total Collected" 
-    ? Math.min((parseFloat(value?.replace(/[^0-9.-]/g, '') || 0) / 100000) * 100, 100) 
-    : Math.min((parseInt(value) / 100) * 100, 100) || 0;
+  const progressPercentage =
+    title === "Total Collected"
+      ? Math.min(
+          (parseFloat(value?.replace(/[^0-9.-]/g, "") || 0) / 100000) * 100,
+          100,
+        )
+      : Math.min((parseInt(value) / 100) * 100, 100) || 0;
 
   return (
     <div
-      className={`relative rounded-2xl p-6 transition-all duration-500 animate-slideUp overflow-hidden group cursor-pointer ${
+      className={`relative rounded-2xl p-4 sm:p-6 transition-all duration-500 animate-slideUp overflow-hidden group cursor-pointer ${
         isDark
           ? "bg-gray-800/70 hover:bg-gray-800"
           : "bg-white hover:bg-gray-50 shadow-sm"
@@ -324,13 +361,13 @@ const DashboardCard = ({
 
       <div className="relative z-10">
         <div className="flex justify-between items-start mb-4">
-          <div className={`p-3 rounded-xl ${bgColor}`}>
+          <div className={`p-2.5 sm:p-3 rounded-xl ${bgColor}`}>
             <div className={textColor}>{icon}</div>
           </div>
         </div>
 
         <h2
-          className={`text-3xl font-bold mb-2 transition-all duration-300 ${
+          className={`text-2xl sm:text-3xl font-bold mb-2 transition-all duration-300 ${
             isHovered ? "scale-105" : "scale-100"
           } ${isDark ? "text-white" : "text-gray-900"}`}
         >
@@ -345,20 +382,26 @@ const DashboardCard = ({
           {title}
         </p>
 
-        <div className="mt-4 flex items-center gap-2">
-          <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
+        <div className="mt-4 flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <span
+            className={`text-xs ${isDark ? "text-slate-400" : "text-gray-600"}`}
+          >
             {sub}
           </span>
           {trend && (
             <>
               <span className="text-xs text-gray-400">•</span>
-              <span className={`text-xs font-medium ${
-                trendDirection === 'up' 
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : trendDirection === 'down'
-                  ? 'text-red-600 dark:text-red-400'
-                  : isDark ? 'text-slate-400' : 'text-gray-600'
-              }`}>
+              <span
+                className={`text-xs font-medium ${
+                  trendDirection === "up"
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : trendDirection === "down"
+                      ? "text-red-600 dark:text-red-400"
+                      : isDark
+                        ? "text-slate-400"
+                        : "text-gray-600"
+                }`}
+              >
                 {trend}
               </span>
             </>
@@ -393,30 +436,26 @@ const SectionCard = ({
   actionButton,
 }) => (
   <div
-    className={`h-full rounded-2xl overflow-hidden transition-all duration-500 animate-slideUp ${
-      isDark
-        ? "bg-gray-800/70 shadow-lg"
-        : "bg-white shadow-lg"
+    className={`flex flex-col h-full rounded-2xl overflow-hidden transition-all duration-500 animate-slideUp ${
+      isDark ? "bg-gray-800/70 shadow-lg" : "bg-white shadow-lg"
     }`}
   >
     <div
-      className={`px-6 py-4 border-b flex items-center justify-between ${
+      className={`px-4 py-3 sm:px-6 sm:py-4 border-b flex items-center justify-between gap-2 flex-shrink-0 ${
         isDark ? "border-gray-700" : "border-gray-200"
       }`}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <div
-          className={`p-2 rounded-lg ${
-            isDark
-              ? "bg-gray-700 text-gray-300"
-              : "bg-gray-100 text-gray-600"
+          className={`p-2 rounded-lg flex-shrink-0 ${
+            isDark ? "bg-gray-700 text-gray-300" : "bg-gray-100 text-gray-600"
           }`}
         >
           {icon}
         </div>
-        <div>
+        <div className="min-w-0">
           <h2
-            className={`text-xl font-bold ${
+            className={`text-lg sm:text-xl font-bold truncate ${
               isDark ? "text-white" : "text-gray-900"
             }`}
           >
@@ -424,7 +463,7 @@ const SectionCard = ({
           </h2>
           {subtitle && (
             <p
-              className={`text-sm ${
+              className={`text-xs sm:text-sm truncate ${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}
             >
@@ -433,9 +472,11 @@ const SectionCard = ({
           )}
         </div>
       </div>
-      {actionButton}
+      <div className="flex-shrink-0">{actionButton}</div>
     </div>
-    <div className="p-6 h-[460px]">{children}</div>
+    <div className="p-4 sm:p-6 h-auto lg:h-[460px] flex flex-col">
+      {children}
+    </div>
   </div>
 );
 
@@ -446,67 +487,74 @@ const Dashboard = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [summary, setSummary] = useState(null);
   const [hoveredCard, setHoveredCard] = useState(null);
   const [recentPayments, setRecentPayments] = useState([]);
 
   const resolvedAccountId = useMemo(
-    () => user?.accountId || user?.AccountId || user?.account_id || '',
-    [user]
+    () => user?.accountId || user?.AccountId || user?.account_id || "",
+    [user],
   );
 
-  const fetchDashboardData = useCallback(async (showRefreshing = false) => {
-    try {
-      if (showRefreshing) {
-        setIsRefreshing(true);
-      } else {
-        setIsLoading(true);
-      }
-      setError('');
-
-      if (!resolvedAccountId) {
-        throw new Error('Missing accountId for dashboard reports');
-      }
-
-      const [reportResult, paymentsResult] = await Promise.allSettled([
-        getFranchiseReportSummary({
-          accountId: resolvedAccountId,
-          months: 6,
-        }),
-        getLatestFranchisePaymentHistory(),
-      ]);
-
-      if (reportResult.status === 'fulfilled') {
-        setSummary(reportResult.value || null);
-      } else {
-        const reportStatus = reportResult.reason?.response?.status;
-        setSummary(null);
-        if (reportStatus !== 404) {
-          throw reportResult.reason;
+  const fetchDashboardData = useCallback(
+    async (showRefreshing = false) => {
+      try {
+        if (showRefreshing) {
+          setIsRefreshing(true);
+        } else {
+          setIsLoading(true);
         }
-      }
+        setError("");
 
-      if (paymentsResult.status === 'fulfilled') {
-        const paymentsRes = paymentsResult.value;
-        const paymentRows = Array.isArray(paymentsRes?.data)
-          ? paymentsRes.data
-          : Array.isArray(paymentsRes)
-          ? paymentsRes
-          : [];
-        setRecentPayments(paymentRows);
-      } else {
+        if (!resolvedAccountId) {
+          throw new Error("Missing accountId for dashboard reports");
+        }
+
+        const [reportResult, paymentsResult] = await Promise.allSettled([
+          getFranchiseReportSummary({
+            accountId: resolvedAccountId,
+            months: 6,
+          }),
+          getLatestFranchisePaymentHistory(),
+        ]);
+
+        if (reportResult.status === "fulfilled") {
+          setSummary(reportResult.value || null);
+        } else {
+          const reportStatus = reportResult.reason?.response?.status;
+          setSummary(null);
+          if (reportStatus !== 404) {
+            throw reportResult.reason;
+          }
+        }
+
+        if (paymentsResult.status === "fulfilled") {
+          const paymentsRes = paymentsResult.value;
+          const paymentRows = Array.isArray(paymentsRes?.data)
+            ? paymentsRes.data
+            : Array.isArray(paymentsRes)
+              ? paymentsRes
+              : [];
+          setRecentPayments(paymentRows);
+        } else {
+          setRecentPayments([]);
+        }
+      } catch (err) {
+        setSummary(null);
         setRecentPayments([]);
+        setError(
+          err?.response?.data?.message ||
+            err?.message ||
+            "Failed to load dashboard reports",
+        );
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
       }
-    } catch (err) {
-      setSummary(null);
-      setRecentPayments([]);
-      setError(err?.response?.data?.message || err?.message || 'Failed to load dashboard reports');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  }, [resolvedAccountId]);
+    },
+    [resolvedAccountId],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -536,36 +584,41 @@ const Dashboard = () => {
 
     return [
       {
-        title: 'Total Collected',
+        title: "Total Collected",
         value: formatAmount(totalCollectedAmount),
-        sub: 'Last 6 months',
-        trend: totalCollectedAmount > 100000 ? '+15.2%' : '+8.3%',
-        trendDirection: 'up',
-        rawValue: totalCollectedAmount
+        sub: "Last 6 months",
+        trend: totalCollectedAmount > 100000 ? "+15.2%" : "+8.3%",
+        trendDirection: "up",
+        rawValue: totalCollectedAmount,
       },
       {
-        title: 'New Customers',
+        title: "New Customers",
         value: String(customersCreatedThisMonth),
-        sub: 'This month',
-        trend: customersCreatedThisMonth > 0 ? `+${customersCreatedThisMonth}` : '0',
-        trendDirection: customersCreatedThisMonth > 0 ? 'up' : 'neutral',
-        rawValue: customersCreatedThisMonth
+        sub: "This month",
+        trend:
+          customersCreatedThisMonth > 0 ? `+${customersCreatedThisMonth}` : "0",
+        trendDirection: customersCreatedThisMonth > 0 ? "up" : "neutral",
+        rawValue: customersCreatedThisMonth,
       },
       {
-        title: 'Resolved Tickets',
+        title: "Resolved Tickets",
         value: String(resolvedTicketsThisMonth),
-        sub: 'This month',
-        trend: resolvedTicketsThisMonth > 0 ? `+${resolvedTicketsThisMonth}` : '0',
-        trendDirection: resolvedTicketsThisMonth > 0 ? 'up' : 'neutral',
-        rawValue: resolvedTicketsThisMonth
+        sub: "This month",
+        trend:
+          resolvedTicketsThisMonth > 0 ? `+${resolvedTicketsThisMonth}` : "0",
+        trendDirection: resolvedTicketsThisMonth > 0 ? "up" : "neutral",
+        rawValue: resolvedTicketsThisMonth,
       },
       {
-        title: 'Open Tickets',
+        title: "Open Tickets",
         value: String(openTicketCustomers),
-        sub: 'Currently open',
-        trend: openTicketCustomers > 0 ? `${openTicketCustomers} pending` : 'All clear',
-        trendDirection: openTicketCustomers > 0 ? 'down' : 'up',
-        rawValue: openTicketCustomers
+        sub: "Currently open",
+        trend:
+          openTicketCustomers > 0
+            ? `${openTicketCustomers} pending`
+            : "All clear",
+        trendDirection: openTicketCustomers > 0 ? "down" : "up",
+        rawValue: openTicketCustomers,
       },
     ];
   }, [summary]);
@@ -579,7 +632,7 @@ const Dashboard = () => {
       .sort(
         (a, b) =>
           new Date(b?.updatedAt || b?.lastMessageAt || b?.createdAt || 0) -
-          new Date(a?.updatedAt || a?.lastMessageAt || a?.createdAt || 0)
+          new Date(a?.updatedAt || a?.lastMessageAt || a?.createdAt || 0),
       )
       .slice(0, 5);
   }, [summary]);
@@ -671,25 +724,27 @@ const Dashboard = () => {
 
       {/* HEADER WITH LOTTIE ANIMATION */}
       <div className="mb-8 animate-slideDown">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
             {/* LOTTIE ANIMATION */}
-            <DashboardHeaderAnimation isDark={isDark} />
+            <div className="flex-shrink-0">
+              <DashboardHeaderAnimation isDark={isDark} />
+            </div>
 
             {/* TITLE + SUBTITLE */}
-            <div>
-              <div className="flex items-center gap-3 mb-1">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
                 <div
-                  className={`p-2 rounded-lg ${
+                  className={`p-2 rounded-lg flex-shrink-0 ${
                     isDark
                       ? "bg-gradient-to-r from-blue-500/20 to-cyan-500/20"
                       : "bg-gradient-to-r from-blue-100 to-cyan-100"
                   }`}
                 >
-                  <Zap className="h-6 w-6 text-blue-500" />
+                  <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
                 </div>
                 <h1
-                  className={`text-3xl font-bold bg-gradient-to-r ${
+                  className={`text-2xl sm:text-3xl font-bold bg-gradient-to-r ${
                     isDark
                       ? "from-blue-400 to-cyan-300"
                       : "from-blue-600 to-cyan-500"
@@ -700,7 +755,7 @@ const Dashboard = () => {
               </div>
 
               <p
-                className={`text-lg ${
+                className={`text-sm sm:text-base md:text-lg ${
                   isDark ? "text-gray-400" : "text-gray-600"
                 }`}
               >
@@ -713,14 +768,16 @@ const Dashboard = () => {
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className={`p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 ${
+            className={`w-full sm:w-auto p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 ${
               isDark
                 ? "bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white"
                 : "bg-white hover:bg-gray-100 text-gray-600 hover:text-gray-900 shadow-sm"
-            } ${isRefreshing ? 'opacity-50 cursor-not-allowed' : ''}`}
+            } ${isRefreshing ? "opacity-50 cursor-not-allowed" : ""}`}
             title="Refresh dashboard"
           >
-            <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`h-5 w-5 ${isRefreshing ? "animate-spin" : ""}`}
+            />
             <span className="text-sm font-medium">Refresh</span>
           </button>
         </div>
@@ -728,11 +785,13 @@ const Dashboard = () => {
 
       {/* Error Banner */}
       {error && (
-        <div className={`mb-6 rounded-xl px-6 py-4 text-sm border flex items-center gap-3 animate-slideDown ${
-          isDark 
-            ? 'bg-red-500/10 border-red-500/20 text-red-300' 
-            : 'bg-red-50 border-red-200 text-red-700'
-        }`}>
+        <div
+          className={`mb-6 rounded-xl px-6 py-4 text-sm border flex items-center gap-3 animate-slideDown ${
+            isDark
+              ? "bg-red-500/10 border-red-500/20 text-red-300"
+              : "bg-red-50 border-red-200 text-red-700"
+          }`}
+        >
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
         </div>
@@ -765,7 +824,7 @@ const Dashboard = () => {
       </div>
 
       {/* Tables Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+      <div className="w-full grid grid-cols-1 gap-6 md:gap-8">
         <SectionCard
           title="Recent Tickets"
           subtitle="Latest 5 customer support tickets"
@@ -775,7 +834,9 @@ const Dashboard = () => {
             <button
               onClick={() => navigate("/Zone-tickets")}
               className={`inline-flex items-center gap-1 text-sm font-medium transition-all duration-200 hover:gap-2 ${
-                isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-500"
+                isDark
+                  ? "text-blue-400 hover:text-blue-300"
+                  : "text-blue-600 hover:text-blue-500"
               }`}
             >
               View All
@@ -786,20 +847,28 @@ const Dashboard = () => {
           {isLoading ? (
             <SkeletonTable isDark={isDark} />
           ) : latestTickets.length === 0 ? (
-            <EmptyState icon={CheckCircle} message="No recent tickets" isDark={isDark} />
+            <EmptyState
+              icon={CheckCircle}
+              message="No recent tickets"
+              isDark={isDark}
+            />
           ) : (
             <DataTable
               headers={["Ticket", "Customer", "Assigned", "Updated"]}
               data={latestTickets}
               renderRow={(ticket) => (
                 <>
-                  <td className="py-3 px-4 align-top">
+                  <td className="py-3 px-2 sm:px-4 align-top">
                     <div className="flex items-center gap-2">
-                      <div className={`p-2 rounded-lg ${isDark ? "bg-gray-700" : "bg-gray-100"}`}>
+                      <div
+                        className={`p-2 rounded-lg flex-shrink-0 ${isDark ? "bg-gray-700" : "bg-gray-100"}`}
+                      >
                         <CheckCircle className="h-4 w-4 text-green-500" />
                       </div>
                       <div className="min-w-0">
-                        <div className={`truncate text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+                        <div
+                          className={`truncate text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}
+                        >
                           {ticket?.ticketName || "--"}
                         </div>
                         <div className="truncate text-xs text-gray-500">
@@ -808,22 +877,32 @@ const Dashboard = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 px-4 align-top">
+                  <td className="py-3 px-2 sm:px-4 align-top">
                     <div className="min-w-0">
-                      <div className={`truncate text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+                      <div
+                        className={`truncate text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}
+                      >
                         {ticket?.customer?.name || "--"}
                       </div>
                       <div className="truncate text-xs text-gray-500">
-                        {ticket?.customer?.phoneNumber || ticket?.customer?.email || "--"}
+                        {ticket?.customer?.phoneNumber ||
+                          ticket?.customer?.email ||
+                          "--"}
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 px-4 align-top">
+                  <td className="py-3 px-2 sm:px-4 align-top">
                     <div className="flex items-center gap-2">
-                      <div className={`p-1 rounded-full ${isDark ? 'bg-slate-800' : 'bg-gray-100'}`}>
-                        <UserCheck className={`w-3 h-3 ${isDark ? 'text-slate-400' : 'text-gray-600'}`} />
+                      <div
+                        className={`p-1 rounded-full flex-shrink-0 ${isDark ? "bg-slate-800" : "bg-gray-100"}`}
+                      >
+                        <UserCheck
+                          className={`w-3 h-3 ${isDark ? "text-slate-400" : "text-gray-600"}`}
+                        />
                       </div>
-                      <span className={`truncate text-sm ${isDark ? 'text-slate-200' : 'text-gray-700'}`}>
+                      <span
+                        className={`truncate text-sm flex-1 min-w-0 ${isDark ? "text-slate-200" : "text-gray-700"}`}
+                      >
                         {ticket?.assignedStaff?.name ||
                           ticket?.assignedStaffName ||
                           ticket?.assignedStaff?.email ||
@@ -832,15 +911,29 @@ const Dashboard = () => {
                       </span>
                     </div>
                   </td>
-                  <td className="py-3 px-4 align-top">
+                  <td className="py-3 px-2 sm:px-4 align-top">
                     <div className="flex items-center gap-2">
-                      <Clock className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
+                      <Clock
+                        className={`w-4 h-4 flex-shrink-0 ${isDark ? "text-slate-400" : "text-gray-400"}`}
+                      />
                       <div className="min-w-0">
-                        <div className={`truncate text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                          {formatDateTime(ticket?.updatedAt || ticket?.lastMessageAt || ticket?.createdAt)}
+                        <div
+                          className={`truncate text-sm ${isDark ? "text-white" : "text-gray-900"}`}
+                        >
+                          {formatDateTime(
+                            ticket?.updatedAt ||
+                              ticket?.lastMessageAt ||
+                              ticket?.createdAt,
+                          )}
                         </div>
-                        <div className={`truncate text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                          {formatRelativeTime(ticket?.updatedAt || ticket?.lastMessageAt || ticket?.createdAt)}
+                        <div
+                          className={`truncate text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                        >
+                          {formatRelativeTime(
+                            ticket?.updatedAt ||
+                              ticket?.lastMessageAt ||
+                              ticket?.createdAt,
+                          )}
                         </div>
                       </div>
                     </div>
@@ -861,7 +954,9 @@ const Dashboard = () => {
             <button
               onClick={() => navigate("/payment-history")}
               className={`inline-flex items-center gap-1 text-sm font-medium transition-all duration-200 hover:gap-2 ${
-                isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-500"
+                isDark
+                  ? "text-blue-400 hover:text-blue-300"
+                  : "text-blue-600 hover:text-blue-500"
               }`}
             >
               View All
@@ -872,20 +967,28 @@ const Dashboard = () => {
           {isLoading ? (
             <SkeletonTable isDark={isDark} />
           ) : recentPayments.length === 0 ? (
-            <EmptyState icon={TrendingUp} message="No recent payments" isDark={isDark} />
+            <EmptyState
+              icon={TrendingUp}
+              message="No recent payments"
+              isDark={isDark}
+            />
           ) : (
             <DataTable
               headers={["Customer", "Plan", "Amount", "Date"]}
               data={recentPayments}
               renderRow={(payment) => (
                 <>
-                  <td className="py-3 px-4 align-top">
+                  <td className="py-3 px-2 sm:px-4 align-top">
                     <div className="flex items-center gap-2">
-                      <div className={`p-2 rounded-lg ${isDark ? "bg-gray-700" : "bg-gray-100"}`}>
+                      <div
+                        className={`p-2 rounded-lg flex-shrink-0 ${isDark ? "bg-gray-700" : "bg-gray-100"}`}
+                      >
                         <User className="h-4 w-4 text-blue-500" />
                       </div>
                       <div className="min-w-0">
-                        <div className={`truncate text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+                        <div
+                          className={`truncate text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}
+                        >
                           {payment.userName ||
                             payment.customer?.name ||
                             payment.customer?.userName ||
@@ -899,9 +1002,11 @@ const Dashboard = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 px-4 align-top">
+                  <td className="py-3 px-2 sm:px-4 align-top">
                     <div className="min-w-0 flex flex-col gap-1">
-                      <span className={`truncate text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+                      <span
+                        className={`truncate text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}
+                      >
                         {payment.planName || payment?.plan?.planName || "--"}
                       </span>
                       <span className="truncate text-xs text-gray-500">
@@ -909,25 +1014,36 @@ const Dashboard = () => {
                       </span>
                     </div>
                   </td>
-                  <td className="py-3 px-4 align-top">
+                  <td className="py-3 px-2 sm:px-4 align-top">
                     <div className="flex flex-col gap-1">
-                      <span className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
-                        {formatAmount(payment.amount ?? payment.planAmount, payment.currency)}
+                      <span
+                        className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                      >
+                        {formatAmount(
+                          payment.amount ?? payment.planAmount,
+                          payment.currency,
+                        )}
                       </span>
                       <div>
                         <StatusBadge status={payment.status} isDark={isDark} />
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 px-4 align-top">
+                  <td className="py-3 px-2 sm:px-4 align-top">
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
                       <div className="min-w-0">
-                        <div className={`truncate text-sm ${isDark ? "text-white" : "text-gray-900"}`}>
+                        <div
+                          className={`truncate text-sm ${isDark ? "text-white" : "text-gray-900"}`}
+                        >
                           {formatDateTime(payment.paidAt || payment.createdAt)}
                         </div>
-                        <div className={`truncate text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                          {formatRelativeTime(payment.paidAt || payment.createdAt)}
+                        <div
+                          className={`truncate text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                        >
+                          {formatRelativeTime(
+                            payment.paidAt || payment.createdAt,
+                          )}
                         </div>
                       </div>
                     </div>
@@ -944,11 +1060,10 @@ const Dashboard = () => {
       <div className="mt-8 pt-6 border-t border-gray-700/30">
         <div className="text-center">
           <span
-            className={`text-sm ${
-              isDark ? "text-gray-500" : "text-gray-400"
-            }`}
+            className={`text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}
           >
-            Last updated: {new Date().toLocaleTimeString([], {
+            Last updated:{" "}
+            {new Date().toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
             })}

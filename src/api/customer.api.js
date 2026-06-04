@@ -11,7 +11,6 @@ export const getCustomers = (page, limit, filters = {}) => {
   return api.get(`/api/customer?${params.toString()}`);
 };
 
-
 // ✅ Get single customer
 export const getSingleCustomer = (customerId) => {
   return api.get(`/api/customer/customers/${customerId}`);
@@ -34,10 +33,14 @@ export const getFranchises = () => {
 };
 
 // ✅ Get franchise profiles with details
-export const getFranchiseProfiles = (accountId, includeDetails = true, type) => {
+export const getFranchiseProfiles = (
+  accountId,
+  includeDetails = true,
+  type,
+) => {
   if (!accountId) throw new Error("accountId is required");
   return api.get(`/api/franchise/${encodeURIComponent(accountId)}/profiles`, {
-    params: { includeDetails, ...(type ? { type } : {}) }
+    params: { includeDetails, ...(type ? { type } : {}) },
   });
 };
 
@@ -45,7 +48,7 @@ export const getFranchiseProfiles = (accountId, includeDetails = true, type) => 
 export const getFranchiseGroupDetails = (accountId) => {
   if (!accountId) throw new Error("accountId is required");
   return api.get("/api/franchise/group-details", {
-    params: { accountId }
+    params: { accountId },
   });
 };
 
@@ -83,22 +86,27 @@ export const getAdminCustomerPaymentHistory = ({
   return api.post(
     "/api/admin/customers/payment-history/by-username",
     { userName },
-    { params: { page, limit, status } }
+    { params: { page, limit, status } },
   );
 };
 
 // ✅ Admin: ticket status/details for a particular customer
 export const getAdminCustomerTickets = (customerId) => {
   if (!customerId) throw new Error("customerId is required");
-  return api.get(`/api/admin/customers/${encodeURIComponent(customerId)}/tickets`);
+  return api.get(
+    `/api/admin/customers/${encodeURIComponent(customerId)}/tickets`,
+  );
 };
 
 export const downloadCustomerDetailsPdf = (customerId) => {
   if (!customerId) throw new Error("customerId is required");
-  return api.get(`/api/admin/customers/${encodeURIComponent(customerId)}/download-pdf`, {
-    responseType: "blob",
-    timeout: 120000,
-  });
+  return api.get(
+    `/api/admin/customers/${encodeURIComponent(customerId)}/download-pdf`,
+    {
+      responseType: "blob",
+      timeout: 120000,
+    },
+  );
 };
 
 /** @deprecated Use downloadCustomerDetailsPdf — kept for backward compatibility */
@@ -112,7 +120,9 @@ export const getAdminAllCustomersPaymentHistory = (params = {}) => {
 // ✅ Maintenance dates by accountId
 export const getAccountMaintenance = (accountId) => {
   if (!accountId) throw new Error("accountId is required");
-  return api.get(`/api/customer/customers/account/${encodeURIComponent(accountId)}/maintenance`);
+  return api.get(
+    `/api/customer/customers/account/${encodeURIComponent(accountId)}/maintenance`,
+  );
 };
 
 // ✅ Maintenance dates for current logged-in account
@@ -124,7 +134,7 @@ export const createAccountMaintenance = (accountId, payload) => {
   if (!accountId) throw new Error("accountId is required");
   return api.post(
     `/api/customer/customers/account/${encodeURIComponent(accountId)}/maintenance`,
-    payload
+    payload,
   );
 };
 
@@ -132,14 +142,14 @@ export const updateAccountMaintenance = (accountId, payload) => {
   if (!accountId) throw new Error("accountId is required");
   return api.patch(
     `/api/customer/customers/account/${encodeURIComponent(accountId)}/maintenance`,
-    payload
+    payload,
   );
 };
 
 export const deleteAccountMaintenance = (accountId) => {
   if (!accountId) throw new Error("accountId is required");
   return api.delete(
-    `/api/customer/customers/account/${encodeURIComponent(accountId)}/maintenance`
+    `/api/customer/customers/account/${encodeURIComponent(accountId)}/maintenance`,
   );
 };
 
@@ -159,8 +169,13 @@ export const updateCustomer = async (customerId, formData) => {
 
   const attempts = [
     () =>
-      api.patch(`/api/customer/customers/${customerId}/admin-edit`, formData, config),
-    () => api.patch(`/api/customer/customers/${customerId}/edit`, formData, config),
+      api.patch(
+        `/api/customer/customers/${customerId}/admin-edit`,
+        formData,
+        config,
+      ),
+    () =>
+      api.patch(`/api/customer/customers/${customerId}/edit`, formData, config),
     () => api.patch(`/api/customer/customers/${customerId}`, formData, config),
     () => api.put(`/api/customer/customers/${customerId}`, formData, config),
     () => api.put(`/api/customer/update/${customerId}`, formData, config),
@@ -174,6 +189,6 @@ export const updateCustomer = async (customerId, formData) => {
   }
 
   throw new Error(
-    "No supported customer update endpoint found (tried admin-edit/edit/customers/:id and customer/update/:id)."
+    "No supported customer update endpoint found (tried admin-edit/edit/customers/:id and customer/update/:id).",
   );
 };

@@ -9,44 +9,14 @@ import { socket } from "../../socket/socket";
 import {
   Search,
   User,
-  MessageSquare,
-  Clock,
-  CheckCircle,
-  AlertCircle,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  Filter,
   RefreshCw,
   Inbox,
-  Users,
   Shield,
   Sparkles,
+  X,
 } from "lucide-react";
-
-/* ---------- STATUS COLOR ---------- */
-const getStatusColor = (status, isDark) => {
-  const map = {
-    OPEN: isDark
-      ? "bg-amber-500/15 text-amber-300 border border-amber-500/30"
-      : "bg-amber-100 text-amber-700 border border-amber-200",
-    ASSIGNED: isDark
-      ? "bg-blue-500/15 text-blue-300 border border-blue-500/30"
-      : "bg-blue-100 text-blue-700 border border-blue-200",
-
-    RESOLVED: isDark
-      ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
-      : "bg-emerald-100 text-emerald-700 border border-emerald-200",
-
-    CLOSED: isDark
-      ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
-      : "bg-emerald-100 text-emerald-700 border border-emerald-200",
-  };
-  return (
-    map[status] ||
-    (isDark ? "bg-gray-800 text-gray-300" : "bg-gray-100 text-gray-700")
-  );
-};
 
 const ALLOWED_STATUS_TRANSITIONS = {
   OPEN: ["OPEN", "IN_PROGRESS", "RESOLVED"],
@@ -55,38 +25,24 @@ const ALLOWED_STATUS_TRANSITIONS = {
   RESOLVED: ["RESOLVED", "OPEN", "IN_PROGRESS"],
 };
 
-const getStatusIcon = (status) => {
-  switch (status) {
-    case "OPEN":
-      return <AlertCircle className="w-3 h-3" />;
-    case "ASSIGNED":
-      return <Users className="w-3 h-3" />;
-    case "RESOLVED":
-      return <CheckCircle className="w-3 h-3" />;
-    case "CLOSED":
-      return <CheckCircle className="w-3 h-3" />;
-    default:
-      return <MessageSquare className="w-3 h-3" />;
-  }
-};
-
 const Tickets = () => {
   const { isDark } = useTheme();
-  const { user, token } = useAuth();
+  const { token } = useAuth();
 
   const [users, setUsers] = useState([]);
   const [activeUserId, setActiveUserId] = useState(null);
   const [activeTicketId, setActiveTicketId] = useState(null);
 
   const [messages, setMessages] = useState([]);
-  const [filterStatus, setFilterStatus] = useState("All");
+  const [filterStatus] = useState("All");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(
+    () => window.innerWidth >= 1024,
+  );
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [assignedRoomCount, setAssignedRoomCount] = useState(0);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [userPage, setUserPage] = useState(1);
   const [userPageSize, setUserPageSize] = useState(12);
 
@@ -251,6 +207,18 @@ const Tickets = () => {
       .catch(() => setAssignedRoomCount(0));
   }, [token]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsSidebarOpen(true);
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   /* ---------- LOAD ALL MESSAGES FOR ACTIVE USER + SOCKET ---------- */
   useEffect(() => {
     if (!activeUser || !token) return;
@@ -319,17 +287,6 @@ const Tickets = () => {
       }
     }
   }, [activeUser, activeTicketId]);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (!e.target.closest(".filter-container")) {
-        setIsFilterOpen(false);
-      }
-    };
-
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, []);
 
   /* ---------- SEND MESSAGE ---------- */
   const sendMessage = ({ message, attachments }) => {
@@ -440,7 +397,7 @@ const Tickets = () => {
 
   if (!token) {
     return (
-      <div className="h-[calc(100vh-120px)] flex items-center justify-center">
+      <div className="h-[calc(100dvh-120px)] min-h-[420px] flex items-center justify-center px-4">
         <div className="text-center">
           <Shield className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-500 font-medium">
@@ -453,42 +410,27 @@ const Tickets = () => {
 
   return (
     <div
-      className={`relative h-[calc(100vh-120px)] overflow-hidden ${
+      className={`relative h-[calc(100dvh-7.5rem)] min-h-[520px] sm:h-[calc(100dvh-12rem)] md:h-[calc(100dvh-14rem)] overflow-hidden rounded-lg ${
         isDark ? "bg-gray-900" : "bg-white"
       }`}
     >
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className={`lg:hidden absolute top-3 left-3 z-50 p-2 rounded-md transition-all duration-200 ${
-          isDark
-            ? "bg-gray-800 text-gray-200 hover:bg-gray-700"
-            : "bg-white text-gray-700 hover:bg-gray-50 shadow-sm"
-        }`}
-      >
-        {isSidebarOpen ? (
-          <ChevronLeft className="w-4 h-4" />
-        ) : (
-          <ChevronRight className="w-4 h-4" />
-        )}
-      </button>
-
-      <div className="flex h-full">
+      <div className="flex h-full min-w-0">
         {/* ---------- SIDEBAR ---------- */}
         <div
           className={`
-          absolute lg:relative z-40 h-full
+          absolute lg:relative z-40 h-full min-w-0
           transition-all duration-300 ease-in-out
           ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-          w-full lg:w-80
+          w-[min(100vw,24rem)] sm:w-96 lg:w-80 xl:w-96
           ${isDark ? "bg-gray-900" : "bg-white"}
-          border-r flex flex-col
+          border-r flex flex-col shadow-2xl lg:shadow-none
           ${isDark ? "border-gray-800" : "border-gray-200"}
         `}
         >
           <div
-            className={`p-3 ${isDark ? "border-gray-800" : "border-gray-200"} border-b`}
+            className={`p-2.5 sm:p-3 ${isDark ? "border-gray-800" : "border-gray-200"} border-b`}
           >
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-2">
                 <div
                   className={`p-1.5 rounded-lg ${isDark ? "bg-blue-500/20" : "bg-blue-100"}`}
@@ -503,25 +445,38 @@ const Tickets = () => {
                   Support Inbox
                 </h2>
               </div>
-              <button
-                onClick={loadTickets}
-                disabled={refreshing}
-                className={`p-1.5 rounded-md transition-all duration-200 ${
-                  isDark
-                    ? "text-gray-400 hover:text-gray-300 hover:bg-gray-800"
-                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                } ${refreshing ? "animate-spin" : ""}`}
-              >
-                <RefreshCw className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={loadTickets}
+                  disabled={refreshing}
+                  className={`p-1.5 rounded-md transition-all duration-200 ${
+                    isDark
+                      ? "text-gray-400 hover:text-gray-300 hover:bg-gray-800"
+                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                  } ${refreshing ? "animate-spin" : ""}`}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setIsSidebarOpen(false)}
+                  className={`lg:hidden p-1.5 rounded-md transition-all duration-200 ${
+                    isDark
+                      ? "text-gray-400 hover:text-gray-300 hover:bg-gray-800"
+                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                  }`}
+                  title="Close sidebar"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-2 mb-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
               <div
                 className={`text-center p-2 rounded-md ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
               >
                 <p
-                  className={`text-base ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                  className={`text-xs sm:text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
                 >
                   Total
                 </p>
@@ -530,14 +485,16 @@ const Tickets = () => {
                     className={`h-5 w-8 mx-auto rounded animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
                   />
                 ) : (
-                  <p className="font-bold text-lg">{stats.total}</p>
+                  <p className="font-bold text-base sm:text-lg">
+                    {stats.total}
+                  </p>
                 )}
               </div>
               <div
                 className={`text-center p-2 rounded-md ${isDark ? "bg-amber-500/10" : "bg-amber-50"}`}
               >
                 <p
-                  className={`text-base ${isDark ? "text-amber-400" : "text-amber-600"}`}
+                  className={`text-xs sm:text-sm ${isDark ? "text-amber-400" : "text-amber-600"}`}
                 >
                   Open
                 </p>
@@ -546,14 +503,14 @@ const Tickets = () => {
                     className={`h-5 w-8 mx-auto rounded animate-pulse ${isDark ? "bg-amber-800/40" : "bg-amber-200"}`}
                   />
                 ) : (
-                  <p className="font-bold text-lg">{stats.open}</p>
+                  <p className="font-bold text-base sm:text-lg">{stats.open}</p>
                 )}
               </div>
               <div
                 className={`text-center p-2 rounded-md ${isDark ? "bg-blue-500/10" : "bg-blue-50"}`}
               >
                 <p
-                  className={`text-base ${isDark ? "text-blue-400" : "text-blue-600"}`}
+                  className={`text-xs sm:text-sm ${isDark ? "text-blue-400" : "text-blue-600"}`}
                 >
                   Assigned
                 </p>
@@ -562,14 +519,16 @@ const Tickets = () => {
                     className={`h-5 w-8 mx-auto rounded animate-pulse ${isDark ? "bg-blue-800/40" : "bg-blue-200"}`}
                   />
                 ) : (
-                  <p className="font-bold text-lg">{stats.assigned}</p>
+                  <p className="font-bold text-base sm:text-lg">
+                    {stats.assigned}
+                  </p>
                 )}
               </div>
               <div
                 className={`text-center p-2 rounded-md ${isDark ? "bg-emerald-500/10" : "bg-emerald-50"}`}
               >
                 <p
-                  className={`text-base ${isDark ? "text-emerald-400" : "text-emerald-600"}`}
+                  className={`text-xs sm:text-sm ${isDark ? "text-emerald-400" : "text-emerald-600"}`}
                 >
                   Resolved
                 </p>
@@ -578,7 +537,9 @@ const Tickets = () => {
                     className={`h-5 w-8 mx-auto rounded animate-pulse ${isDark ? "bg-emerald-800/40" : "bg-emerald-200"}`}
                   />
                 ) : (
-                  <p className="font-bold text-lg">{stats.resolved}</p>
+                  <p className="font-bold text-base sm:text-lg">
+                    {stats.resolved}
+                  </p>
                 )}
               </div>
             </div>
@@ -594,66 +555,13 @@ const Tickets = () => {
                   setUserPage(1);
                 }}
                 placeholder="Search users..."
-                className={`pl-9 pr-3 py-2 w-full rounded-md border text-lg transition-all duration-200 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none ${
+                className={`pl-9 pr-3 py-2 w-full rounded-md border text-sm sm:text-base transition-all duration-200 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none ${
                   isDark
                     ? "bg-gray-800 border-gray-700 text-white placeholder-gray-500"
                     : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400"
                 }`}
               />
             </div>
-
-            {/* <div className="relative mt-2 filter-container">
-              <button
-                onClick={() => setIsFilterOpen((prev) => !prev)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium transition ${
-                  isDark
-                    ? "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                <Filter className="w-4 h-4" />
-                <span>
-                  {filterStatus === "All" ? "All Tickets" : filterStatus}
-                </span>
-                <ChevronDown
-                  className={`w-3 h-3 transition-transform ${isFilterOpen ? "rotate-180" : ""}`}
-                />
-              </button>
-              {isFilterOpen && (
-                <div
-                  className={`absolute z-50 mt-2 w-44 rounded-md shadow-lg border ${
-                    isDark
-                      ? "bg-gray-900 border-gray-700"
-                      : "bg-white border-gray-200"
-                  }`}
-                >
-                  {["All", "OPEN", "ASSIGNED", "RESOLVED"].map(
-                    (status) => (
-                      <button
-                        key={status}
-                        onClick={() => {
-                          setFilterStatus(status);
-                          setIsFilterOpen(false);
-                          setUserPage(1);
-                        }}
-                        className={`w-full text-left px-3 py-2 text-base flex items-center gap-2 transition ${
-                          filterStatus === status
-                            ? isDark
-                              ? "bg-blue-500/20 text-blue-400"
-                              : "bg-blue-100 text-blue-600"
-                            : isDark
-                              ? "text-gray-300 hover:bg-gray-800"
-                              : "text-gray-700 hover:bg-gray-100"
-                        }`}
-                      >
-                        {status !== "All" && getStatusIcon(status)}
-                        <span>{status}</span>
-                      </button>
-                    ),
-                  )}
-                </div>
-              )}
-            </div> */}
           </div>
 
           <div className="flex-1 overflow-y-auto premium-scrollbar">
@@ -763,7 +671,7 @@ const Tickets = () => {
                         ></div>
                       )}
 
-                      <div className="flex items-start gap-2">
+                      <div className="flex items-start gap-2 min-w-0">
                         <div
                           className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
                             activeUserId === u.customerId
@@ -787,7 +695,7 @@ const Tickets = () => {
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-0.5">
+                          <div className="flex items-center justify-between gap-2 mb-0.5">
                             <h3
                               className={`font-medium text-base truncate ${
                                 activeUserId === u.customerId
@@ -803,7 +711,7 @@ const Tickets = () => {
                             </h3>
                             {u.latestMessageTime && (
                               <span
-                                className={`text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}
+                                className={`flex-shrink-0 text-xs sm:text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}
                               >
                                 {new Date(
                                   u.latestMessageTime,
@@ -815,14 +723,14 @@ const Tickets = () => {
                             )}
                           </div>
 
-                          <div className="flex items-center gap-1.5 mb-1">
+                          <div className="flex flex-wrap items-center gap-1.5 mb-1">
                             <span
-                              className={`text-base font-mono ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                              className={`text-xs sm:text-sm font-mono ${isDark ? "text-gray-400" : "text-gray-600"}`}
                             >
                               Latest: #{u.latestTicketId}
                             </span>
                             <span
-                              className={`text-sm px-1.5 py-0.5 rounded-full ${isDark ? "bg-gray-800 text-gray-300" : "bg-gray-200 text-gray-700"} flex items-center gap-1`}
+                              className={`text-xs px-1.5 py-0.5 rounded-full ${isDark ? "bg-gray-800 text-gray-300" : "bg-gray-200 text-gray-700"} flex items-center gap-1`}
                             >
                               {u.tickets.length} Tickets
                             </span>
@@ -904,7 +812,7 @@ const Tickets = () => {
         </div>
         {/* ---------- CHAT AREA ---------- */}
         <div
-          className={`flex-1 h-full flex flex-col ${isDark ? "bg-gray-900" : "bg-white"}`}
+          className={`flex-1 h-full min-w-0 flex flex-col ${isDark ? "bg-gray-900" : "bg-white"}`}
         >
           {isSidebarOpen && (
             <div
@@ -914,7 +822,7 @@ const Tickets = () => {
           )}
 
           {activeUser ? (
-            <div className="flex-1 overflow-hidden animate-fade-in">
+            <div className="flex-1 min-h-0 overflow-hidden animate-fade-in">
               <Chat
                 ticket={activeTicket}
                 userTickets={activeUser.tickets}
@@ -940,6 +848,7 @@ const Tickets = () => {
                 createdAt={activeUser.tickets?.[0]?.createdAt}
                 loading={loadingMessages}
                 zigzagStatuses={["ASSIGNED", "RESOLVED"]}
+                onBack={() => setIsSidebarOpen(true)}
               />
             </div>
           ) : loading ? (

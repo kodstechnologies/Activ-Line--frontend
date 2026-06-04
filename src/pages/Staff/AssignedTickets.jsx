@@ -384,29 +384,13 @@ const AssignedTickets = () => {
         isDark ? "bg-gray-900" : "bg-white"
       }`}
     >
-      {/* Mobile Sidebar Toggle */}
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className={`lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl shadow-lg transition-all ${
-          isDark
-            ? "bg-gray-800/90 backdrop-blur-md text-white hover:bg-gray-700"
-            : "bg-white/90 backdrop-blur-md text-gray-800 hover:bg-gray-100 shadow-md"
-        }`}
-      >
-        {isSidebarOpen ? (
-          <ChevronLeft className="w-5 h-5" />
-        ) : (
-          <ChevronRight className="w-5 h-5" />
-        )}
-      </button>
-
       <div className="flex h-full">
         {/* Sidebar */}
         <aside
           className={`
             absolute lg:static inset-y-0 left-0 z-40 w-80 lg:w-80
             transform transition-transform duration-300 ease-in-out
-            ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
+            ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
             flex flex-col border-r shadow-xl
             ${isDark ? "bg-gray-900/95 border-gray-800 backdrop-blur-xl" : "bg-white/95 border-gray-200 backdrop-blur-xl"}
           `}
@@ -419,15 +403,28 @@ const AssignedTickets = () => {
               >
                 Assigned Chats
               </h2>
-              <span
-                className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                  isDark
-                    ? "bg-blue-600/20 text-blue-300"
-                    : "bg-blue-100 text-blue-700"
-                }`}
-              >
-                {users.length}
-              </span>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                    isDark
+                      ? "bg-blue-600/20 text-blue-300"
+                      : "bg-blue-100 text-blue-700"
+                  }`}
+                >
+                  {users.length}
+                </span>
+                <button
+                  onClick={() => setIsSidebarOpen(false)}
+                  className={`lg:hidden p-1.5 rounded-lg transition-all duration-200 ${
+                    isDark
+                      ? "text-gray-400 hover:text-gray-300 hover:bg-gray-800"
+                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                  }`}
+                  title="Close sidebar"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* Search */}
@@ -694,6 +691,7 @@ const AssignedTickets = () => {
               loading={loadingMessages}
               zigzagStatuses={["RESOLVED"]}
               selectableStatuses={["OPEN", "ASSIGNED", "IN_PROGRESS"]}
+              onBack={() => setIsSidebarOpen(true)}
             />
           ) : (
             <div className="flex-1 flex items-center justify-center p-6">

@@ -100,9 +100,9 @@ const SettingsPage = () => {
         : "bg-white/50 border-b border-gray-200"
     } backdrop-blur-sm`,
     headerContent: `px-4 md:px-8 lg:px-12 py-8 md:py-10`,
-    titleWrapper: `flex items-start justify-between flex-wrap gap-6`,
+    titleWrapper: `flex flex-col md:flex-row items-center md:items-start justify-between text-center md:text-left gap-6`,
     titleSection: `flex-1`,
-    titleIcon: `inline-flex items-center gap-3 mb-4`,
+    titleIcon: `inline-flex items-center justify-center md:justify-start gap-3 mb-4`,
     title: `text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r ${
       isDark 
         ? "from-blue-400 via-purple-400 to-pink-400" 
@@ -111,7 +111,7 @@ const SettingsPage = () => {
     subtitle: `text-base md:text-lg mt-3 ${
       isDark ? "text-gray-400" : "text-gray-600"
     } max-w-2xl`,
-    breadcrumb: `flex items-center gap-2 mt-4 text-sm`,
+    breadcrumb: `flex items-center justify-center md:justify-start gap-2 mt-4 text-sm`,
     badge: `px-3 py-1 rounded-full text-xs font-medium ${
       isDark 
         ? "bg-gray-800 text-gray-300 border border-gray-700" 

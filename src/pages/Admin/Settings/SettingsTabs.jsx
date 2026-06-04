@@ -36,8 +36,8 @@ const SettingsTabs = ({ activeTab, setActiveTab }) => {
   }), [isDark]);
 
   return (
-    <div className="w-full">
-      <div className={styles.container}>
+    <div className="w-full overflow-x-auto scrollbar-hide">
+      <div className={`${styles.container} min-w-[640px] md:min-w-0`}>
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;

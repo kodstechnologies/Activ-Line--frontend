@@ -247,7 +247,7 @@ const RelocationPage = () => {
 
       {/* Tabs */}
       <div
-        className={`flex border-b ${isDark ? "border-slate-800" : "border-gray-200"}`}
+        className={`scrollbar-hide flex overflow-x-auto whitespace-nowrap hide-scrollbar border-b ${isDark ? "border-slate-800" : "border-gray-200"}`}
       >
         {[
           { key: "REQUEST", label: "Requests" },
@@ -260,7 +260,7 @@ const RelocationPage = () => {
               setActiveTab(tab.key);
               setCurrentPage(1);
             }}
-            className={`px-6 py-3 text-sm font-semibold border-b-2 transition-all duration-300 relative
+            className={`px-6 py-3 text-sm font-semibold border-b-2 transition-all duration-300 relative flex-shrink-0
               ${
                 activeTab === tab.key
                   ? isDark
@@ -312,8 +312,8 @@ const RelocationPage = () => {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <div className="scrollbar-hide overflow-x-auto pb-4">
+            <table className="w-full min-w-[1000px] text-left border-collapse">
               <thead>
                 <tr
                   className={`border-b text-xs font-semibold uppercase tracking-wider
@@ -323,11 +323,19 @@ const RelocationPage = () => {
                         : "bg-gray-50 border-gray-200 text-gray-500"
                     }`}
                 >
-                  <th className="px-6 py-4">Customer Details</th>
-                  <th className="px-6 py-4">Franchise & Group</th>
-                  <th className="px-6 py-4">Relocation Location</th>
-                  <th className="px-6 py-4">Shifting Date</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4">
+                    Customer Details
+                  </th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4">
+                    Franchise & Group
+                  </th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4">
+                    Relocation Location
+                  </th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4">Shifting Date</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-right">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-transparent">
@@ -346,7 +354,7 @@ const RelocationPage = () => {
                         ${isDark ? "text-slate-300 hover:text-white" : "text-gray-700 hover:text-gray-900"}`}
                     >
                       {/* Customer contact Info */}
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3 sm:px-6 sm:py-4">
                         <div>
                           <p className="font-semibold">{name}</p>
                           <p
@@ -363,7 +371,7 @@ const RelocationPage = () => {
                       </td>
 
                       {/* Group and AccountId */}
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3 sm:px-6 sm:py-4">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border
                             ${
@@ -382,7 +390,7 @@ const RelocationPage = () => {
                       </td>
 
                       {/* Address */}
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3 sm:px-6 sm:py-4">
                         <p className="font-medium">
                           {item.installation_address_city}
                         </p>
@@ -448,7 +456,7 @@ const RelocationPage = () => {
                       </td>
 
                       {/* Shift Date */}
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3 sm:px-6 sm:py-4">
                         <div className="flex items-center gap-1.5 text-xs">
                           <Calendar className="w-3.5 h-3.5 text-blue-500" />
                           <span>
@@ -458,7 +466,7 @@ const RelocationPage = () => {
                       </td>
 
                       {/* Actions */}
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-4 py-3 sm:px-6 sm:py-4 text-right">
                         <div className="flex items-center justify-end gap-2.5">
                           {/* View details */}
                           <button
@@ -607,12 +615,12 @@ const RelocationPage = () => {
         createPortal(
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
             <div
-              className={`w-full max-w-4xl rounded-2xl border p-8 overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300
+              className={`w-full max-w-4xl rounded-2xl border p-4 sm:p-6 md:p-8 overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300
               ${isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-gray-200 text-gray-900"}`}
             >
               <button
                 onClick={() => setSelectedRequest(null)}
-                className={`absolute top-6 right-6 p-2 rounded-full border transition-all duration-200 hover:scale-115
+                className={`absolute top-4 right-4 sm:top-6 sm:right-6 p-2 rounded-full border transition-all duration-200 hover:scale-115
                 ${
                   isDark
                     ? "bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-400"
@@ -622,8 +630,8 @@ const RelocationPage = () => {
                 <X className="w-4 h-4" />
               </button>
 
-              <h3 className="text-xl font-bold flex items-center gap-2 mb-6 bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">
-                <MapPin className="w-6 h-6 text-blue-500" />
+              <h3 className="text-lg sm:text-xl font-bold flex items-center gap-2 mb-4 sm:mb-6 bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent pr-8">
+                <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
                 <span>Relocation Request Details</span>
               </h3>
 

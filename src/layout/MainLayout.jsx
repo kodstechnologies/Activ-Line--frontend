@@ -44,7 +44,9 @@ const MainLayout = () => {
   const { isDark, toggleTheme } = useTheme();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    window.innerWidth >= 768 && window.innerWidth < 1024,
+  );
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [notificationCount, setNotificationCount] = useState(0);
@@ -52,9 +54,16 @@ const MainLayout = () => {
   /* ---------------- EFFECTS ---------------- */
   useEffect(() => {
     const onResize = () => {
-      const mobile = window.innerWidth < 768;
+      const width = window.innerWidth;
+      const mobile = width < 768;
       setIsMobile(mobile);
-      if (mobile) setSidebarCollapsed(false);
+      if (mobile) {
+        setSidebarCollapsed(false);
+      } else {
+        // Automatically collapse sidebar on tablet screens to maximize space
+        const tablet = width >= 768 && width < 1024;
+        setSidebarCollapsed(tablet);
+      }
     };
     onResize();
     window.addEventListener("resize", onResize);
@@ -220,10 +229,12 @@ const MainLayout = () => {
       >
         {/* LOGO */}
         <div
-          onClick={() => setSidebarCollapsed((p) => !p)}
+          onClick={() => !isMobile && setSidebarCollapsed((p) => !p)}
           className={`h-24 flex items-center border-b
           ${sidebarCollapsed ? "justify-center" : "justify-between px-6"}
-          ${isDark ? "border-slate-800/50" : "border-gray-200/50"} transition-all duration-300`}
+          ${isDark ? "border-slate-800/50" : "border-gray-200/50"} 
+          ${!isMobile ? "cursor-pointer" : "cursor-default"}
+          transition-all duration-300`}
         >
           <ActivlineLogo collapsed={sidebarCollapsed} />
 
@@ -284,35 +295,119 @@ const MainLayout = () => {
         </nav>
 
         {/* FOOTER */}
-        {!sidebarCollapsed && (
-          <div
-            className={`p-4 border-t transition-all duration-300
-              ${isDark ? "border-slate-800/50" : "border-gray-200/50"}`}
-          >
-            <button
-              onClick={() => setIsUserMenuOpen((p) => !p)}
-              className={`w-full flex items-center gap-3 p-3 rounded-xl
-                transition-all duration-300 transform hover:scale-[1.02] group
-                ${
-                  isDark
-                    ? "hover:bg-slate-800/70 shadow-lg shadow-slate-900/30"
-                    : "hover:bg-gray-100 shadow-lg shadow-gray-200/30"
-                }`}
-            >
-              <div className="relative">
+        <div
+          className={`p-4 border-t transition-all duration-300 flex flex-col items-center
+            ${isDark ? "border-slate-800/50" : "border-gray-200/50"}`}
+        >
+          {!sidebarCollapsed ? (
+            <div className="w-full">
+              <button
+                onClick={() => setIsUserMenuOpen((p) => !p)}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl
+                  transition-all duration-300 transform hover:scale-[1.02] group
+                  ${
+                    isDark
+                      ? "hover:bg-slate-800/70 shadow-lg shadow-slate-900/30"
+                      : "hover:bg-gray-100 shadow-lg shadow-gray-200/30"
+                  }`}
+              >
+                <div className="relative">
+                  <div
+                    className={`w-10 h-10 rounded-full bg-gradient-to-br 
+                    ${
+                      isDark
+                        ? "from-blue-500 to-purple-600"
+                        : "from-indigo-500 to-purple-600"
+                    } text-white flex items-center justify-center font-bold text-lg`}
+                  >
+                    {user?.name?.[0]?.toUpperCase()}
+                  </div>
+                  <div
+                    className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 
+                    ${isDark ? "border-slate-900" : "border-white"}
+                    ${
+                      ["admin", "super_admin"].includes(
+                        user?.role?.toLowerCase(),
+                      )
+                        ? "bg-emerald-500"
+                        : ["franchise", "franchise_admin"].includes(
+                              user?.role?.toLowerCase(),
+                            )
+                          ? "bg-orange-500"
+                          : "bg-blue-500"
+                    }`}
+                  />
+                </div>
+                <div className="text-left flex-1 min-w-0">
+                  <p className="text-base font-semibold group-hover:text-purple-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                    {user?.name}
+                  </p>
+                  <p
+                    className={`text-xs uppercase tracking-wider font-medium truncate
+                    ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                  >
+                    {user?.role?.replace("_", " ")}
+                  </p>
+                </div>
+              </button>
+
+              {isUserMenuOpen && (
                 <div
-                  className={`w-10 h-10 rounded-full bg-gradient-to-br 
+                  className={`mt-2 rounded-xl overflow-hidden shadow-xl animate-in fade-in slide-in-from-top-2 duration-300
+                  ${
+                    isDark
+                      ? "bg-slate-800/80 border border-slate-700/50 backdrop-blur-lg"
+                      : "bg-white border border-gray-200/50 backdrop-blur-lg"
+                  }`}
+                >
+                  <button
+                    onClick={() => navigate("/profile")}
+                    className={`w-full px-4 py-3 flex items-center gap-3 text-lg font-medium
+                      transition-all duration-300 hover:pl-5
+                      ${
+                        isDark
+                          ? "hover:bg-slate-700/50 text-slate-300"
+                          : "hover:bg-gray-100 text-gray-700"
+                      }`}
+                  >
+                    <User
+                      size={18}
+                      className="text-purple-500 dark:text-blue-400"
+                    />{" "}
+                    Profile
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className={`w-full px-4 py-3 flex items-center gap-3 text-lg font-medium
+                      transition-all duration-300 hover:pl-5
+                      ${
+                        isDark
+                          ? "text-red-400 hover:bg-red-500/10"
+                          : "text-red-500 hover:bg-red-50"
+                      }`}
+                  >
+                    <LogOut size={18} /> Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="relative">
+              <button
+                onClick={() => setIsUserMenuOpen((p) => !p)}
+                className={`w-12 h-12 rounded-xl flex items-center justify-center
+                  transition-all duration-300 transform hover:scale-110 active:scale-95
+                  bg-gradient-to-br 
                   ${
                     isDark
                       ? "from-blue-500 to-purple-600"
                       : "from-indigo-500 to-purple-600"
-                  } text-white flex items-center justify-center font-bold text-lg`}
-                >
-                  {user?.name?.[0]?.toUpperCase()}
-                </div>
+                  } text-white font-bold text-lg relative`}
+              >
+                {user?.name?.[0]?.toUpperCase()}
                 <div
-                  className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 
-                  ${isDark ? "border-slate-900" : "border-white"}
+                  className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 
+                  ${isDark ? "border-slate-950" : "border-white"}
                   ${
                     ["admin", "super_admin"].includes(user?.role?.toLowerCase())
                       ? "bg-emerald-500"
@@ -323,68 +418,77 @@ const MainLayout = () => {
                         : "bg-blue-500"
                   }`}
                 />
-              </div>
-              <div className="text-left">
-                <p className="text-base font-semibold group-hover:text-purple-600 dark:group-hover:text-blue-400 transition-colors">
-                  {user?.name}
-                </p>
-                <p
-                  className={`text-xs uppercase tracking-wider font-medium
-                  ${isDark ? "text-slate-400" : "text-gray-500"}`}
-                >
-                  {user?.role?.replace("_", " ")}
-                </p>
-              </div>
-            </button>
+              </button>
 
-            {isUserMenuOpen && (
-              <div
-                className={`mt-2 rounded-xl overflow-hidden shadow-xl animate-in fade-in slide-in-from-top-2 duration-300
-                ${
-                  isDark
-                    ? "bg-slate-800/80 border border-slate-700/50 backdrop-blur-lg"
-                    : "bg-white border border-gray-200/50 backdrop-blur-lg"
-                }`}
-              >
-                <button
-                  onClick={() => navigate("/profile")}
-                  className={`w-full px-4 py-3 flex items-center gap-3 text-lg font-medium
-                    transition-all duration-300 hover:pl-5
-                    ${
-                      isDark
-                        ? "hover:bg-slate-700/50 text-slate-300"
-                        : "hover:bg-gray-100 text-gray-700"
-                    }`}
+              {isUserMenuOpen && (
+                <div
+                  className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-48 rounded-xl overflow-hidden shadow-2xl border animate-in fade-in slide-in-from-bottom-2 duration-300 z-50
+                  ${
+                    isDark
+                      ? "bg-slate-900 border-slate-800 text-slate-100"
+                      : "bg-white border-gray-200 text-gray-900"
+                  }`}
                 >
-                  <User
-                    size={18}
-                    className="text-purple-500 dark:text-blue-400"
-                  />{" "}
-                  Profile
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className={`w-full px-4 py-3 flex items-center gap-3 text-lg font-medium
-                    transition-all duration-300 hover:pl-5
-                    ${
-                      isDark
-                        ? "text-red-400 hover:bg-red-500/10"
-                        : "text-red-500 hover:bg-red-50"
-                    }`}
-                >
-                  <LogOut size={18} /> Logout
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+                  <div
+                    className={`px-4 py-2 text-center border-b
+                      ${isDark ? "border-slate-800 bg-slate-950/20" : "border-gray-100 bg-gray-50/50"}`}
+                  >
+                    <p className="text-sm font-semibold truncate">
+                      {user?.name}
+                    </p>
+                    <p
+                      className={`text-[9px] uppercase tracking-wider font-medium
+                        ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                    >
+                      {user?.role?.replace("_", " ")}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      navigate("/profile");
+                    }}
+                    className={`w-full px-4 py-2.5 flex items-center gap-3 text-sm font-medium
+                      transition-all duration-300 hover:pl-5
+                      ${
+                        isDark
+                          ? "hover:bg-slate-800 text-slate-300"
+                          : "hover:bg-gray-100 text-gray-700"
+                      }`}
+                  >
+                    <User
+                      size={16}
+                      className="text-purple-500 dark:text-blue-400"
+                    />{" "}
+                    Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      handleLogout();
+                    }}
+                    className={`w-full px-4 py-2.5 flex items-center gap-3 text-sm font-medium
+                      transition-all duration-300 hover:pl-5
+                      ${
+                        isDark
+                          ? "text-red-400 hover:bg-red-500/10"
+                          : "text-red-500 hover:bg-red-50"
+                      }`}
+                  >
+                    <LogOut size={16} /> Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </aside>
 
       {/* MAIN */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* TOP BAR */}
         <header
-          className={`sticky top-0 z-30 h-24 px-6 md:px-8 flex items-center
+          className={`sticky top-0 z-30 min-h-20 md:h-24 py-3 md:py-0 px-4 sm:px-6 md:px-8 flex items-center gap-3
             backdrop-blur-xl transition-all duration-500
             border-b shadow-xl
             ${
@@ -395,7 +499,7 @@ const MainLayout = () => {
         >
           <button
             onClick={() => setSidebarOpen(true)}
-            className="md:hidden p-2.5 rounded-xl transition-all duration-300 transform hover:scale-110"
+            className="md:hidden p-2.5 rounded-xl transition-all duration-300 transform hover:scale-110 shrink-0"
           >
             <Menu
               size={24}
@@ -403,7 +507,7 @@ const MainLayout = () => {
             />
           </button>
 
-          <div className="m-0 p-0">
+          <div className="m-0 p-0 flex-1 min-w-0 pr-2">
             <div className="flex items-center m-0 p-0">
               {/* Animation (absolute trim technique) */}
               <div className="hidden md:flex w-14 h-14 items-center justify-center shrink-0 m-0 p-0">
@@ -418,17 +522,17 @@ const MainLayout = () => {
               {/* Heading */}
               <h1
                 className="
-        m-0 p-0
-        text-2xl md:text-3xl font-bold tracking-tight
-        bg-gradient-to-r
-        from-blue-700 to-indigo-700
-        dark:from-blue-500 dark:to-cyan-500
-        bg-clip-text text-transparent
-        leading-tight
-      "
+                  m-0 p-0
+                  text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-tight
+                  bg-gradient-to-r
+                  from-blue-700 to-indigo-700
+                  dark:from-blue-500 dark:to-cyan-500
+                  bg-clip-text text-transparent
+                  leading-tight truncate
+                "
               >
                 Welcome back,{" "}
-                <span className="whitespace-nowrap">
+                <span className="font-extrabold">
                   {user?.name?.split(" ")[0] || "User"}
                 </span>
               </h1>
@@ -437,17 +541,17 @@ const MainLayout = () => {
             {/* Subtitle */}
             <p
               className={`
-      m-0 mt-1
-      text-sm md:text-base
-      leading-normal
-      ${isDark ? "text-slate-400" : "text-gray-600"}
-    `}
+                m-0 mt-0.5
+                text-[11px] sm:text-xs md:text-sm
+                leading-normal truncate
+                ${isDark ? "text-slate-400" : "text-gray-600"}
+              `}
             >
               Manage your dashboard & activities efficiently
             </p>
           </div>
 
-          <div className="ml-auto flex items-center gap-4">
+          <div className="ml-auto flex items-center gap-2 sm:gap-4 shrink-0">
             {/* Theme Toggle Enhanced */}
             <button
               onClick={toggleTheme}
@@ -496,9 +600,9 @@ const MainLayout = () => {
         </header>
 
         {/* CONTENT */}
-        <div className="flex-1 p-6 md:p-8 overflow-y-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-400/20">
+        <div className="flex-1 p-1 sm:p-6 md:p-8 overflow-y-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-400/20">
           <div
-            className={`rounded-2xl p-6 md:p-8 transition-all duration-500
+            className={`rounded-xl sm:rounded-2xl p-2 sm:p-6 md:p-8 transition-all duration-500
             ${
               isDark
                 ? "bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 shadow-2xl shadow-slate-900/20"
@@ -511,7 +615,7 @@ const MainLayout = () => {
 
         {/* FOOTER */}
         <footer
-          className={`py-4 px-6 border-t text-center text-sm transition-colors duration-500
+          className={`py-4 px-4 sm:px-6 border-t text-center text-xs sm:text-sm transition-colors duration-500
           ${
             isDark
               ? "border-slate-800/50 text-slate-500"
@@ -522,7 +626,9 @@ const MainLayout = () => {
             © {new Date().getFullYear()} Activline Dashboard. All rights
             reserved.
           </p>
-          <p className="text-xs mt-1">v2.0.0 • Enhanced with modern UI</p>
+          <p className="text-[10px] sm:text-xs mt-1">
+            v2.0.0 • Enhanced with modern UI
+          </p>
         </footer>
       </main>
     </div>

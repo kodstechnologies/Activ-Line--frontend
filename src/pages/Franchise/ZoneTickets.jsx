@@ -11,6 +11,8 @@ import {
   Clock,
   XCircle,
   ChevronDown,
+  ChevronLeft,
+  X,
   Filter,
   RefreshCw,
   MessageSquare,
@@ -513,18 +515,6 @@ const ZoneTickets = () => {
         isDark ? "bg-gray-900" : "bg-white"
       }`}
     >
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setShowSidebar(!showSidebar)}
-        className={`md:hidden absolute top-3 left-3 z-50 p-2 rounded-md transition-all ${
-          isDark
-            ? "bg-gray-800 text-gray-200 hover:bg-gray-700"
-            : "bg-white text-gray-700 hover:bg-gray-50 shadow-sm"
-        }`}
-      >
-        <Menu className="w-4 h-4" />
-      </button>
-
       <div className="flex h-full">
         {/* Sidebar */}
         <div
@@ -556,17 +546,30 @@ const ZoneTickets = () => {
                   Support Chats
                 </h2>
               </div>
-              <button
-                onClick={loadRooms}
-                disabled={refreshing}
-                className={`p-1.5 rounded-md transition ${
-                  isDark
-                    ? "text-gray-400 hover:text-gray-300 hover:bg-gray-800"
-                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                } ${refreshing ? "animate-spin" : ""}`}
-              >
-                <RefreshCw className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={loadRooms}
+                  disabled={refreshing}
+                  className={`p-1.5 rounded-md transition ${
+                    isDark
+                      ? "text-gray-400 hover:text-gray-300 hover:bg-gray-800"
+                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-105"
+                  } ${refreshing ? "animate-spin" : ""}`}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setShowSidebar(false)}
+                  className={`md:hidden p-1.5 rounded-md transition ${
+                    isDark
+                      ? "text-gray-400 hover:text-gray-300 hover:bg-gray-800"
+                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-105"
+                  }`}
+                  title="Close sidebar"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Stats Cards */}
@@ -882,6 +885,19 @@ const ZoneTickets = () => {
                 }`}
               >
                 <div className="flex items-center gap-3">
+                  {!showSidebar && (
+                    <button
+                      type="button"
+                      onClick={() => setShowSidebar(true)}
+                      className={`md:hidden p-2 rounded-xl transition-all border shrink-0 ${
+                        isDark
+                          ? "border-gray-800 text-gray-300 hover:bg-gray-800"
+                          : "border-gray-200 text-gray-700 hover:bg-gray-105 shadow-sm"
+                      }`}
+                    >
+                      <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
+                  )}
                   <div
                     className={`
                     w-10 h-10 rounded-xl flex items-center justify-center

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   Plus,
   Edit,
@@ -36,20 +37,30 @@ const TableRowShimmer = ({ isDark, cols = 6 }) => (
   <tr className="animate-pulse">
     {[...Array(cols)].map((_, i) => (
       <td key={i} className="px-6 py-4">
-        <div className={`h-4 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded`}></div>
-       </td>
+        <div
+          className={`h-4 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded`}
+        ></div>
+      </td>
     ))}
   </tr>
 );
 
 const StatCardShimmer = ({ isDark }) => (
-  <div className={`p-4 rounded-xl border ${isDark ? "bg-slate-800/50 border-slate-700" : "bg-white border-gray-200"}`}>
+  <div
+    className={`p-4 rounded-xl border ${isDark ? "bg-slate-800/50 border-slate-700" : "bg-white border-gray-200"}`}
+  >
     <div className="flex items-center justify-between">
       <div className="flex-1">
-        <div className={`h-3 w-24 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded mb-2`}></div>
-        <div className={`h-8 w-16 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded`}></div>
+        <div
+          className={`h-3 w-24 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded mb-2`}
+        ></div>
+        <div
+          className={`h-8 w-16 ${isDark ? "bg-slate-700" : "bg-gray-200"} rounded`}
+        ></div>
       </div>
-      <div className={`w-12 h-12 rounded-full ${isDark ? "bg-slate-700" : "bg-gray-200"}`}></div>
+      <div
+        className={`w-12 h-12 rounded-full ${isDark ? "bg-slate-700" : "bg-gray-200"}`}
+      ></div>
     </div>
   </div>
 );
@@ -113,7 +124,7 @@ const Frenchiseadmin = () => {
       setTotalPages(
         res?.totalPages ||
           res?.pagination?.totalPages ||
-          Math.max(1, Math.ceil(list.length / ITEMS_PER_PAGE))
+          Math.max(1, Math.ceil(list.length / ITEMS_PER_PAGE)),
       );
     } catch (err) {
       toast.error("Failed to load franchise admins");
@@ -178,8 +189,10 @@ const Frenchiseadmin = () => {
       if (editingAdmin) {
         const payload = new FormData();
         if (formData.name?.trim()) payload.append("name", formData.name.trim());
-        if (formData.password?.trim()) payload.append("password", formData.password.trim());
-        if (formData.profileImage) payload.append("profileImage", formData.profileImage);
+        if (formData.password?.trim())
+          payload.append("password", formData.password.trim());
+        if (formData.profileImage)
+          payload.append("profileImage", formData.profileImage);
         await updateFranchiseAdmin(editingAdmin._id, payload);
         toast.success("Franchise admin updated");
       } else {
@@ -223,8 +236,10 @@ const Frenchiseadmin = () => {
     const term = searchTerm.toLowerCase();
     return admins.filter((a) =>
       [a.name, a.email, a.accountId].some((v) =>
-        String(v || "").toLowerCase().includes(term)
-      )
+        String(v || "")
+          .toLowerCase()
+          .includes(term),
+      ),
     );
   }, [admins, searchTerm]);
 
@@ -256,28 +271,32 @@ const Frenchiseadmin = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
         className={`relative overflow-hidden rounded-2xl border ${
-          isDark 
-            ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-700/50" 
+          isDark
+            ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-700/50"
             : "bg-gradient-to-br from-white via-gray-50 to-white border-gray-200"
         } shadow-xl`}
       >
-        <div className={`absolute inset-0 opacity-5 ${
-          isDark ? "bg-gradient-to-r from-blue-500 to-purple-500" : "bg-gradient-to-r from-purple-500 to-indigo-500"
-        }`}></div>
-        
+        <div
+          className={`absolute inset-0 opacity-5 ${
+            isDark
+              ? "bg-gradient-to-r from-blue-500 to-purple-500"
+              : "bg-gradient-to-r from-purple-500 to-indigo-500"
+          }`}
+        ></div>
+
         <div className="relative p-6 md:p-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="flex items-center gap-4">
               <motion.div
-                animate={{ 
+                animate={{
                   rotate: [0, 5, -5, 0],
-                  scale: [1, 1.05, 1]
+                  scale: [1, 1.05, 1],
                 }}
-                transition={{ 
-                  repeat: Infinity, 
-                  duration: 5, 
+                transition={{
+                  repeat: Infinity,
+                  duration: 5,
                   repeatType: "reverse",
-                  ease: "easeInOut"
+                  ease: "easeInOut",
                 }}
                 className="w-20 h-20 md:w-24 md:h-24"
               >
@@ -289,12 +308,18 @@ const Frenchiseadmin = () => {
                 />
               </motion.div>
               <div>
-                <h1 className={`text-3xl md:text-4xl font-bold ${
-                  isDark ? "bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent" : "text-gray-900"
-                }`}>
+                <h1
+                  className={`text-3xl md:text-4xl font-bold ${
+                    isDark
+                      ? "bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent"
+                      : "text-gray-900"
+                  }`}
+                >
                   Franchise Admins
                 </h1>
-                <p className={`text-sm mt-2 flex items-center gap-2 ${isDark ? "text-slate-400" : "text-gray-600"}`}>
+                <p
+                  className={`text-sm mt-2 flex items-center gap-2 ${isDark ? "text-slate-400" : "text-gray-600"}`}
+                >
                   <Users className="w-4 h-4" />
                   Create and manage franchise admin credentials
                 </p>
@@ -310,24 +335,28 @@ const Frenchiseadmin = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all duration-200
-                    ${isDark
-                      ? "bg-slate-800 border-slate-700 text-white placeholder-slate-400 focus:border-blue-500"
-                      : "bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-purple-500"
+                    ${
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white placeholder-slate-400 focus:border-blue-500"
+                        : "bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-purple-500"
                     } focus:ring-2 focus:ring-opacity-50 ${isDark ? "focus:ring-blue-500" : "focus:ring-purple-500"}`}
                 />
               </div>
-              
+
               <button
                 onClick={handleRefresh}
                 disabled={isLoading}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-200 text-sm
                   ${isLoading ? "opacity-50 cursor-not-allowed" : "hover:scale-105 active:scale-95"}
-                  ${isDark
-                    ? "border-slate-700 text-slate-300 hover:bg-slate-800"
-                    : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                  ${
+                    isDark
+                      ? "border-slate-700 text-slate-300 hover:bg-slate-800"
+                      : "border-gray-300 text-gray-700 hover:bg-gray-100"
                   }`}
               >
-                <RefreshCcw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+                <RefreshCcw
+                  className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
+                />
                 Refresh
               </button>
 
@@ -336,9 +365,10 @@ const Frenchiseadmin = () => {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => openModal()}
                 className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white rounded-xl shadow-lg transition-all
-                  ${isDark
-                    ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-500/25"
-                    : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/25"
+                  ${
+                    isDark
+                      ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-500/25"
+                      : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/25"
                   }`}
               >
                 <UserPlus className="w-4 h-4" />
@@ -353,22 +383,37 @@ const Frenchiseadmin = () => {
               whileHover={{ y: -5 }}
               transition={{ duration: 0.2 }}
               className={`p-4 rounded-xl border ${
-                isDark ? "bg-slate-800/50 border-slate-700" : "bg-white border-gray-200 shadow-sm"
+                isDark
+                  ? "bg-slate-800/50 border-slate-700"
+                  : "bg-white border-gray-200 shadow-sm"
               }`}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm ${isDark ? "text-slate-400" : "text-gray-600"}`}>Total Frenchsie Admins</p>
-                  <p className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"} mt-1`}>
+                  <p
+                    className={`text-sm ${isDark ? "text-slate-400" : "text-gray-600"}`}
+                  >
+                    Total Frenchsie Admins
+                  </p>
+                  <p
+                    className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"} mt-1`}
+                  >
                     {isLoading ? (
-                      <span className={`inline-block h-8 w-16 rounded animate-pulse ${isDark ? "bg-slate-700" : "bg-gray-200"}`} />
+                      <span
+                        className={`inline-block h-8 w-16 rounded animate-pulse ${isDark ? "bg-slate-700" : "bg-gray-200"}`}
+                      />
                     ) : (
                       admins.length
                     )}
                   </p>
                 </div>
                 <div className="w-12 h-12">
-                  <Lottie animationData={statsUsersAnimation} loop autoplay className="w-full h-full" />
+                  <Lottie
+                    animationData={statsUsersAnimation}
+                    loop
+                    autoplay
+                    className="w-full h-full"
+                  />
                 </div>
               </div>
             </motion.div>
@@ -377,29 +422,37 @@ const Frenchiseadmin = () => {
               whileHover={{ y: -5 }}
               transition={{ duration: 0.2 }}
               className={`p-4 rounded-xl border ${
-                isDark ? "bg-slate-800/50 border-slate-700" : "bg-white border-gray-200 shadow-sm"
+                isDark
+                  ? "bg-slate-800/50 border-slate-700"
+                  : "bg-white border-gray-200 shadow-sm"
               }`}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm ${isDark ? "text-slate-400" : "text-gray-600"}`}>Showing</p>
-                  <p className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"} mt-1`}>
+                  <p
+                    className={`text-sm ${isDark ? "text-slate-400" : "text-gray-600"}`}
+                  >
+                    Showing
+                  </p>
+                  <p
+                    className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"} mt-1`}
+                  >
                     {isLoading ? (
-                      <span className={`inline-block h-8 w-16 rounded animate-pulse ${isDark ? "bg-slate-700" : "bg-gray-200"}`} />
+                      <span
+                        className={`inline-block h-8 w-16 rounded animate-pulse ${isDark ? "bg-slate-700" : "bg-gray-200"}`}
+                      />
                     ) : (
                       paginatedAdmins.length
                     )}
                   </p>
                 </div>
                 <div className="w-12 h-12">
-                  <Shield className={`${isDark ? "text-blue-400" : "text-indigo-500"} w-full h-full`} />
+                  <Shield
+                    className={`${isDark ? "text-blue-400" : "text-indigo-500"} w-full h-full`}
+                  />
                 </div>
               </div>
             </motion.div>
-
-          
-
-           
           </div>
         </div>
       </motion.div>
@@ -410,21 +463,37 @@ const Frenchiseadmin = () => {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
         className={`rounded-2xl border overflow-hidden shadow-lg franchise-admin-table ${
-          isDark ? "bg-slate-900 border-slate-800/50" : "bg-white border-gray-200"
+          isDark
+            ? "bg-slate-900 border-slate-800/50"
+            : "bg-white border-gray-200"
         }`}
       >
-        <div className="overflow-x-auto">
+        <div className="scrollbar-hide  overflow-x-auto">
           <table className="w-full min-w-[900px]">
-            <thead className={`${isDark ? "bg-slate-800/80" : "bg-gradient-to-r from-gray-50 to-gray-100"}`}>
+            <thead
+              className={`${isDark ? "bg-slate-800/80" : "bg-gradient-to-r from-gray-50 to-gray-100"}`}
+            >
               <tr>
-                {["Admin", "Email", "Role", "Account ID", "Created", "Actions"].map((label) => (
-                  <th key={label} className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">
+                {[
+                  "Admin",
+                  "Email",
+                  "Role",
+                  "Account ID",
+                  "Created",
+                  "Actions",
+                ].map((label) => (
+                  <th
+                    key={label}
+                    className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider"
+                  >
                     {label}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className={`divide-y ${isDark ? "divide-slate-800" : "divide-gray-100"}`}>
+            <tbody
+              className={`divide-y ${isDark ? "divide-slate-800" : "divide-gray-100"}`}
+            >
               {isLoading ? (
                 [...Array(5)].map((_, i) => (
                   <TableRowShimmer key={i} isDark={isDark} cols={6} />
@@ -437,11 +506,17 @@ const Frenchiseadmin = () => {
                       animate={{ opacity: 1, scale: 1 }}
                       className="flex flex-col items-center gap-3"
                     >
-                      <Users className={`w-16 h-16 ${isDark ? "text-slate-600" : "text-gray-400"}`} />
-                      <p className={`text-lg font-medium ${isDark ? "text-slate-300" : "text-gray-700"}`}>
+                      <Users
+                        className={`w-16 h-16 ${isDark ? "text-slate-600" : "text-gray-400"}`}
+                      />
+                      <p
+                        className={`text-lg font-medium ${isDark ? "text-slate-300" : "text-gray-700"}`}
+                      >
                         No franchise admins found
                       </p>
-                      <p className={`text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+                      <p
+                        className={`text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                      >
                         Click the "Add Admin" button to create one
                       </p>
                     </motion.div>
@@ -454,21 +529,37 @@ const Frenchiseadmin = () => {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    whileHover={{ backgroundColor: isDark ? "rgba(51, 65, 85, 0.4)" : "rgba(243, 244, 246, 0.6)" }}
+                    whileHover={{
+                      backgroundColor: isDark
+                        ? "rgba(51, 65, 85, 0.4)"
+                        : "rgba(243, 244, 246, 0.6)",
+                    }}
                     className="transition-colors duration-200"
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          isDark ? "bg-gradient-to-br from-blue-500/20 to-purple-500/20" : "bg-gradient-to-br from-blue-100 to-purple-100"
-                        }`}>
-                          <span className={`font-semibold text-sm ${isDark ? "text-blue-400" : "text-blue-600"}`}>
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                            isDark
+                              ? "bg-gradient-to-br from-blue-500/20 to-purple-500/20"
+                              : "bg-gradient-to-br from-blue-100 to-purple-100"
+                          }`}
+                        >
+                          <span
+                            className={`font-semibold text-sm ${isDark ? "text-blue-400" : "text-blue-600"}`}
+                          >
                             {(admin.name || "F").charAt(0).toUpperCase()}
                           </span>
                         </div>
                         <div>
-                          <p className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>{admin.name}</p>
-                          <p className={`text-xs ${isDark ? "text-slate-500" : "text-gray-400"}`}>
+                          <p
+                            className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}
+                          >
+                            {admin.name}
+                          </p>
+                          <p
+                            className={`text-xs ${isDark ? "text-slate-500" : "text-gray-400"}`}
+                          >
                             ID: {admin._id?.slice(-8)}
                           </p>
                         </div>
@@ -476,30 +567,50 @@ const Frenchiseadmin = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <Mail className={`w-4 h-4 ${isDark ? "text-slate-500" : "text-gray-400"}`} />
-                        <span className={`text-sm ${isDark ? "text-slate-300" : "text-gray-600"}`}>{admin.email}</span>
+                        <Mail
+                          className={`w-4 h-4 ${isDark ? "text-slate-500" : "text-gray-400"}`}
+                        />
+                        <span
+                          className={`text-sm ${isDark ? "text-slate-300" : "text-gray-600"}`}
+                        >
+                          {admin.email}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex px-3 py-1.5 rounded-full text-xs font-medium ${
-                        isDark 
-                          ? "bg-slate-700 text-slate-300" 
-                          : "bg-gray-100 text-gray-700"
-                      }`}>
+                      <span
+                        className={`inline-flex px-3 py-1.5 rounded-full text-xs font-medium ${
+                          isDark
+                            ? "bg-slate-700 text-slate-300"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
                         {admin.role || "FRANCHISE_ADMIN"}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <Building className={`w-4 h-4 ${isDark ? "text-slate-500" : "text-gray-400"}`} />
-                        <span className={`text-sm ${isDark ? "text-slate-300" : "text-gray-600"}`}>{admin.accountId || "-"}</span>
+                        <Building
+                          className={`w-4 h-4 ${isDark ? "text-slate-500" : "text-gray-400"}`}
+                        />
+                        <span
+                          className={`text-sm ${isDark ? "text-slate-300" : "text-gray-600"}`}
+                        >
+                          {admin.accountId || "-"}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <Calendar className={`w-4 h-4 ${isDark ? "text-slate-500" : "text-gray-400"}`} />
-                        <span className={`text-sm ${isDark ? "text-slate-300" : "text-gray-600"}`}>
-                          {admin.createdAt ? new Date(admin.createdAt).toLocaleDateString() : "-"}
+                        <Calendar
+                          className={`w-4 h-4 ${isDark ? "text-slate-500" : "text-gray-400"}`}
+                        />
+                        <span
+                          className={`text-sm ${isDark ? "text-slate-300" : "text-gray-600"}`}
+                        >
+                          {admin.createdAt
+                            ? new Date(admin.createdAt).toLocaleDateString()
+                            : "-"}
                         </span>
                       </div>
                     </td>
@@ -510,8 +621,8 @@ const Frenchiseadmin = () => {
                           whileTap={{ scale: 0.95 }}
                           onClick={() => openModal(admin)}
                           className={`p-2 rounded-lg transition-all ${
-                            isDark 
-                              ? "hover:bg-slate-800 text-slate-400 hover:text-emerald-400" 
+                            isDark
+                              ? "hover:bg-slate-800 text-slate-400 hover:text-emerald-400"
                               : "hover:bg-gray-100 text-gray-400 hover:text-emerald-600"
                           }`}
                           title="Edit"
@@ -523,8 +634,8 @@ const Frenchiseadmin = () => {
                           whileTap={{ scale: 0.95 }}
                           onClick={() => handleDeleteClick(admin._id)}
                           className={`p-2 rounded-lg transition-all ${
-                            isDark 
-                              ? "hover:bg-slate-800 text-slate-400 hover:text-red-400" 
+                            isDark
+                              ? "hover:bg-slate-800 text-slate-400 hover:text-red-400"
                               : "hover:bg-gray-100 text-gray-400 hover:text-red-600"
                           }`}
                           title="Delete"
@@ -542,11 +653,17 @@ const Frenchiseadmin = () => {
 
         {/* Pagination */}
         {!isLoading && totalPages > 1 && paginatedAdmins.length > 0 && (
-          <div className={`p-6 border-t flex flex-col sm:flex-row justify-between items-center gap-4 ${
-            isDark ? "border-slate-800 bg-slate-900/50" : "border-gray-200 bg-gray-50"
-          }`}>
-            <span className={`text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}>
-              Showing {((page - 1) * ITEMS_PER_PAGE) + 1} to{" "}
+          <div
+            className={`p-6 border-t flex flex-col sm:flex-row justify-between items-center gap-4 ${
+              isDark
+                ? "border-slate-800 bg-slate-900/50"
+                : "border-gray-200 bg-gray-50"
+            }`}
+          >
+            <span
+              className={`text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}
+            >
+              Showing {(page - 1) * ITEMS_PER_PAGE + 1} to{" "}
               {Math.min(page * ITEMS_PER_PAGE, filteredAdmins.length)} of{" "}
               {filteredAdmins.length} entries
             </span>
@@ -557,14 +674,14 @@ const Frenchiseadmin = () => {
                 onClick={() => handlePageChange(page - 1)}
                 disabled={page === 1}
                 className={`p-2 rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isDark 
-                    ? "border-slate-700 hover:bg-slate-800 text-slate-300" 
+                  isDark
+                    ? "border-slate-700 hover:bg-slate-800 text-slate-300"
                     : "border-gray-300 hover:bg-gray-100 text-gray-700"
                 }`}
               >
                 <ChevronLeft className="w-4 h-4" />
               </motion.button>
-              
+
               <div className="flex items-center gap-1">
                 {[...Array(Math.min(5, totalPages))].map((_, i) => {
                   let pageNum;
@@ -577,7 +694,7 @@ const Frenchiseadmin = () => {
                   } else {
                     pageNum = page - 2 + i;
                   }
-                  
+
                   return (
                     <motion.button
                       key={pageNum}
@@ -606,8 +723,8 @@ const Frenchiseadmin = () => {
                 onClick={() => handlePageChange(page + 1)}
                 disabled={page === totalPages}
                 className={`p-2 rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isDark 
-                    ? "border-slate-700 hover:bg-slate-800 text-slate-300" 
+                  isDark
+                    ? "border-slate-700 hover:bg-slate-800 text-slate-300"
                     : "border-gray-300 hover:bg-gray-100 text-gray-700"
                 }`}
               >
@@ -618,32 +735,44 @@ const Frenchiseadmin = () => {
         )}
       </motion.div>
 
-      {/* Add/Edit Modal */}
-      <AnimatePresence>
-        {isModalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
-          >
+      {createPortal(
+        <AnimatePresence>
+          {isModalOpen && (
             <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className={`w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl ${
-                isDark ? "bg-slate-900 border border-slate-700" : "bg-white border border-gray-200"
-              }`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
             >
-              <div className={`px-6 py-5 flex justify-between items-center border-b ${
-                isDark ? "border-slate-800" : "border-gray-200"
-              }`}>
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className={`w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl ${
+                  isDark
+                    ? "bg-slate-900 border border-slate-700"
+                    : "bg-white border border-gray-200"
+                }`}
+              >
+              <div
+                className={`px-6 py-5 flex justify-between items-center border-b ${
+                  isDark ? "border-slate-800" : "border-gray-200"
+                }`}
+              >
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-xl ${isDark ? "bg-slate-800" : "bg-gray-100"}`}>
-                    <UserPlus className={`${isDark ? "text-blue-400" : "text-indigo-500"} w-5 h-5`} />
+                  <div
+                    className={`p-2 rounded-xl ${isDark ? "bg-slate-800" : "bg-gray-100"}`}
+                  >
+                    <UserPlus
+                      className={`${isDark ? "text-blue-400" : "text-indigo-500"} w-5 h-5`}
+                    />
                   </div>
-                  <h2 className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
-                    {editingAdmin ? "Edit Franchise Admin" : "Add Franchise Admin"}
+                  <h2
+                    className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                  >
+                    {editingAdmin
+                      ? "Edit Franchise Admin"
+                      : "Add Franchise Admin"}
                   </h2>
                 </div>
                 <motion.button
@@ -658,7 +787,9 @@ const Frenchiseadmin = () => {
 
               <form onSubmit={handleSubmit} className="p-6 space-y-5">
                 <div>
-                  <label className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}>
+                  <label
+                    className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}
+                  >
                     Franchise Account *
                   </label>
                   <select
@@ -668,12 +799,16 @@ const Frenchiseadmin = () => {
                     value={formData.accountId}
                     onChange={handleChange}
                     className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${
-                      isDark 
-                        ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500" 
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500"
                         : "bg-white border-gray-300 text-gray-900 focus:border-purple-500"
                     } ${editingAdmin ? "opacity-60 cursor-not-allowed" : ""}`}
                   >
-                    <option value="">{franchiseLoading ? "Loading franchises..." : "Select a franchise"}</option>
+                    <option value="">
+                      {franchiseLoading
+                        ? "Loading franchises..."
+                        : "Select a franchise"}
+                    </option>
                     {franchises.map((f) => (
                       <option key={f._id} value={f.accountId}>
                         {f.companyName || f.accountName || f.accountId}
@@ -683,7 +818,9 @@ const Frenchiseadmin = () => {
                 </div>
 
                 <div>
-                  <label className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}>
+                  <label
+                    className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}
+                  >
                     Full Name *
                   </label>
                   <input
@@ -694,15 +831,17 @@ const Frenchiseadmin = () => {
                     onChange={handleChange}
                     placeholder="Enter full name"
                     className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${
-                      isDark 
-                        ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500" 
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500"
                         : "bg-white border-gray-300 text-gray-900 focus:border-purple-500"
                     }`}
                   />
                 </div>
 
                 <div>
-                  <label className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}>
+                  <label
+                    className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}
+                  >
                     Email Address *
                   </label>
                   <input
@@ -714,16 +853,19 @@ const Frenchiseadmin = () => {
                     onChange={handleChange}
                     placeholder="admin@example.com"
                     className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${
-                      isDark 
-                        ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500" 
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500"
                         : "bg-white border-gray-300 text-gray-900 focus:border-purple-500"
                     } ${editingAdmin ? "opacity-60 cursor-not-allowed" : ""}`}
                   />
                 </div>
 
                 <div>
-                  <label className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}>
-                    {editingAdmin ? "New Password" : "Password"} {editingAdmin ? "(optional)" : "*"}
+                  <label
+                    className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}
+                  >
+                    {editingAdmin ? "New Password" : "Password"}{" "}
+                    {editingAdmin ? "(optional)" : "*"}
                   </label>
                   <input
                     type="password"
@@ -731,24 +873,26 @@ const Frenchiseadmin = () => {
                     required={!editingAdmin}
                     value={formData.password}
                     onChange={handleChange}
-                    placeholder={editingAdmin ? "Leave blank to keep current" : "Enter secure password"}
+                    placeholder={
+                      editingAdmin
+                        ? "Leave blank to keep current"
+                        : "Enter secure password"
+                    }
                     className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${
-                      isDark 
-                        ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500" 
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500"
                         : "bg-white border-gray-300 text-gray-900 focus:border-purple-500"
                     }`}
                   />
                 </div>
-
-              
 
                 <div className="flex justify-end gap-3 pt-4">
                   <button
                     type="button"
                     onClick={closeModal}
                     className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                      isDark 
-                        ? "bg-slate-800 text-slate-300 hover:bg-slate-700" 
+                      isDark
+                        ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
@@ -758,47 +902,63 @@ const Frenchiseadmin = () => {
                     type="submit"
                     disabled={isSubmitting}
                     className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-all disabled:opacity-50 ${
-                      isDark 
-                        ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500" 
+                      isDark
+                        ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500"
                         : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500"
                     }`}
                   >
-                    {isSubmitting ? "Processing..." : editingAdmin ? "Update Admin" : "Create Admin"}
+                    {isSubmitting
+                      ? "Processing..."
+                      : editingAdmin
+                        ? "Update Admin"
+                        : "Create Admin"}
                   </button>
                 </div>
               </form>
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+    )}
 
-      {/* Delete Modal */}
-      <AnimatePresence>
-        {showDeleteModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          >
+      {createPortal(
+        <AnimatePresence>
+          {showDeleteModal && (
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className={`w-full max-w-md rounded-2xl shadow-2xl ${
-                isDark ? "bg-slate-900 border border-slate-700" : "bg-white border border-gray-200"
-              }`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 backdrop-blur-sm"
             >
-              <div className={`p-6 border-b ${isDark ? "border-slate-800" : "border-gray-200"}`}>
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className={`w-full max-w-md rounded-2xl shadow-2xl ${
+                  isDark
+                    ? "bg-slate-900 border border-slate-700"
+                    : "bg-white border border-gray-200"
+                }`}
+              >
+              <div
+                className={`p-6 border-b ${isDark ? "border-slate-800" : "border-gray-200"}`}
+              >
                 <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-xl ${isDark ? "bg-red-500/10" : "bg-red-100"}`}>
+                  <div
+                    className={`p-3 rounded-xl ${isDark ? "bg-red-500/10" : "bg-red-100"}`}
+                  >
                     <Trash2 className="w-6 h-6 text-red-500" />
                   </div>
                   <div>
-                    <h3 className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
+                    <h3
+                      className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                    >
                       Delete Franchise Admin
                     </h3>
-                    <p className={`text-sm ${isDark ? "text-slate-400" : "text-gray-600"} mt-1`}>
+                    <p
+                      className={`text-sm ${isDark ? "text-slate-400" : "text-gray-600"} mt-1`}
+                    >
                       This action cannot be undone
                     </p>
                   </div>
@@ -806,15 +966,18 @@ const Frenchiseadmin = () => {
               </div>
               <div className="p-6">
                 <p className={`${isDark ? "text-slate-300" : "text-gray-600"}`}>
-                  Are you sure you want to delete this franchise admin? All associated data will be permanently removed.
+                  Are you sure you want to delete this franchise admin? All
+                  associated data will be permanently removed.
                 </p>
               </div>
-              <div className={`p-6 border-t flex justify-end gap-3 ${isDark ? "border-slate-800" : "border-gray-200"}`}>
+              <div
+                className={`p-6 border-t flex justify-end gap-3 ${isDark ? "border-slate-800" : "border-gray-200"}`}
+              >
                 <button
                   onClick={() => setShowDeleteModal(false)}
                   className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                    isDark 
-                      ? "bg-slate-800 text-slate-300 hover:bg-slate-700" 
+                    isDark
+                      ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                 >
@@ -830,7 +993,9 @@ const Frenchiseadmin = () => {
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+    )}
 
       <style jsx>{`
         @keyframes fadeInUp {
@@ -843,7 +1008,7 @@ const Frenchiseadmin = () => {
             transform: translateY(0);
           }
         }
-        
+
         tr {
           animation: fadeInUp 0.3s ease-out forwards;
         }
