@@ -748,7 +748,7 @@ const Frenchiseadmin = () => {
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className={`w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl ${
+                className={`w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh] ${
                   isDark
                     ? "bg-slate-900 border border-slate-700"
                     : "bg-white border border-gray-200"
@@ -785,7 +785,7 @@ const Frenchiseadmin = () => {
                 </motion.button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-6 space-y-5">
+              <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto scrollbar-hide flex-1">
                 <div>
                   <label
                     className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}
@@ -1011,6 +1011,14 @@ const Frenchiseadmin = () => {
 
         tr {
           animation: fadeInUp 0.3s ease-out forwards;
+        }
+
+        .scrollbar-hide {
+          -ms-overflow-style: none; /* IE and Edge */
+          scrollbar-width: none; /* Firefox */
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none; /* Chrome, Safari and Opera */
         }
       `}</style>
     </motion.div>

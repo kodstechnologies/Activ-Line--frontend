@@ -314,96 +314,105 @@ const BillingPage = () => {
               Filters
             </button>
 
-            {showFilter && (
-              <div
-                className={`absolute right-6 top-20 w-[360px] max-w-full p-5 rounded-xl shadow-2xl border z-50 ${
-                  isDark
-                    ? "bg-slate-900 border-slate-700"
-                    : "bg-white border-gray-200"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h4
-                    className={`font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+            {showFilter &&
+              createPortal(
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-fade-in"
+                  onClick={() => setShowFilter(false)}
+                >
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className={`w-full max-w-[360px] p-5 rounded-xl shadow-2xl border ${
+                      isDark
+                        ? "bg-slate-900 border-slate-700 text-white"
+                        : "bg-white border-gray-200 text-gray-900"
+                    }`}
                   >
-                    Filters
-                  </h4>
-                  <button
-                    onClick={() => setShowFilter(false)}
-                    className={`p-1.5 rounded-md ${isDark ? "text-slate-400 hover:text-white" : "text-gray-500 hover:text-gray-700"}`}
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label
-                      className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? "text-slate-400" : "text-gray-500"}`}
-                    >
-                      Status
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value)}
-                        className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/40 appearance-none pr-8 cursor-pointer transition-colors ${isDark ? "bg-slate-800 border-slate-700 text-white hover:bg-slate-700" : "bg-white border-gray-300 text-gray-900 hover:bg-gray-50"}`}
+                    <div className="flex items-center justify-between mb-4">
+                      <h4
+                        className={`font-bold ${isDark ? "text-white" : "text-gray-900"}`}
                       >
-                        <option value="All">All Transactions</option>
-                        <option value="Paid">Paid</option>
-                        <option value="Pending Dues">Pending Dues</option>
-                      </select>
-                      <ChevronDown
-                        className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDark ? "text-slate-400" : "text-gray-500"}`}
-                      />
+                        Filters
+                      </h4>
+                      <button
+                        onClick={() => setShowFilter(false)}
+                        className={`p-1.5 rounded-md ${isDark ? "text-slate-400 hover:text-white" : "text-gray-500 hover:text-gray-700"}`}
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label
+                          className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                        >
+                          Status
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={filter}
+                            onChange={(e) => setFilter(e.target.value)}
+                            className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/40 appearance-none pr-8 cursor-pointer transition-colors ${isDark ? "bg-slate-800 border-slate-700 text-white hover:bg-slate-700" : "bg-white border-gray-300 text-gray-900 hover:bg-gray-50"}`}
+                          >
+                            <option value="All">All Transactions</option>
+                            <option value="Paid">Paid</option>
+                            <option value="Pending Dues">Pending Dues</option>
+                          </select>
+                          <ChevronDown
+                            className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label
+                            className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                          >
+                            From Date
+                          </label>
+                          <input
+                            value={fromDate}
+                            onChange={(e) => setFromDate(e.target.value)}
+                            type="date"
+                            className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/40 ${isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-300 text-gray-900"}`}
+                          />
+                        </div>
+                        <div>
+                          <label
+                            className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                          >
+                            To Date
+                          </label>
+                          <input
+                            value={toDate}
+                            onChange={(e) => setToDate(e.target.value)}
+                            type="date"
+                            className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/40 ${isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-300 text-gray-900"}`}
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setFilter("All");
+                          setSearchTerm("");
+                          setFromDate("");
+                          setToDate("");
+                          setCurrentPage(1);
+                          setShowFilter(false);
+                        }}
+                        className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+                      >
+                        Clear Filters
+                      </button>
                     </div>
                   </div>
+                </div>,
+                document.body,
+              )}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label
-                        className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? "text-slate-400" : "text-gray-500"}`}
-                      >
-                        From Date
-                      </label>
-                      <input
-                        value={fromDate}
-                        onChange={(e) => setFromDate(e.target.value)}
-                        type="date"
-                        className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/40 ${isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-300 text-gray-900"}`}
-                      />
-                    </div>
-                    <div>
-                      <label
-                        className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? "text-slate-400" : "text-gray-500"}`}
-                      >
-                        To Date
-                      </label>
-                      <input
-                        value={toDate}
-                        onChange={(e) => setToDate(e.target.value)}
-                        type="date"
-                        className={`w-full border text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/40 ${isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-300 text-gray-900"}`}
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setFilter("All");
-                      setSearchTerm("");
-                      setFromDate("");
-                      setToDate("");
-                      setCurrentPage(1);
-                      setShowFilter(false);
-                    }}
-                    className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
-                  >
-                    Clear Filters
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -418,13 +427,13 @@ const BillingPage = () => {
 
           <div className="flex-1 min-h-0 overflow-hidden">
             <div
-              className={`rounded-lg border overflow-hidden h-full ${isDark ? "border-slate-800" : "border-gray-200"}`}
+              className={`rounded-lg border overflow-hidden h-full ${isDark ? "border-slate-800 text-white" : "border-gray-200 text-black"}`}
             >
               <div className="scrollbar-hide overflow-auto h-full">
                 <table className="w-full text-left">
                   <thead>
                     <tr
-                      className={`${isDark ? "bg-slate-800/50 border-b border-slate-800" : "bg-gray-50 border-b border-gray-200"}`}
+                      className={`${isDark ? "bg-slate-800/50 text-white border-b border-slate-800" : "bg-gray-50 text-gray-900 border-b border-gray-200"}`}
                     >
                       <th
                         className={`py-4 px-6 text-xs font-semibold uppercase tracking-wider ${isDark ? "text-slate-400" : "text-gray-600"}`}
@@ -756,7 +765,9 @@ const BillingPage = () => {
                   </p>
                 ) : (
                   <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <div
+                      className={`grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm ${isDark ? "text-slate-300" : "text-gray-700"}`}
+                    >
                       <p>
                         <span className="font-semibold">Payment ID:</span>{" "}
                         {selectedPayment?.paymentId ||

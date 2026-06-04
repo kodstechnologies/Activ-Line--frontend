@@ -271,7 +271,7 @@ const SectionCard = ({
       }`}
     >
       <div
-        className={`flex items-center gap-3 px-6 py-4 border-b ${
+        className={`flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-b ${
           isDark
             ? "border-slate-800 bg-slate-900/40"
             : "border-slate-100 bg-slate-50/50"
@@ -302,7 +302,7 @@ const DetailRow = ({ property, value, highlight = false }) => {
   return (
     <motion.div
       whileHover={{ x: 5 }}
-      className={`flex items-center justify-between px-6 py-3 transition-all duration-200 ${
+      className={`flex items-center justify-between px-4 sm:px-6 py-2.5 sm:py-3 transition-all duration-200 ${
         isDark ? "hover:bg-slate-800/40" : "hover:bg-slate-50"
       } ${highlight ? (isDark ? "bg-blue-500/5" : "bg-blue-50/30") : ""}`}
     >
@@ -352,47 +352,60 @@ const StepProgress = ({ current, isDark = false }) => {
     { name: "Profile", icon: Shield },
   ];
 
-  return (
-    <div className="hidden sm:flex items-center gap-2">
-      {steps.map((step, i) => {
-        const n = i + 1;
-        const isDone = current > n;
-        const isActive = current === n;
-        const Icon = step.icon;
+  const currentStepName = steps[current - 1]?.name || "";
 
-        return (
-          <div key={step.name} className="flex items-center gap-2">
-            {i > 0 && (
-              <div
-                className={`w-8 h-px ${isDone ? "bg-blue-400" : isDark ? "bg-slate-700" : "bg-slate-200"}`}
-              />
-            )}
-            <div
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                isActive
-                  ? isDark
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
-                    : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
-                  : isDone
-                    ? isDark
-                      ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
-                      : "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                    : isDark
-                      ? "bg-slate-800 text-slate-500"
-                      : "bg-slate-100 text-slate-400"
-              }`}
-            >
-              {isDone ? (
-                <span className="text-xs">✓</span>
-              ) : (
-                <Icon className="w-3 h-3" />
+  return (
+    <>
+      {/* Mobile step progress indicator */}
+      <div className="sm:hidden flex items-center justify-between gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+        <span>Step {current} of 3</span>
+        <span className="font-bold uppercase tracking-wider">
+          {currentStepName}
+        </span>
+      </div>
+
+      {/* Desktop step progress indicator */}
+      <div className="hidden sm:flex items-center gap-2">
+        {steps.map((step, i) => {
+          const n = i + 1;
+          const isDone = current > n;
+          const isActive = current === n;
+          const Icon = step.icon;
+
+          return (
+            <div key={step.name} className="flex items-center gap-2">
+              {i > 0 && (
+                <div
+                  className={`w-8 h-px ${isDone ? "bg-blue-400" : isDark ? "bg-slate-700" : "bg-slate-200"}`}
+                />
               )}
-              <span>{step.name}</span>
+              <div
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  isActive
+                    ? isDark
+                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
+                      : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
+                    : isDone
+                      ? isDark
+                        ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+                        : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                      : isDark
+                        ? "bg-slate-800 text-slate-500"
+                        : "bg-slate-100 text-slate-400"
+                }`}
+              >
+                {isDone ? (
+                  <span className="text-xs">✓</span>
+                ) : (
+                  <Icon className="w-3 h-3" />
+                )}
+                <span>{step.name}</span>
+              </div>
             </div>
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    </>
   );
 };
 
@@ -466,7 +479,7 @@ const FranchiseList = ({ onSelect }) => {
           Choose an account to view its group plans and configurations
         </p>
       </div>
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
         {franchises.map((f, index) => (
           <motion.button
             key={f._id}
@@ -476,7 +489,7 @@ const FranchiseList = ({ onSelect }) => {
             whileHover={{ y: -5, scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onSelect(f)}
-            className={`group text-left rounded-2xl border p-5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+            className={`group text-left rounded-2xl border p-4 sm:p-5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 ${
               isDark
                 ? "bg-slate-900/60 border-slate-800 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10"
                 : "bg-white border-slate-200 hover:border-blue-400 hover:shadow-xl"
@@ -630,7 +643,7 @@ const TariffForm = ({ franchise, onClose, isDark }) => {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -15 }}
-      className={`rounded-2xl border p-6 lg:p-8 max-w-4xl mx-auto shadow-xl ${
+      className={`rounded-2xl border p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto shadow-xl ${
         isDark
           ? "bg-slate-900/80 border-slate-800"
           : "bg-white border-slate-200"
@@ -684,7 +697,7 @@ const TariffForm = ({ franchise, onClose, isDark }) => {
           >
             Tariff Rule Type
           </label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
               {
                 type: "FIXED",
@@ -946,7 +959,7 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
             {groups.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -959,7 +972,7 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
           <BackButton onClick={onBack} isDark={isDark} />
         </div>
       </div>
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
         {groups.map((g, index) => (
           <motion.button
             key={g.Group_id}
@@ -969,7 +982,7 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
             whileHover={{ y: -5, scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onSelect(g)}
-            className={`group text-left rounded-2xl border p-5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+            className={`group text-left rounded-2xl border p-4 sm:p-5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
               isDark
                 ? "bg-slate-900/60 border-slate-800 hover:border-indigo-500 hover:shadow-xl hover:shadow-indigo-500/10"
                 : "bg-white border-slate-200 hover:border-indigo-400 hover:shadow-xl"
@@ -1006,7 +1019,7 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
                 {g.Profile_Name}
               </span>
             </p>
-            <div className="mt-3 grid grid-cols-3 gap-2">
+            <div className="mt-3 grid grid-cols-3 gap-1.5 sm:gap-2">
               {[
                 {
                   label: "Total",
@@ -1029,7 +1042,7 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
               ].map(({ label, val, icon, color }) => (
                 <div
                   key={label}
-                  className={`rounded-lg px-2 py-2 text-center transition-all group-hover:scale-105 ${
+                  className={`rounded-lg px-1 sm:px-2 py-1.5 sm:py-2 text-center transition-all group-hover:scale-105 ${
                     isDark ? "bg-slate-800/60" : "bg-slate-50"
                   }`}
                 >
@@ -1379,7 +1392,7 @@ export default function Plans() {
               : "bg-white/80 border-slate-200/80 backdrop-blur-sm"
           }`}
         >
-          <div className="p-6 lg:p-8">
+          <div className="p-4 sm:p-6 lg:p-8">
             <AnimatePresence mode="wait">
               {step === 1 && (
                 <FranchiseList
