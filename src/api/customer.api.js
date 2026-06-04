@@ -29,7 +29,7 @@ export const getAdminCustomers = (params = {}) => {
 
 // ✅ Get franchise list
 export const getFranchises = () => {
-  return api.get("/api/franchise");
+  return api.get("api/franchise");
 };
 
 // ✅ Get franchise profiles with details
