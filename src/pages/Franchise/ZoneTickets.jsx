@@ -177,6 +177,8 @@ const ZoneTickets = () => {
 
   const fileRef = useRef();
   const messageEndRef = useRef();
+  const [isTicketListOpen, setIsTicketListOpen] = useState(false);
+  const ticketListRef = useRef(null);
 
   const activeUser = users.find((u) => u.customerId === activeUserId);
   const activeTicket =
@@ -224,11 +226,14 @@ const ZoneTickets = () => {
     loadRooms();
   }, []);
 
-  // Click outside handler for filter
+  // Click outside handler for filter and ticket list
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (!e.target.closest(".filter-container")) {
         setIsFilterOpen(false);
+      }
+      if (ticketListRef.current && !ticketListRef.current.contains(e.target)) {
+        setIsTicketListOpen(false);
       }
     };
     document.addEventListener("click", handleClickOutside);
@@ -1180,51 +1185,110 @@ const ZoneTickets = () => {
                 </div>
               ) : (
                 <div
-                  className={`p-4 border-t ${
+                  className={`px-4 py-1 border-t ${
                     isDark
                       ? "border-gray-800 bg-gray-900"
                       : "border-gray-200 bg-white"
                   }`}
                 >
                   {/* Dropdown for Context Selection */}
-                  <div className="w-full mb-3 flex justify-between items-center gap-2">
+                  <div className="w-full mb-1 flex justify-between items-center gap-2">
                     <span
                       className={`text-xs font-semibold ${isDark ? "text-gray-400" : "text-gray-500"}`}
                     >
                       Replying To:
                     </span>
-                    <div className="relative">
-                      <select
-                        value={activeTicketId || ""}
-                        onChange={(e) => setActiveTicketId(e.target.value)}
+                    <div className="relative" ref={ticketListRef}>
+                      <button
+                        type="button"
+                        onClick={() => setIsTicketListOpen(!isTicketListOpen)}
                         className={`
-                             text-xs px-6.5 py-1.5 pl-7 rounded-md border outline-none
-                             transition-all focus:ring-1 focus:ring-blue-500 appearance-none
+                             text-xs py-1.5 pl-7 pr-8 rounded-md border outline-none text-left
+                             transition-all focus:ring-1 focus:ring-blue-500 flex items-center gap-1.5 select-none
+                             w-full max-w-[180px] sm:max-w-[240px] truncate
                              ${
                                isDark
-                                 ? "bg-gray-800 border-gray-700 text-white"
-                                 : "bg-white border-gray-300 text-gray-900"
+                                 ? "bg-gray-800 border-gray-700 text-white hover:bg-gray-750"
+                                 : "bg-white border-gray-300 text-gray-900 hover:bg-gray-50"
                              }
                            `}
                       >
-                        {activeUser.tickets.map((t) => (
-                          <option
-                            key={t.id}
-                            value={t.id}
-                            disabled={["RESOLVED", "ASSIGNED"].includes(
-                              t.status,
-                            )}
-                          >
-                            Ticket #{t.ticketId} ({t.status})
-                          </option>
-                        ))}
-                      </select>
+                        <span className="truncate">
+                          Ticket #
+                          {activeTicket?.ticketId ||
+                            (activeTicketId &&
+                              activeTicketId.slice(-6).toUpperCase()) ||
+                            "N/A"}{" "}
+                          ({activeTicket?.status || "N/A"})
+                        </span>
+                      </button>
                       <ListFilter
-                        className={`absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                        className={`absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none ${isDark ? "text-gray-400" : "text-gray-500"}`}
                       />
                       <ChevronDown
-                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 transition-transform pointer-events-none ${isDark ? "text-gray-400" : "text-gray-500"} ${isTicketListOpen ? "rotate-180" : ""}`}
                       />
+
+                      {isTicketListOpen && (
+                        <div
+                          className={`absolute bottom-full right-0 left-auto mb-2 z-50 rounded-xl border shadow-2xl max-h-60 overflow-y-auto w-max max-w-[calc(100vw-2rem)] sm:max-w-md divide-y premium-scrollbar ${
+                            isDark
+                              ? "bg-gray-900 border-gray-800 text-white divide-gray-800/50"
+                              : "bg-white border-gray-200 text-gray-900 divide-gray-100"
+                          }`}
+                        >
+                          {activeUser.tickets.map((t) => {
+                            const isSelected = t.id === activeTicketId;
+                            const isClosed = ["RESOLVED", "ASSIGNED"].includes(
+                              t.status,
+                            );
+
+                            return (
+                              <button
+                                key={t.id}
+                                type="button"
+                                disabled={isClosed}
+                                onClick={() => {
+                                  setActiveTicketId(t.id);
+                                  setIsTicketListOpen(false);
+                                }}
+                                className={`w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between gap-4 ${
+                                  isSelected
+                                    ? isDark
+                                      ? "bg-blue-600/20 text-blue-400 font-semibold"
+                                      : "bg-blue-50 text-blue-600 font-semibold"
+                                    : isClosed
+                                      ? "opacity-50 cursor-not-allowed text-gray-500"
+                                      : isDark
+                                        ? "hover:bg-gray-800 text-gray-300"
+                                        : "hover:bg-gray-50 text-gray-700"
+                                }`}
+                              >
+                                <span className="truncate">
+                                  Ticket #{t.ticketId}
+                                </span>
+                                <span
+                                  className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ${
+                                    isClosed
+                                      ? isDark
+                                        ? "bg-gray-800/40 text-gray-500"
+                                        : "bg-gray-100 text-gray-400"
+                                      : t.status === "OPEN"
+                                        ? isDark
+                                          ? "bg-amber-500/20 text-amber-400"
+                                          : "bg-amber-100 text-amber-800"
+                                        : isDark
+                                          ? "bg-blue-500/20 text-blue-400"
+                                          : "bg-blue-100 text-blue-800"
+                                  }`}
+                                >
+                                  {t.status}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
 

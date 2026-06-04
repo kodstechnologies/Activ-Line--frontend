@@ -605,7 +605,7 @@ const Profile = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-2 mb-8 overflow-x-auto">
+        <div className="scrollbar-hide flex gap-2 mb-8 overflow-x-auto">
           {[
             { id: "profile", label: "Profile Information", icon: User },
             { id: "general", label: "General Settings", icon: Settings },
@@ -638,7 +638,7 @@ const Profile = () => {
 
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Left – Avatar & Quick Info */}
-          <div className="lg:w-1/3">
+          <div className="hidden md:block lg:w-1/3">
             <div
               className={`sticky top-6 rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 hover:shadow-2xl ${
                 isDark
