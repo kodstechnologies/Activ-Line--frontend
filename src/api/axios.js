@@ -1,11 +1,14 @@
 import axios from "axios";
 
+const rawBaseURL = import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8000";
+const baseURL = rawBaseURL.replace(/\/+$/, "");
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8000",
+  baseURL,
 });
 
 const refreshClient = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_API_URL || "http://localhost:8000",
+  baseURL,
 });
 
 const getTokenStorageKey = () => import.meta.env.VITE_TOKEN_STORAGE_KEY || "token";
