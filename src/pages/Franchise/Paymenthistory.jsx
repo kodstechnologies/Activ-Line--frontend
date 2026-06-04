@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   ChevronLeft,
   ChevronRight,
@@ -875,197 +876,199 @@ const BillingPage = () => {
       </div>
 
       {/* Modal */}
-      {isViewModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-          onClick={closeModal}
-        >
+      {isViewModalOpen &&
+        createPortal(
           <div
-            onClick={(e) => e.stopPropagation()}
-            className={`w-full max-w-2xl rounded-xl border shadow-xl transform transition-all ${
-              isDark
-                ? "bg-slate-900 border-slate-700"
-                : "bg-white border-gray-200"
-            }`}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+            onClick={closeModal}
           >
             <div
-              className={`flex items-center justify-between px-6 py-4 border-b ${
-                isDark ? "border-slate-700" : "border-gray-200"
+              onClick={(e) => e.stopPropagation()}
+              className={`w-full max-w-2xl rounded-xl border shadow-xl transform transition-all ${
+                isDark
+                  ? "bg-slate-900 border-slate-700"
+                  : "bg-white border-gray-200"
               }`}
             >
-              <div className="flex items-center gap-2">
-                <Eye
-                  className={`w-5 h-5 ${isDark ? "text-slate-400" : "text-gray-500"}`}
-                />
-                <h3
-                  className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
-                >
-                  Payment Details
-                </h3>
-              </div>
-              <button
-                onClick={closeModal}
-                className={`transition-colors ${isDark ? "text-slate-400 hover:text-white" : "text-gray-500 hover:text-gray-800"}`}
+              <div
+                className={`flex items-center justify-between px-6 py-4 border-b ${
+                  isDark ? "border-slate-700" : "border-gray-200"
+                }`}
               >
-                <XCircle className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4 max-h-[70vh] overflow-auto">
-              {selectedPayment?.error ? (
-                <div
-                  className={`rounded-lg p-4 text-center ${
-                    isDark
-                      ? "bg-red-500/10 text-red-300"
-                      : "bg-red-50 text-red-700"
-                  }`}
-                >
-                  {selectedPayment.error}
+                <div className="scrollbar-hide flex items-center gap-2">
+                  <Eye
+                    className={`w-5 h-5 ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                  />
+                  <h3
+                    className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                  >
+                    Payment Details
+                  </h3>
                 </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div
-                      className={`rounded-lg p-3 ${isDark ? "bg-slate-800/50" : "bg-gray-50"}`}
-                    >
-                      <p
-                        className={`text-xs font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}
-                      >
-                        Payment ID
-                      </p>
-                      <p
-                        className={`font-mono text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
-                      >
-                        {selectedPayment?.paymentId ||
-                          selectedPayment?._id ||
-                          "--"}
-                      </p>
-                    </div>
-                    <div
-                      className={`rounded-lg p-3 ${isDark ? "bg-slate-800/50" : "bg-gray-50"}`}
-                    >
-                      <p
-                        className={`text-xs font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}
-                      >
-                        Order ID
-                      </p>
-                      <p
-                        className={`font-mono text-sm ${isDark ? "text-slate-300" : "text-gray-700"}`}
-                      >
-                        {selectedPayment?.orderId ||
-                          selectedPayment?.razorpayOrderId ||
-                          "--"}
-                      </p>
-                    </div>
-                    <div
-                      className={`rounded-lg p-3 ${isDark ? "bg-slate-800/50" : "bg-gray-50"}`}
-                    >
-                      <p
-                        className={`text-xs font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}
-                      >
-                        Amount
-                      </p>
-                      <p
-                        className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
-                      >
-                        {formatAmount(
-                          selectedPayment?.amount ??
-                            selectedPayment?.planAmount,
-                          selectedPayment?.currency || "INR",
-                        )}
-                      </p>
-                    </div>
-                    <div
-                      className={`rounded-lg p-3 ${isDark ? "bg-slate-800/50" : "bg-gray-50"}`}
-                    >
-                      <p
-                        className={`text-xs font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}
-                      >
-                        Status
-                      </p>
-                      <StatusBadge
-                        status={selectedPayment?.status}
-                        isDark={isDark}
-                      />
-                    </div>
-                    <div
-                      className={`rounded-lg p-3 ${isDark ? "bg-slate-800/50" : "bg-gray-50"}`}
-                    >
-                      <p
-                        className={`text-xs font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}
-                      >
-                        Plan
-                      </p>
-                      <p
-                        className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}
-                      >
-                        {selectedPayment?.planName ||
-                          selectedPayment?.plan?.planName ||
-                          "--"}
-                      </p>
-                    </div>
-                    <div
-                      className={`rounded-lg p-3 ${isDark ? "bg-slate-800/50" : "bg-gray-50"}`}
-                    >
-                      <p
-                        className={`text-xs font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}
-                      >
-                        Paid At
-                      </p>
-                      <p
-                        className={`text-sm ${isDark ? "text-slate-300" : "text-gray-700"}`}
-                      >
-                        {formatDateTime(selectedPayment?.paidAt)}
-                      </p>
-                    </div>
-                  </div>
+                <button
+                  onClick={closeModal}
+                  className={`transition-colors ${isDark ? "text-slate-400 hover:text-white" : "text-gray-500 hover:text-gray-800"}`}
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
 
-                  {getDetailPairs(
-                    selectedPayment?.plan?.details ||
-                      selectedPayment?.planDetails,
-                  ).length > 0 && (
-                    <div>
-                      <h4
-                        className={`text-sm font-semibold mb-3 ${isDark ? "text-slate-200" : "text-gray-900"}`}
-                      >
-                        Plan Details
-                      </h4>
+              <div className="scrollbar-hide p-6 space-y-4 max-h-[70vh] overflow-auto">
+                {selectedPayment?.error ? (
+                  <div
+                    className={`rounded-lg p-4 text-center ${
+                      isDark
+                        ? "bg-red-500/10 text-red-300"
+                        : "bg-red-50 text-red-700"
+                    }`}
+                  >
+                    {selectedPayment.error}
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div
-                        className={`rounded-lg border overflow-hidden ${
-                          isDark ? "border-slate-700" : "border-gray-200"
-                        }`}
+                        className={`rounded-lg p-3 ${isDark ? "bg-slate-800/50" : "bg-gray-50"}`}
                       >
-                        {getDetailPairs(
-                          selectedPayment?.plan?.details ||
-                            selectedPayment?.planDetails,
-                        ).map((item, idx) => (
-                          <div
-                            key={`${item?.property}-${idx}`}
-                            className={`flex items-center justify-between gap-3 px-4 py-3 text-sm border-b last:border-b-0 ${
-                              isDark ? "border-slate-700" : "border-gray-100"
-                            }`}
-                          >
-                            <span
-                              className={`${isDark ? "text-slate-300" : "text-gray-600"}`}
-                            >
-                              {item?.property || "--"}
-                            </span>
-                            <span
-                              className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}
-                            >
-                              {String(item?.value ?? "--")}
-                            </span>
-                          </div>
-                        ))}
+                        <p
+                          className={`text-xs font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                        >
+                          Payment ID
+                        </p>
+                        <p
+                          className={`font-mono text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                        >
+                          {selectedPayment?.paymentId ||
+                            selectedPayment?._id ||
+                            "--"}
+                        </p>
+                      </div>
+                      <div
+                        className={`rounded-lg p-3 ${isDark ? "bg-slate-800/50" : "bg-gray-50"}`}
+                      >
+                        <p
+                          className={`text-xs font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                        >
+                          Order ID
+                        </p>
+                        <p
+                          className={`font-mono text-sm ${isDark ? "text-slate-300" : "text-gray-700"}`}
+                        >
+                          {selectedPayment?.orderId ||
+                            selectedPayment?.razorpayOrderId ||
+                            "--"}
+                        </p>
+                      </div>
+                      <div
+                        className={`rounded-lg p-3 ${isDark ? "bg-slate-800/50" : "bg-gray-50"}`}
+                      >
+                        <p
+                          className={`text-xs font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                        >
+                          Amount
+                        </p>
+                        <p
+                          className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                        >
+                          {formatAmount(
+                            selectedPayment?.amount ??
+                              selectedPayment?.planAmount,
+                            selectedPayment?.currency || "INR",
+                          )}
+                        </p>
+                      </div>
+                      <div
+                        className={`rounded-lg p-3 ${isDark ? "bg-slate-800/50" : "bg-gray-50"}`}
+                      >
+                        <p
+                          className={`text-xs font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                        >
+                          Status
+                        </p>
+                        <StatusBadge
+                          status={selectedPayment?.status}
+                          isDark={isDark}
+                        />
+                      </div>
+                      <div
+                        className={`rounded-lg p-3 ${isDark ? "bg-slate-800/50" : "bg-gray-50"}`}
+                      >
+                        <p
+                          className={`text-xs font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                        >
+                          Plan
+                        </p>
+                        <p
+                          className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}
+                        >
+                          {selectedPayment?.planName ||
+                            selectedPayment?.plan?.planName ||
+                            "--"}
+                        </p>
+                      </div>
+                      <div
+                        className={`rounded-lg p-3 ${isDark ? "bg-slate-800/50" : "bg-gray-50"}`}
+                      >
+                        <p
+                          className={`text-xs font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                        >
+                          Paid At
+                        </p>
+                        <p
+                          className={`text-sm ${isDark ? "text-slate-300" : "text-gray-700"}`}
+                        >
+                          {formatDateTime(selectedPayment?.paidAt)}
+                        </p>
                       </div>
                     </div>
-                  )}
-                </>
-              )}
+
+                    {getDetailPairs(
+                      selectedPayment?.plan?.details ||
+                        selectedPayment?.planDetails,
+                    ).length > 0 && (
+                      <div>
+                        <h4
+                          className={`text-sm font-semibold mb-3 ${isDark ? "text-slate-200" : "text-gray-900"}`}
+                        >
+                          Plan Details
+                        </h4>
+                        <div
+                          className={`rounded-lg border overflow-hidden ${
+                            isDark ? "border-slate-700" : "border-gray-200"
+                          }`}
+                        >
+                          {getDetailPairs(
+                            selectedPayment?.plan?.details ||
+                              selectedPayment?.planDetails,
+                          ).map((item, idx) => (
+                            <div
+                              key={`${item?.property}-${idx}`}
+                              className={`flex items-center justify-between gap-3 px-4 py-3 text-sm border-b last:border-b-0 ${
+                                isDark ? "border-slate-700" : "border-gray-100"
+                              }`}
+                            >
+                              <span
+                                className={`${isDark ? "text-slate-300" : "text-gray-600"}`}
+                              >
+                                {item?.property || "--"}
+                              </span>
+                              <span
+                                className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}
+                              >
+                                {String(item?.value ?? "--")}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   ChevronDown,
   ChevronLeft,
@@ -722,161 +723,163 @@ const BillingPage = () => {
         </div>
       </div>
 
-      {isViewModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-          onClick={closeModal}
-        >
+      {isViewModalOpen &&
+        createPortal(
           <div
-            onClick={(e) => e.stopPropagation()}
-            className={`w-full max-w-2xl rounded-xl border shadow-xl ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+            onClick={closeModal}
           >
             <div
-              className={`flex items-center justify-between px-5 py-4 border-b ${isDark ? "border-slate-700" : "border-gray-200"}`}
+              onClick={(e) => e.stopPropagation()}
+              className={`w-full max-w-2xl rounded-xl border shadow-xl ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`}
             >
-              <h3
-                className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+              <div
+                className={`flex items-center justify-between px-5 py-4 border-b ${isDark ? "border-slate-700" : "border-gray-200"}`}
               >
-                Payment Details
-              </h3>
-              <button
-                onClick={closeModal}
-                className={`${isDark ? "text-slate-400 hover:text-white" : "text-gray-500 hover:text-gray-800"}`}
-              >
-                <XCircle className="w-5 h-5" />
-              </button>
-            </div>
+                <h3
+                  className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                >
+                  Payment Details
+                </h3>
+                <button
+                  onClick={closeModal}
+                  className={`${isDark ? "text-slate-400 hover:text-white" : "text-gray-500 hover:text-gray-800"}`}
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
 
-            <div className="p-5 space-y-4 max-h-[70vh] overflow-auto">
-              {selectedPayment?.error ? (
-                <p className={`${isDark ? "text-red-300" : "text-red-700"}`}>
-                  {selectedPayment.error}
-                </p>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    <p>
-                      <span className="font-semibold">Payment ID:</span>{" "}
-                      {selectedPayment?.paymentId ||
-                        selectedPayment?._id ||
-                        "--"}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Order ID:</span>{" "}
-                      {selectedPayment?.orderId ||
-                        selectedPayment?.razorpayOrderId ||
-                        "--"}
-                    </p>
-                    <p>
-                      <span className="font-semibold">
-                        Razorpay Payment ID:
-                      </span>{" "}
-                      {selectedPayment?.razorpayPaymentId || "--"}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Status:</span>{" "}
-                      {statusToUi[selectedPayment?.status] ||
-                        selectedPayment?.status ||
-                        "--"}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Amount:</span>{" "}
-                      {formatAmount(
-                        selectedPayment?.amount ??
-                          selectedPayment?.planAmount ??
-                          selectedPayment?.plan?.planAmount,
-                        selectedPayment?.currency || "INR",
-                      )}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Plan:</span>{" "}
-                      {selectedPayment?.planName ||
-                        selectedPayment?.plan?.planName ||
-                        "--"}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Profile ID:</span>{" "}
-                      {selectedPayment?.profileId ||
-                        selectedPayment?.plan?.profileId ||
-                        "--"}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Group ID:</span>{" "}
-                      {selectedPayment?.groupId || "--"}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Account ID:</span>{" "}
-                      {selectedPayment?.accountId || "--"}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Paid At:</span>{" "}
-                      {formatDateTime(selectedPayment?.paidAt)}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Plan End Date:</span>{" "}
-                      {formatDateTime(
-                        selectedPayment?.planEndDate ||
-                          selectedPayment?.plan?.planEndDate ||
-                          addDays(
-                            selectedPayment?.paidAt ||
-                              selectedPayment?.createdAt,
-                            selectedPayment?.planPeriodDays ||
-                              selectedPayment?.plan?.planPeriodDays,
-                          ),
-                      )}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Created At:</span>{" "}
-                      {formatDateTime(selectedPayment?.createdAt)}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Updated At:</span>{" "}
-                      {formatDateTime(selectedPayment?.updatedAt)}
-                    </p>
-                  </div>
-
-                  {getDetailPairs(
-                    selectedPayment?.plan?.details ||
-                      selectedPayment?.planDetails,
-                  ).length > 0 && (
-                    <div>
-                      <h4
-                        className={`text-sm font-semibold mb-2 ${isDark ? "text-slate-200" : "text-gray-900"}`}
-                      >
-                        Plan Details
-                      </h4>
-                      <div
-                        className={`rounded-lg border ${isDark ? "border-slate-700" : "border-gray-200"}`}
-                      >
-                        {getDetailPairs(
-                          selectedPayment?.plan?.details ||
-                            selectedPayment?.planDetails,
-                        ).map((item, idx) => (
-                          <div
-                            key={`${item?.property}-${idx}`}
-                            className={`flex items-start justify-between gap-3 px-3 py-2 text-sm border-b last:border-b-0 ${isDark ? "border-slate-700" : "border-gray-100"}`}
-                          >
-                            <span
-                              className={`${isDark ? "text-slate-300" : "text-gray-700"}`}
-                            >
-                              {item?.property || "--"}
-                            </span>
-                            <span
-                              className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}
-                            >
-                              {String(item?.value ?? "--")}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+              <div className="scrollbar-hide p-5 space-y-4 max-h-[70vh] overflow-auto">
+                {selectedPayment?.error ? (
+                  <p className={`${isDark ? "text-red-300" : "text-red-700"}`}>
+                    {selectedPayment.error}
+                  </p>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                      <p>
+                        <span className="font-semibold">Payment ID:</span>{" "}
+                        {selectedPayment?.paymentId ||
+                          selectedPayment?._id ||
+                          "--"}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Order ID:</span>{" "}
+                        {selectedPayment?.orderId ||
+                          selectedPayment?.razorpayOrderId ||
+                          "--"}
+                      </p>
+                      <p>
+                        <span className="font-semibold">
+                          Razorpay Payment ID:
+                        </span>{" "}
+                        {selectedPayment?.razorpayPaymentId || "--"}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Status:</span>{" "}
+                        {statusToUi[selectedPayment?.status] ||
+                          selectedPayment?.status ||
+                          "--"}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Amount:</span>{" "}
+                        {formatAmount(
+                          selectedPayment?.amount ??
+                            selectedPayment?.planAmount ??
+                            selectedPayment?.plan?.planAmount,
+                          selectedPayment?.currency || "INR",
+                        )}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Plan:</span>{" "}
+                        {selectedPayment?.planName ||
+                          selectedPayment?.plan?.planName ||
+                          "--"}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Profile ID:</span>{" "}
+                        {selectedPayment?.profileId ||
+                          selectedPayment?.plan?.profileId ||
+                          "--"}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Group ID:</span>{" "}
+                        {selectedPayment?.groupId || "--"}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Account ID:</span>{" "}
+                        {selectedPayment?.accountId || "--"}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Paid At:</span>{" "}
+                        {formatDateTime(selectedPayment?.paidAt)}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Plan End Date:</span>{" "}
+                        {formatDateTime(
+                          selectedPayment?.planEndDate ||
+                            selectedPayment?.plan?.planEndDate ||
+                            addDays(
+                              selectedPayment?.paidAt ||
+                                selectedPayment?.createdAt,
+                              selectedPayment?.planPeriodDays ||
+                                selectedPayment?.plan?.planPeriodDays,
+                            ),
+                        )}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Created At:</span>{" "}
+                        {formatDateTime(selectedPayment?.createdAt)}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Updated At:</span>{" "}
+                        {formatDateTime(selectedPayment?.updatedAt)}
+                      </p>
                     </div>
-                  )}
-                </>
-              )}
+
+                    {getDetailPairs(
+                      selectedPayment?.plan?.details ||
+                        selectedPayment?.planDetails,
+                    ).length > 0 && (
+                      <div>
+                        <h4
+                          className={`text-sm font-semibold mb-2 ${isDark ? "text-slate-200" : "text-gray-900"}`}
+                        >
+                          Plan Details
+                        </h4>
+                        <div
+                          className={`rounded-lg border ${isDark ? "border-slate-700 text-white" : "border-gray-200 text-gray-900"}`}
+                        >
+                          {getDetailPairs(
+                            selectedPayment?.plan?.details ||
+                              selectedPayment?.planDetails,
+                          ).map((item, idx) => (
+                            <div
+                              key={`${item?.property}-${idx}`}
+                              className={`flex items-start justify-between gap-3 px-3 py-2 text-sm border-b last:border-b-0 ${isDark ? "border-slate-700" : "border-gray-100"}`}
+                            >
+                              <span
+                                className={`${isDark ? "text-slate-300" : "text-gray-700"}`}
+                              >
+                                {item?.property || "--"}
+                              </span>
+                              <span
+                                className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}
+                              >
+                                {String(item?.value ?? "--")}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };
