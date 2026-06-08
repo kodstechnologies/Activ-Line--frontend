@@ -938,7 +938,7 @@ const BillingPage = () => {
                         <p
                           className={`font-mono text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
                         >
-                          {selectedPayment?.paymentId ||
+                          {selectedPayment?.razorpayPaymentId ||
                             selectedPayment?._id ||
                             "--"}
                         </p>
@@ -977,6 +977,25 @@ const BillingPage = () => {
                           )}
                         </p>
                       </div>
+
+                      <div
+                        className={`rounded-lg p-3 ${isDark ? "bg-slate-800/50" : "bg-gray-50"}`}
+                      >
+                        <p
+                          className={`text-xs font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                        >
+                          Plateform Fees
+                        </p>
+                        <p
+                          className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                        >
+                          {formatAmount(
+                            selectedPayment?.plan?.planAmount -
+                              selectedPayment?.plan?.totalPrice || 0,
+                          )}
+                        </p>
+                      </div>
+
                       <div
                         className={`rounded-lg p-3 ${isDark ? "bg-slate-800/50" : "bg-gray-50"}`}
                       >

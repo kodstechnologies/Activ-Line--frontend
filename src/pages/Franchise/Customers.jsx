@@ -986,10 +986,16 @@ const MySubscribers = () => {
                     Phone Number
                   </label>
                   <input
-                    type="tel"
+                    type="text"
+                    maxlength="10"
                     value={editForm.phoneNumber}
                     onChange={(e) =>
-                      setEditForm({ ...editForm, phoneNumber: e.target.value })
+                      setEditForm({
+                        ...editForm,
+                        phoneNumber: e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 10),
+                      })
                     }
                     className={`w-full p-2.5 border rounded-lg text-sm outline-none focus:border-blue-500 ${
                       isDark
@@ -1545,7 +1551,15 @@ const MySubscribers = () => {
                         type="tel"
                         name="phoneNumber"
                         value={newSubscriber.phoneNumber}
-                        onChange={handleAddInputChange}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                          setNewSubscriber((prev) => ({
+                            ...prev,
+                            phoneNumber: digits,
+                          }));
+                          setFormError("");
+                        }}
+                        maxLength="10"
                         className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${
                           isDark
                             ? "bg-slate-800 border-slate-700 text-white"

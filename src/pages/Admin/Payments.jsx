@@ -572,7 +572,13 @@ const BillingPage = () => {
           </div>
 
           {/* Stats Cards */}
-          {!loading && (
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+              {[...Array(4)].map((_, i) => (
+                <StatCardShimmer key={i} isDark={isDark} />
+              ))}
+            </div>
+          ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
               <motion.div
                 whileHover={{ y: -5 }}
@@ -1077,7 +1083,7 @@ const BillingPage = () => {
                           <p
                             className={`font-mono text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}
                           >
-                            {selectedPayment?.paymentId ||
+                            {selectedPayment?.razorpayPaymentId ||
                               selectedPayment?._id ||
                               "--"}
                           </p>
@@ -1115,6 +1121,25 @@ const BillingPage = () => {
                             )}
                           </p>
                         </div>
+
+                        <div
+                          className={`p-3 rounded-xl ${isDark ? "bg-slate-800/50" : "bg-gray-50"}`}
+                        >
+                          <p
+                            className={`text-xs uppercase mb-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                          >
+                            Platform Fee
+                          </p>
+                          <p
+                            className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                          >
+                            {formatAmount(
+                              selectedPayment?.plan?.planAmount -
+                                selectedPayment?.plan?.totalPrice || 0,
+                            )}
+                          </p>
+                        </div>
+
                         <div
                           className={`p-3 rounded-xl ${isDark ? "bg-slate-800/50" : "bg-gray-50"}`}
                         >

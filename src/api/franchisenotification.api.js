@@ -6,15 +6,15 @@ export const getFranchiseNotifications = async () => {
   return res.data.data;
 };
 
-// PATCH /api/franchise/notifications/:id/read
+// PUT /api/franchise/notifications/:id/read
 export const markFranchiseNotificationRead = async (id) => {
-  const res = await api.patch(`/api/franchise/notifications/${id}/read`);
+  const res = await api.put(`/api/franchise/notifications/${id}/read`);
   return res.data;
 };
 
-// PATCH /api/franchise/notifications/read-all
+// PUT /api/franchise/notifications/read-all
 export const markAllFranchiseNotificationsRead = async () => {
-  const res = await api.patch("/api/franchise/notifications/read-all");
+  const res = await api.put("/api/franchise/notifications/read-all");
   return res.data;
 };
 

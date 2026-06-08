@@ -91,7 +91,7 @@ const Tickets = () => {
         // Group by Customer
         const groupedUsers = [];
         const userMap = new Map();
-
+        console.log("Mapped rooms:", mapped);
         mapped.forEach((t) => {
           const cid = t.customerId;
           if (!userMap.has(cid)) {
@@ -394,7 +394,6 @@ const Tickets = () => {
 
     return statsMap;
   }, [users, staffList]);
-
   if (!token) {
     return (
       <div className="h-[calc(100dvh-120px)] min-h-[420px] flex items-center justify-center px-4">
@@ -824,6 +823,7 @@ const Tickets = () => {
           {activeUser ? (
             <div className="flex-1 min-h-0 overflow-hidden animate-fade-in">
               <Chat
+                key={activeTicket?.customerId} // Force remount when ticket changes
                 ticket={activeTicket}
                 userTickets={activeUser.tickets}
                 onTicketSelect={(tId) => setActiveTicketId(tId)}
@@ -848,6 +848,7 @@ const Tickets = () => {
                 createdAt={activeUser.tickets?.[0]?.createdAt}
                 loading={loadingMessages}
                 zigzagStatuses={["ASSIGNED", "RESOLVED"]}
+                selectableStatuses={["OPEN", "ASSIGNED", "IN_PROGRESS"]}
                 onBack={() => setIsSidebarOpen(true)}
               />
             </div>

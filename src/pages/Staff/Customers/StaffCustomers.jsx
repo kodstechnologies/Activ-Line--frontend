@@ -78,6 +78,7 @@ const CustomerFormModal = ({
 }) => {
   const handleInput = (e) => {
     const { name, value, type, checked } = e.target;
+    if (name === "phoneNumber" && value.length > 10) return; // Limit phone number to 10 digits
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -183,6 +184,8 @@ const CustomerFormModal = ({
               </Field>
               <Field label="Phone Number">
                 <input
+                  type="text"
+                  maxlength={10}
                   name="phoneNumber"
                   value={formData.phoneNumber}
                   onChange={handleInput}

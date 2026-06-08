@@ -192,3 +192,9 @@ export const updateCustomer = async (customerId, formData) => {
     "No supported customer update endpoint found (tried admin-edit/edit/customers/:id and customer/update/:id).",
   );
 };
+
+// ✅ Get franchise tariff configuration details
+export const getFranchiseTariff = (franchiseId) => {
+  if (!franchiseId) throw new Error("franchiseId is required");
+  return api.get(`/api/customer/tariff/${encodeURIComponent(franchiseId)}`);
+};

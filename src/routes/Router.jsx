@@ -13,10 +13,8 @@ import {
 } from "./routePrefetch";
 // Settings - Canned Responses
 import Main from "../pages/Admin/Settings/CannedResponses/CannedResponses.jsx";
-import CategoryResponses from
-  "../pages/Admin/Settings/CannedResponses/CategoryResponses.jsx";
+import CategoryResponses from "../pages/Admin/Settings/CannedResponses/CategoryResponses.jsx";
 import Categories from "../pages/Admin/Settings/CannedResponses/Categories.jsx";
-
 
 // import SubscriberDetailPage from "../pages/Admin/CustomerDetails";
 // import SubscribersPage from "../pages/Admin/Customers";
@@ -24,26 +22,30 @@ const ProfilePage = lazy(() => import("../pages/profile/ProfilePage.jsx"));
 
 // Admin
 const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
-const DashboardPage = lazy(() =>
-  import("../pages/Admin/DashboardPage/DashboardPage")
+const DashboardPage = lazy(
+  () => import("../pages/Admin/DashboardPage/DashboardPage"),
 );
-const StaffDashboardPage = lazy(() =>
-  import("../pages/Staff/Dashboard/Staffdashboard")
+const StaffDashboardPage = lazy(
+  () => import("../pages/Staff/Dashboard/Staffdashboard"),
 );
-const StaffCustomersPage = lazy(() =>
-  import("../pages/Staff/Customers/StaffCustomers")
+const StaffCustomersPage = lazy(
+  () => import("../pages/Staff/Customers/StaffCustomers"),
 );
-const StaffCustomerDetailsPage = lazy(() =>
-  import("../pages/Staff/Customers/Staffcustomerdetails")
+const StaffCustomerDetailsPage = lazy(
+  () => import("../pages/Staff/Customers/Staffcustomerdetails"),
 );
 const Customers = lazy(() => import("../pages/Admin/Customers"));
 const CustomerPlans = lazy(() => import("../pages/Admin/CustomerPlans"));
 const CustomerDetails = lazy(() => import("../pages/Admin/CustomerDetails"));
-const FranchiseCustomerDetails = lazy(() => import("../pages/Franchise/CustomerDetails"));
+const FranchiseCustomerDetails = lazy(
+  () => import("../pages/Franchise/CustomerDetails"),
+);
 const FieldStaffPage = lazy(() => import("../pages/Admin/FieldStaffPage"));
 const Staff = lazy(() => import("../pages/Admin/Staff"));
 const Reports = lazy(() => import("../pages/Admin/Reports"));
-const StaffReports = lazy(() => import("../pages/Staff/Staff Reports/StaffReports"));
+const StaffReports = lazy(
+  () => import("../pages/Staff/Staff Reports/StaffReports"),
+);
 const Logs = lazy(() => import("../pages/Admin/Logs"));
 const Plans = lazy(() => import("../pages/Admin/Plans"));
 const OTT = lazy(() => import("../pages/Admin/OTT"));
@@ -51,11 +53,11 @@ const Payments = lazy(() => import("../pages/Admin/Payments"));
 const OffersPage = lazy(() => import("../pages/Admin/OffersPage"));
 const Tickets = lazy(preloadTickets);
 const SettingsPage = lazy(() => import("../pages/Admin/Settings/SettingsPage"));
-const RelocationPage = lazy(() =>
-  import("../pages/Admin/Relocation/RelocationPage.jsx")
+const RelocationPage = lazy(
+  () => import("../pages/Admin/Relocation/RelocationPage.jsx"),
 );
-const Frenchiseadmin = lazy(() =>
-  import("../pages/Admin/Frenchiseadmin/Frenchiseadmin")
+const Frenchiseadmin = lazy(
+  () => import("../pages/Admin/Frenchiseadmin/Frenchiseadmin"),
 );
 const AdminNotifications = lazy(preloadAdminNotifications);
 const FranchiseNotifications = lazy(preloadFranchiseNotifications);
@@ -65,19 +67,25 @@ const ForgotPassword = lazy(() => import("../pages/auth/ForgotPassword"));
 const FranchisePage = lazy(() => import("../pages/Admin/Franchise"));
 
 //franchise
-const FranchiseDashboard = lazy(() =>
-  import("../pages/Franchise/Dashboard/Dashboard")
+const FranchiseDashboard = lazy(
+  () => import("../pages/Franchise/Dashboard/Dashboard"),
 );
-const FranchiseCustomers = lazy(() => import('../pages/Franchise/Customers'));
+const FranchiseCustomers = lazy(() => import("../pages/Franchise/Customers"));
 const LocalStaff = lazy(() => import("../pages/Franchise/LocalStaff"));
 const Collections = lazy(() => import("../pages/Franchise/Collections"));
 const FranchisePlans = lazy(() => import("../pages/Franchise/Frenchiseplans"));
 const PaymentHistory = lazy(() => import("../pages/Franchise/Paymenthistory"));
-const StaffPaymentHistory = lazy(() => import("../pages/Staff/Payment_History/Paymenthistory"));
+const StaffPaymentHistory = lazy(
+  () => import("../pages/Staff/Payment_History/Paymenthistory"),
+);
 // const ZoneSupport = lazy(() => import('../pages/Franchise/ZoneSupport'));
 const ZoneTickets = lazy(preloadZoneTickets);
-const FranchiseProfile = lazy(() => import("../pages/Franchise/Frenchiseprofile"));
-const FranchiseReport = lazy(() => import("../pages/Franchise/FrenchiseReport"));
+const FranchiseProfile = lazy(
+  () => import("../pages/Franchise/Frenchiseprofile"),
+);
+const FranchiseReport = lazy(
+  () => import("../pages/Franchise/FrenchiseReport"),
+);
 
 //staff
 const AssignedTickets = lazy(preloadAssignedTickets);
@@ -104,7 +112,9 @@ const ProfileSwitcher = ({ franchiseUser, onUpdate }) => {
   const { user } = useAuth();
   const role = user?.role?.toLowerCase();
   if (["franchise", "franchise_admin"].includes(role)) {
-    return <FranchiseProfile franchiseUser={franchiseUser} onUpdate={onUpdate} />;
+    return (
+      <FranchiseProfile franchiseUser={franchiseUser} onUpdate={onUpdate} />
+    );
   }
   return <ProfilePage />;
 };
@@ -144,7 +154,6 @@ const Router = () => {
   });
   return (
     <BrowserRouter>
-   
       <Routes>
         <Route
           path="/login"
@@ -178,9 +187,7 @@ const Router = () => {
             path="admin-notifications"
             element={
               <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN"]}>
-                
-                  <AdminNotifications />
-                
+                <AdminNotifications />
               </ProtectedRoute>
             }
           />
@@ -189,9 +196,7 @@ const Router = () => {
             path="franchise-notifications"
             element={
               <ProtectedRoute allowedRoles={["franchise", "franchise_admin"]}>
-                
-                  <FranchiseNotifications />
-                
+                <FranchiseNotifications />
               </ProtectedRoute>
             }
           />
@@ -200,9 +205,7 @@ const Router = () => {
             path="staff-notifications"
             element={
               <ProtectedRoute allowedRoles={["staff", "admin_staff"]}>
-                
-                  <StaffNotifications />
-                
+                <StaffNotifications />
               </ProtectedRoute>
             }
           />
@@ -210,7 +213,9 @@ const Router = () => {
           <Route
             path="dashboard"
             element={
-              <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}>
+              <ProtectedRoute
+                allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}
+              >
                 <DashboardSwitcher />
               </ProtectedRoute>
             }
@@ -229,9 +234,7 @@ const Router = () => {
             path="franchise-dashboard"
             element={
               <ProtectedRoute allowedRoles={["franchise", "franchise_admin"]}>
-                
-                  <FranchiseDashboard />
-                
+                <FranchiseDashboard />
               </ProtectedRoute>
             }
           />
@@ -240,7 +243,7 @@ const Router = () => {
             path="my-customers"
             element={
               <ProtectedRoute allowedRoles={["franchise", "franchise_admin"]}>
-                  <FranchiseCustomers onUpdateCash={() => {}} />
+                <FranchiseCustomers onUpdateCash={() => {}} />
               </ProtectedRoute>
             }
           />
@@ -258,7 +261,9 @@ const Router = () => {
           <Route
             path="customers"
             element={
-              <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}>
+              <ProtectedRoute
+                allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}
+              >
                 <CustomersSwitcher />
               </ProtectedRoute>
             }
@@ -266,21 +271,23 @@ const Router = () => {
           <Route
             path="customer-plans"
             element={
-              <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff", "franchise", "franchise_admin"]}>
+              <ProtectedRoute
+                allowedRoles={[
+                  "admin",
+                  "SUPER_ADMIN",
+                  "staff",
+                  "admin_staff",
+                  "franchise",
+                  "franchise_admin",
+                ]}
+              >
                 <Suspense fallback={<LoadingFallback />}>
                   <CustomerPlans />
                 </Suspense>
               </ProtectedRoute>
             }
           />
-          <Route
-            path="customer-details/:id"
-            element={
-              
-                <CustomerDetails />
-              
-            }
-          />
+          <Route path="customer-details/:id" element={<CustomerDetails />} />
           <Route
             path="staff-customer/:id"
             element={
@@ -294,9 +301,7 @@ const Router = () => {
             path="field-staff"
             element={
               <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN"]}>
-                
-                  <FieldStaffPage />
-                
+                <FieldStaffPage />
               </ProtectedRoute>
             }
           />
@@ -315,9 +320,7 @@ const Router = () => {
             path="collections"
             element={
               <ProtectedRoute allowedRoles={["franchise", "franchise_admin"]}>
-                
-                  <Collections cashInHand={12450} setCashInHand={() => {}} />
-                
+                <Collections cashInHand={12450} setCashInHand={() => {}} />
               </ProtectedRoute>
             }
           />
@@ -362,9 +365,7 @@ const Router = () => {
             path="payments"
             element={
               <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN"]}>
-                
-                  <Payments />
-                
+                <Payments />
               </ProtectedRoute>
             }
           />
@@ -372,9 +373,7 @@ const Router = () => {
             path="staff"
             element={
               <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN"]}>
-                
-                  <Staff />
-                
+                <Staff />
               </ProtectedRoute>
             }
           />
@@ -389,35 +388,44 @@ const Router = () => {
           <Route
             path="reports"
             element={
-              <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}>
-                  <ReportsSwitcher />
+              <ProtectedRoute
+                allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}
+              >
+                <ReportsSwitcher />
               </ProtectedRoute>
             }
           />
           <Route
             path="logs"
             element={
-              <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}>
-                
-                  <Logs />
-                
+              <ProtectedRoute
+                allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}
+              >
+                <Logs />
               </ProtectedRoute>
             }
           />
           <Route
             path="plans"
             element={
-              <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}>
-                
-                  <Plans />
-                
+              <ProtectedRoute
+                allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}
+              >
+                <Plans />
               </ProtectedRoute>
             }
           />
           <Route
             path="relocation"
             element={
-              <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "franchise", "franchise_admin"]}>
+              <ProtectedRoute
+                allowedRoles={[
+                  "admin",
+                  "SUPER_ADMIN",
+                  "franchise",
+                  "franchise_admin",
+                ]}
+              >
                 <Suspense fallback={<LoadingFallback />}>
                   <RelocationPage />
                 </Suspense>
@@ -440,9 +448,7 @@ const Router = () => {
             path="offers"
             element={
               <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN"]}>
-                
-                  <OffersPage />
-                
+                <OffersPage />
               </ProtectedRoute>
             }
           />
@@ -452,9 +458,7 @@ const Router = () => {
             path="tickets"
             element={
               <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN"]}>
-                
-                  <Tickets />
-                
+                <Tickets />
               </ProtectedRoute>
             }
           />
@@ -463,7 +467,7 @@ const Router = () => {
             path="Zone-tickets"
             element={
               <ProtectedRoute allowedRoles={["franchise", "franchise_admin"]}>
-                  <ZoneTickets />
+                <ZoneTickets />
               </ProtectedRoute>
             }
           />
@@ -471,9 +475,7 @@ const Router = () => {
             path="assigned-tickets"
             element={
               <ProtectedRoute allowedRoles={["staff", "admin_staff"]}>
-                
-                  <AssignedTickets />
-                
+                <AssignedTickets />
               </ProtectedRoute>
             }
           />
@@ -486,40 +488,54 @@ const Router = () => {
             }
           />
           {/* Settings - accessible to both admin and franchise */}
-        {/* SETTINGS */}
-<Route
-  path="settings"
-  element={
-    <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}>
-      <SettingsPage />
-    </ProtectedRoute>
-  }
-/>
+          {/* SETTINGS */}
+          <Route
+            path="settings"
+            element={
+              <ProtectedRoute
+                allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}
+              >
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
 
-{/* CANNED RESPONSES */}
-<Route
-  path="settings/canned/categories"
-  element={
-    <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}>
-      <Categories />
-    </ProtectedRoute>
-  }
-/>
+          {/* CANNED RESPONSES */}
+          <Route
+            path="settings/canned/categories"
+            element={
+              <ProtectedRoute
+                allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}
+              >
+                <Categories />
+              </ProtectedRoute>
+            }
+          />
 
-<Route
-  path="settings/canned/:categoryId"
-  element={
-    <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}>
-      <CategoryResponses />
-    </ProtectedRoute>
-  }
-/>
-
+          <Route
+            path="settings/canned/:categoryId"
+            element={
+              <ProtectedRoute
+                allowedRoles={["admin", "SUPER_ADMIN", "staff", "admin_staff"]}
+              >
+                <CategoryResponses />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="profile"
             element={
-              <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN", "franchise", "franchise_admin", "staff", "admin_staff"]}>
+              <ProtectedRoute
+                allowedRoles={[
+                  "admin",
+                  "SUPER_ADMIN",
+                  "franchise",
+                  "franchise_admin",
+                  "staff",
+                  "admin_staff",
+                ]}
+              >
                 <ProfileSwitcher
                   franchiseUser={franchiseUser}
                   onUpdate={setFranchiseUser}
@@ -530,7 +546,6 @@ const Router = () => {
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
-     
     </BrowserRouter>
   );
 };

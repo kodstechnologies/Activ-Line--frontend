@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Mail, ArrowLeft, Lock, KeyRound, RefreshCw, Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
@@ -17,6 +17,19 @@ const ForgotPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState({ send: false, resend: false, reset: false });
   const [formError, setFormError] = useState("");
+  const [timer, setTimer] = useState(0);
+
+  useEffect(() => {
+    let intervalId;
+    if (timer > 0) {
+      intervalId = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [timer]);
 
   const handleSendOtp = async () => {
     setFormError("");
@@ -29,6 +42,7 @@ const ForgotPassword = () => {
       await forgotPassword(email.trim());
       toast.success("OTP sent to your email");
       setStep("reset");
+      setTimer(60);
     } catch (err) {
       setFormError(err?.response?.data?.message || err?.message || "Failed to send OTP");
     } finally {
@@ -46,6 +60,7 @@ const ForgotPassword = () => {
       setLoading((prev) => ({ ...prev, resend: true }));
       await resendForgotPasswordOtp(email.trim());
       toast.success("OTP resent");
+      setTimer(60);
     } catch (err) {
       setFormError(err?.response?.data?.message || err?.message || "Failed to resend OTP");
     } finally {
@@ -300,14 +315,14 @@ const ForgotPassword = () => {
                     <button
                       type="button"
                       onClick={handleResendOtp}
-                      disabled={loading.resend}
+                      disabled={loading.resend || timer > 0}
                       className={`w-full h-12 rounded-xl font-semibold text-sm transition-all duration-200 border ${
                         isDark ? "border-gray-700 text-gray-300 hover:bg-gray-800" : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                      } ${loading.resend ? "opacity-70 cursor-not-allowed" : ""}`}
+                      } ${(loading.resend || timer > 0) ? "opacity-70 cursor-not-allowed" : ""}`}
                     >
                       <span className="inline-flex items-center gap-2">
                         <RefreshCw className={`w-4 h-4 ${loading.resend ? "animate-spin" : ""}`} />
-                        Resend OTP
+                        {timer > 0 ? `Resend OTP (${timer}s)` : "Resend OTP"}
                       </span>
                     </button>
                   </div>

@@ -6,7 +6,8 @@ import {
   getFranchiseProfiles,
   createPlanOrder,
   verifyPlanPayment,
-  getSingleCustomer
+  getSingleCustomer,
+  getFranchiseTariff,
 } from "../../api/customer.api";
 
 const CustomerPlans = () => {
@@ -31,19 +32,55 @@ const CustomerPlans = () => {
   const [paymentForm, setPaymentForm] = useState({
     groupId: "",
     profileId: "",
-    amount: ""
+    amount: "",
   });
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [paymentVerified, setPaymentVerified] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [customerUserName, setCustomerUserName] = useState("");
+  const [tariff, setTariff] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    if (!accountId) return;
+    getFranchiseTariff(accountId)
+      .then((res) => {
+        if (!active) return;
+        const tariffData = res?.data?.data || res?.data || {};
+        if (tariffData && tariffData.isActive) {
+          setTariff(tariffData);
+        } else {
+          setTariff(null);
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setTariff(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [accountId]);
+
+  const calculatedTariff = useMemo(() => {
+    if (!tariff || !paymentForm.amount) return 0;
+    const base = Number(paymentForm.amount);
+    if (Number.isNaN(base) || base <= 0) return 0;
+
+    if (tariff.tariffType === "FIXED") {
+      return Number(tariff.tariffValue || 0);
+    } else if (tariff.tariffType === "PERCENTAGE") {
+      return base * (Number(tariff.tariffValue || 0) / 100);
+    }
+    return 0;
+  }, [tariff, paymentForm.amount]);
 
   useEffect(() => {
     if (location?.state?.groupId || location?.state?.profileId) {
       setPaymentForm((prev) => ({
         ...prev,
         groupId: location.state.groupId || prev.groupId,
-        profileId: location.state.profileId || prev.profileId
+        profileId: location.state.profileId || prev.profileId,
       }));
     }
   }, [location]);
@@ -74,7 +111,8 @@ const CustomerPlans = () => {
   }, [customerId]);
 
   const extractProfileInfo = (profile) => {
-    if (!profile) return { profileId: "", groupId: "", name: "", planName: "", amount: "" };
+    if (!profile)
+      return { profileId: "", groupId: "", name: "", planName: "", amount: "" };
     const profileId =
       profile?.Profile?.id ||
       profile.profileId ||
@@ -109,8 +147,10 @@ const CustomerPlans = () => {
     const detailsBilling = Array.isArray(profile?.details?.["billing Details"])
       ? profile.details["billing Details"]
       : [];
-    const totalPriceItem = detailsBilling.find(
-      (item) => String(item?.property || "").toLowerCase().includes("total price")
+    const totalPriceItem = detailsBilling.find((item) =>
+      String(item?.property || "")
+        .toLowerCase()
+        .includes("total price"),
     );
     const amount =
       totalPriceItem?.value ||
@@ -136,7 +176,8 @@ const CustomerPlans = () => {
 
       if (filterProps.has(propKey)) return false;
       if (filterValues.has(valueKey)) return false;
-      if (dedupeProp && propKey === dedupeProp && seenProps.has(propKey)) return false;
+      if (dedupeProp && propKey === dedupeProp && seenProps.has(propKey))
+        return false;
       if (dedupeProp && propKey === dedupeProp) seenProps.add(propKey);
       return true;
     });
@@ -146,9 +187,16 @@ const CustomerPlans = () => {
     return (
       <div className="mt-2 space-y-1">
         {rows.map((item, idx) => (
-          <div key={`${item?.property || "item"}-${idx}`} className="flex justify-between text-xs gap-3">
-            <span className={`${isDark ? "text-slate-300" : "text-gray-700"}`}>{item?.property || "—"}</span>
-            <span className={`${isDark ? "text-slate-400" : "text-gray-600"}`}>{item?.value ?? "—"}</span>
+          <div
+            key={`${item?.property || "item"}-${idx}`}
+            className="flex justify-between text-xs gap-3"
+          >
+            <span className={`${isDark ? "text-slate-300" : "text-gray-700"}`}>
+              {item?.property || "—"}
+            </span>
+            <span className={`${isDark ? "text-slate-400" : "text-gray-600"}`}>
+              {item?.value ?? "—"}
+            </span>
           </div>
         ))}
       </div>
@@ -179,7 +227,7 @@ const CustomerPlans = () => {
     setPaymentForm({
       profileId: info.profileId || "",
       groupId: info.groupId || "",
-      amount: info.amount !== "" ? info.amount : ""
+      amount: info.amount !== "" ? info.amount : "",
     });
     setPaymentVerified(false);
     setPaymentStatus(null);
@@ -195,7 +243,10 @@ const CustomerPlans = () => {
       return;
     }
     if (!groupId || !profileId || !amountValue) {
-      setPaymentStatus({ type: "error", message: "Please select a plan first." });
+      setPaymentStatus({
+        type: "error",
+        message: "Please select a plan first.",
+      });
       return;
     }
     const resolvedUserName = customerUserName || userName;
@@ -208,7 +259,8 @@ const CustomerPlans = () => {
         accountId,
         groupId,
         profileId,
-        amount: Number(amountValue)
+        amount: Number(amountValue),
+        platformFee: calculatedTariff,
       };
       if (resolvedUserName) {
         createPayload.userName = resolvedUserName;
@@ -216,27 +268,37 @@ const CustomerPlans = () => {
 
       const createRes = await createPlanOrder(createPayload);
 
-      const createResponsePayload = createRes?.data?.data ?? createRes?.data ?? {};
+      const createResponsePayload =
+        createRes?.data?.data ?? createRes?.data ?? {};
       const orderId =
         createResponsePayload.orderId ||
         createResponsePayload.razorpayOrderId ||
         createResponsePayload.id ||
         createResponsePayload.order?.id;
-      const currency = createResponsePayload.currency || createResponsePayload.order?.currency || "INR";
-      const orderAmount = createResponsePayload.amount ?? createResponsePayload.order?.amount;
+      const currency =
+        createResponsePayload.currency ||
+        createResponsePayload.order?.currency ||
+        "INR";
+      const orderAmount =
+        createResponsePayload.amount ?? createResponsePayload.order?.amount;
 
       if (!orderId) {
         throw new Error("Order ID not returned from create-order API.");
       }
 
-      const keyId = import.meta.env.VITE_RAZORPAY_KEY_ID || import.meta.env.RAZORPAY_KEY_ID;
+      const keyId =
+        import.meta.env.VITE_RAZORPAY_KEY_ID || import.meta.env.RAZORPAY_KEY_ID;
       if (!keyId) {
-        throw new Error("Razorpay key not found. Please set VITE_RAZORPAY_KEY_ID in .env.");
+        throw new Error(
+          "Razorpay key not found. Please set VITE_RAZORPAY_KEY_ID in .env.",
+        );
       }
 
       await loadRazorpayScript();
 
-      const amountInPaise = orderAmount ?? Math.round(Number(amountValue) * 100);
+      const amountInPaise =
+        orderAmount ??
+        Math.round((Number(amountValue) + calculatedTariff) * 100);
 
       const options = {
         key: keyId,
@@ -248,12 +310,12 @@ const CustomerPlans = () => {
         prefill: {
           name: resolvedUserName || "",
           email: emailId || "",
-          contact: phoneNumber || ""
+          contact: phoneNumber || "",
         },
         notes: {
           accountId,
           groupId,
-          profileId
+          profileId,
         },
         handler: async (response) => {
           try {
@@ -269,15 +331,19 @@ const CustomerPlans = () => {
                 accountId,
                 groupId,
                 profileId,
-                ...(resolvedUserName ? { userName: resolvedUserName } : {})
+                platformFee: calculatedTariff,
+                ...(resolvedUserName ? { userName: resolvedUserName } : {}),
               },
-              verifyUrl
+              verifyUrl,
             );
 
-            setPaymentStatus({ type: "success", message: "Payment verified successfully." });
+            setPaymentStatus({
+              type: "success",
+              message: "Payment verified successfully.",
+            });
             setPaymentVerified(true);
             navigate("/customers", {
-              replace: true
+              replace: true,
             });
           } catch (verifyErr) {
             const msg =
@@ -289,19 +355,23 @@ const CustomerPlans = () => {
           }
         },
         theme: {
-          color: "#2563eb"
-        }
+          color: "#2563eb",
+        },
       };
 
       const razorpay = new window.Razorpay(options);
       razorpay.on("payment.failed", (resp) => {
-        const msg = resp?.error?.description || "Payment failed. Please try again.";
+        const msg =
+          resp?.error?.description || "Payment failed. Please try again.";
         setPaymentStatus({ type: "error", message: msg });
         setPaymentVerified(false);
       });
       razorpay.open();
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.message || "Failed to start payment.";
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to start payment.";
       setPaymentStatus({ type: "error", message: msg });
       setPaymentVerified(false);
     } finally {
@@ -321,8 +391,8 @@ const CustomerPlans = () => {
         firstName,
         lastName,
         emailId,
-        phoneNumber
-      }
+        phoneNumber,
+      },
     });
   };
 
@@ -340,7 +410,11 @@ const CustomerPlans = () => {
       .catch((err) => {
         if (!isActive) return;
         setProfiles([]);
-        setProfilesError(err?.response?.data?.message || err?.message || "Failed to load profiles");
+        setProfilesError(
+          err?.response?.data?.message ||
+            err?.message ||
+            "Failed to load profiles",
+        );
       })
       .finally(() => {
         if (!isActive) return;
@@ -364,7 +438,9 @@ const CustomerPlans = () => {
   }, [profiles, location]);
 
   const canPay = useMemo(() => {
-    return Boolean(paymentForm.groupId && paymentForm.profileId && paymentForm.amount);
+    return Boolean(
+      paymentForm.groupId && paymentForm.profileId && paymentForm.amount,
+    );
   }, [paymentForm.groupId, paymentForm.profileId, paymentForm.amount]);
 
   const filteredProfiles = useMemo(() => {
@@ -391,7 +467,9 @@ const CustomerPlans = () => {
   }
 
   return (
-    <div className={`p-6 ${isDark ? "bg-slate-900 text-slate-100" : "bg-white text-gray-900"}`}>
+    <div
+      className={`p-6 ${isDark ? "bg-slate-900 text-slate-100" : "bg-white text-gray-900"}`}
+    >
       <div className="flex items-center justify-between mb-6">
         <div>
           <button
@@ -402,7 +480,9 @@ const CustomerPlans = () => {
             Back to Customers
           </button>
           <h2 className="text-2xl font-bold">Select Plan & Pay</h2>
-          <p className={`text-sm ${isDark ? "text-slate-400" : "text-gray-600"}`}>
+          <p
+            className={`text-sm ${isDark ? "text-slate-400" : "text-gray-600"}`}
+          >
             Account ID: {accountId}
           </p>
         </div>
@@ -410,25 +490,37 @@ const CustomerPlans = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <div className={`rounded-xl border ${isDark ? "border-slate-800 bg-slate-900" : "border-gray-200 bg-gray-50"} p-4`}>
+          <div
+            className={`rounded-xl border ${isDark ? "border-slate-800 bg-slate-900" : "border-gray-200 bg-gray-50"} p-4`}
+          >
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-semibold">Plan Details</h3>
               {profilesLoading && (
-                <span className={`text-xs ${isDark ? "text-slate-400" : "text-gray-600"}`}>Loading...</span>
+                <span
+                  className={`text-xs ${isDark ? "text-slate-400" : "text-gray-600"}`}
+                >
+                  Loading...
+                </span>
               )}
             </div>
 
             {profilesError && (
-              <div className={`text-sm mb-3 ${isDark ? "text-red-300" : "text-red-600"}`}>
+              <div
+                className={`text-sm mb-3 ${isDark ? "text-red-300" : "text-red-600"}`}
+              >
                 {profilesError}
               </div>
             )}
 
-            {!profilesLoading && !profilesError && filteredProfiles.length === 0 && (
-              <div className={`text-sm ${isDark ? "text-slate-400" : "text-gray-600"}`}>
-                No profiles found for this group.
-              </div>
-            )}
+            {!profilesLoading &&
+              !profilesError &&
+              filteredProfiles.length === 0 && (
+                <div
+                  className={`text-sm ${isDark ? "text-slate-400" : "text-gray-600"}`}
+                >
+                  No profiles found for this group.
+                </div>
+              )}
 
             {filteredProfiles.length > 0 && (
               <div className="grid grid-cols-1 gap-3 max-h-[70vh] overflow-y-auto">
@@ -447,12 +539,12 @@ const CustomerPlans = () => {
                   const billingFilterProps = new Set([
                     "billingplanid",
                     "type",
-                    "description"
+                    "description",
                   ]);
                   const billingFilterValues = new Set([
                     "payasyougo",
                     "cgst",
-                    "sgst"
+                    "sgst",
                   ]);
                   const isSelected =
                     selectedProfile &&
@@ -462,25 +554,33 @@ const CustomerPlans = () => {
                   return (
                     <div
                       key={profile._id || profile.id || info.profileId || idx}
-                      className={`rounded-lg border p-3 ${isSelected
-                        ? isDark
-                          ? "border-blue-500 bg-slate-800"
-                          : "border-blue-500 bg-white"
-                        : isDark
-                          ? "border-slate-800 bg-slate-900"
-                          : "border-gray-200 bg-white"
-                        }`}
+                      className={`rounded-lg border p-3 ${
+                        isSelected
+                          ? isDark
+                            ? "border-blue-500 bg-slate-800"
+                            : "border-blue-500 bg-white"
+                          : isDark
+                            ? "border-slate-800 bg-slate-900"
+                            : "border-gray-200 bg-white"
+                      }`}
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <div className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+                          <div
+                            className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                          >
                             {info.name || "Profile"}
                           </div>
-                          <div className={`text-xs ${isDark ? "text-slate-400" : "text-gray-600"}`}>
-                            Profile ID: {info.profileId || "—"} | Group ID: {info.groupId || "—"}
+                          <div
+                            className={`text-xs ${isDark ? "text-slate-400" : "text-gray-600"}`}
+                          >
+                            Profile ID: {info.profileId || "—"} | Group ID:{" "}
+                            {info.groupId || "—"}
                           </div>
                           {(info.planName || info.amount) && (
-                            <div className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-gray-600"}`}>
+                            <div
+                              className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-gray-600"}`}
+                            >
                               {info.planName ? `Plan: ${info.planName}` : ""}
                               {info.planName && info.amount ? " • " : ""}
                               {info.amount ? `Amount: ${info.amount}` : ""}
@@ -490,18 +590,19 @@ const CustomerPlans = () => {
                           {renderDetailList(billingDetails, {
                             filterProps: billingFilterProps,
                             filterValues: billingFilterValues,
-                            dedupeProp: "period"
+                            dedupeProp: "period",
                           })}
                         </div>
                         <button
                           type="button"
                           onClick={() => handleSelectProfile(profile)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${isSelected
-                            ? "bg-blue-600 text-white"
-                            : isDark
-                              ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
-                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                            }`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                            isSelected
+                              ? "bg-blue-600 text-white"
+                              : isDark
+                                ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
                         >
                           {isSelected ? "Selected" : "Select"}
                         </button>
@@ -515,28 +616,86 @@ const CustomerPlans = () => {
         </div>
 
         <div>
-          <div className={`rounded-xl border p-4 ${isDark ? "border-slate-800 bg-slate-900" : "border-gray-200 bg-white"}`}>
+          <div
+            className={`rounded-xl border p-4 ${isDark ? "border-slate-800 bg-slate-900" : "border-gray-200 bg-white"}`}
+          >
             <h3 className="text-lg font-semibold mb-3">Selected Plan</h3>
             <div className="space-y-3 text-sm">
               <div>
-                <div className={`${isDark ? "text-slate-400" : "text-gray-600"}`}>Profile ID</div>
-                <div className="font-semibold">{paymentForm.profileId || "—"}</div>
+                <div
+                  className={`${isDark ? "text-slate-400" : "text-gray-600"}`}
+                >
+                  Profile ID
+                </div>
+                <div className="font-semibold">
+                  {paymentForm.profileId || "—"}
+                </div>
               </div>
               <div>
-                <div className={`${isDark ? "text-slate-400" : "text-gray-600"}`}>Group ID</div>
-                <div className="font-semibold">{paymentForm.groupId || "—"}</div>
+                <div
+                  className={`${isDark ? "text-slate-400" : "text-gray-600"}`}
+                >
+                  Group ID
+                </div>
+                <div className="font-semibold">
+                  {paymentForm.groupId || "—"}
+                </div>
               </div>
               <div>
-                <div className={`${isDark ? "text-slate-400" : "text-gray-600"}`}>Amount</div>
-                <div className="font-semibold">{paymentForm.amount || "—"}</div>
+                <div
+                  className={`${isDark ? "text-slate-400" : "text-gray-600"}`}
+                >
+                  Plan Amount
+                </div>
+                <div className="font-semibold">
+                  {paymentForm.amount
+                    ? `₹${Number(paymentForm.amount).toFixed(2)}`
+                    : "—"}
+                </div>
+              </div>
+              {tariff && paymentForm.amount && (
+                <div>
+                  <div
+                    className={`${isDark ? "text-slate-400" : "text-gray-600"}`}
+                  >
+                    Platform Fee
+                  </div>
+                  <div className="font-semibold text-blue-500">
+                    + ₹{calculatedTariff.toFixed(2)} (
+                    {tariff.tariffType === "PERCENTAGE"
+                      ? `${tariff.tariffValue}%`
+                      : "Fixed"}
+                    )
+                  </div>
+                </div>
+              )}
+              <div>
+                <div
+                  className={`${isDark ? "text-slate-400" : "text-gray-600"}`}
+                >
+                  Total Amount to Pay
+                </div>
+                <div className="font-bold text-lg text-emerald-500">
+                  ₹
+                  {(Number(paymentForm.amount || 0) + calculatedTariff).toFixed(
+                    2,
+                  )}
+                </div>
               </div>
             </div>
 
             {paymentStatus && (
-              <div className={`mt-4 text-sm ${paymentStatus.type === "success"
-                ? isDark ? "text-green-300" : "text-green-700"
-                : isDark ? "text-red-300" : "text-red-600"
-                }`}>
+              <div
+                className={`mt-4 text-sm ${
+                  paymentStatus.type === "success"
+                    ? isDark
+                      ? "text-green-300"
+                      : "text-green-700"
+                    : isDark
+                      ? "text-red-300"
+                      : "text-red-600"
+                }`}
+              >
                 {paymentStatus.message}
               </div>
             )}
@@ -550,7 +709,6 @@ const CustomerPlans = () => {
               >
                 {isPaying ? "Processing Payment..." : "Pay with Razorpay"}
               </button>
-             
             </div>
           </div>
         </div>

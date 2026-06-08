@@ -754,173 +754,176 @@ const Frenchiseadmin = () => {
                     : "bg-white border border-gray-200"
                 }`}
               >
-              <div
-                className={`px-6 py-5 flex justify-between items-center border-b ${
-                  isDark ? "border-slate-800" : "border-gray-200"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`p-2 rounded-xl ${isDark ? "bg-slate-800" : "bg-gray-100"}`}
+                <div
+                  className={`px-6 py-5 flex justify-between items-center border-b ${
+                    isDark ? "border-slate-800" : "border-gray-200"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`p-2 rounded-xl ${isDark ? "bg-slate-800" : "bg-gray-100"}`}
+                    >
+                      <UserPlus
+                        className={`${isDark ? "text-blue-400" : "text-indigo-500"} w-5 h-5`}
+                      />
+                    </div>
+                    <h2
+                      className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                    >
+                      {editingAdmin
+                        ? "Edit Franchise Admin"
+                        : "Add Franchise Admin"}
+                    </h2>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={closeModal}
+                    className={`p-1 rounded-full transition ${isDark ? "text-slate-400 hover:bg-slate-800" : "text-gray-400 hover:bg-gray-100"}`}
                   >
-                    <UserPlus
-                      className={`${isDark ? "text-blue-400" : "text-indigo-500"} w-5 h-5`}
+                    <XCircle className="w-6 h-6" />
+                  </motion.button>
+                </div>
+
+                <form
+                  onSubmit={handleSubmit}
+                  className="scrollbar-hide p-6 space-y-5 max-h-[calc(85vh-80px)] overflow-y-auto"
+                >
+                  <div>
+                    <label
+                      className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}
+                    >
+                      Franchise Account *
+                    </label>
+                    <select
+                      name="accountId"
+                      required={!editingAdmin}
+                      disabled={!!editingAdmin || franchiseLoading}
+                      value={formData.accountId}
+                      onChange={handleChange}
+                      className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${
+                        isDark
+                          ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500"
+                          : "bg-white border-gray-300 text-gray-900 focus:border-purple-500"
+                      } ${editingAdmin ? "opacity-60 cursor-not-allowed" : ""}`}
+                    >
+                      <option value="">
+                        {franchiseLoading
+                          ? "Loading franchises..."
+                          : "Select a franchise"}
+                      </option>
+                      {franchises.map((f) => (
+                        <option key={f._id} value={f.accountId}>
+                          {f.companyName || f.accountName || f.accountId}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label
+                      className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}
+                    >
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      required
+                      value={formData.name}
+                      onChange={handleChange}
+                      placeholder="Enter full name"
+                      className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${
+                        isDark
+                          ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500"
+                          : "bg-white border-gray-300 text-gray-900 focus:border-purple-500"
+                      }`}
                     />
                   </div>
-                  <h2
-                    className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
-                  >
-                    {editingAdmin
-                      ? "Edit Franchise Admin"
-                      : "Add Franchise Admin"}
-                  </h2>
-                </div>
-                <motion.button
-                  whileHover={{ scale: 1.1, rotate: 90 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={closeModal}
-                  className={`p-1 rounded-full transition ${isDark ? "text-slate-400 hover:bg-slate-800" : "text-gray-400 hover:bg-gray-100"}`}
-                >
-                  <XCircle className="w-6 h-6" />
-                </motion.button>
-              </div>
 
-              <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                <div>
-                  <label
-                    className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}
-                  >
-                    Franchise Account *
-                  </label>
-                  <select
-                    name="accountId"
-                    required={!editingAdmin}
-                    disabled={!!editingAdmin || franchiseLoading}
-                    value={formData.accountId}
-                    onChange={handleChange}
-                    className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500"
-                        : "bg-white border-gray-300 text-gray-900 focus:border-purple-500"
-                    } ${editingAdmin ? "opacity-60 cursor-not-allowed" : ""}`}
-                  >
-                    <option value="">
-                      {franchiseLoading
-                        ? "Loading franchises..."
-                        : "Select a franchise"}
-                    </option>
-                    {franchises.map((f) => (
-                      <option key={f._id} value={f.accountId}>
-                        {f.companyName || f.accountName || f.accountId}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  <div>
+                    <label
+                      className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}
+                    >
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      required={!editingAdmin}
+                      disabled={!!editingAdmin}
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="admin@example.com"
+                      className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${
+                        isDark
+                          ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500"
+                          : "bg-white border-gray-300 text-gray-900 focus:border-purple-500"
+                      } ${editingAdmin ? "opacity-60 cursor-not-allowed" : ""}`}
+                    />
+                  </div>
 
-                <div>
-                  <label
-                    className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}
-                  >
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    required
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="Enter full name"
-                    className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500"
-                        : "bg-white border-gray-300 text-gray-900 focus:border-purple-500"
-                    }`}
-                  />
-                </div>
+                  <div>
+                    <label
+                      className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}
+                    >
+                      {editingAdmin ? "New Password" : "Password"}{" "}
+                      {editingAdmin ? "(optional)" : "*"}
+                    </label>
+                    <input
+                      type="password"
+                      name="password"
+                      required={!editingAdmin}
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder={
+                        editingAdmin
+                          ? "Leave blank to keep current"
+                          : "Enter secure password"
+                      }
+                      className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${
+                        isDark
+                          ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500"
+                          : "bg-white border-gray-300 text-gray-900 focus:border-purple-500"
+                      }`}
+                    />
+                  </div>
 
-                <div>
-                  <label
-                    className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}
-                  >
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    required={!editingAdmin}
-                    disabled={!!editingAdmin}
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="admin@example.com"
-                    className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500"
-                        : "bg-white border-gray-300 text-gray-900 focus:border-purple-500"
-                    } ${editingAdmin ? "opacity-60 cursor-not-allowed" : ""}`}
-                  />
-                </div>
-
-                <div>
-                  <label
-                    className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}
-                  >
-                    {editingAdmin ? "New Password" : "Password"}{" "}
-                    {editingAdmin ? "(optional)" : "*"}
-                  </label>
-                  <input
-                    type="password"
-                    name="password"
-                    required={!editingAdmin}
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder={
-                      editingAdmin
-                        ? "Leave blank to keep current"
-                        : "Enter secure password"
-                    }
-                    className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500"
-                        : "bg-white border-gray-300 text-gray-900 focus:border-purple-500"
-                    }`}
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                      isDark
-                        ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-all disabled:opacity-50 ${
-                      isDark
-                        ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500"
-                        : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500"
-                    }`}
-                  >
-                    {isSubmitting
-                      ? "Processing..."
-                      : editingAdmin
-                        ? "Update Admin"
-                        : "Create Admin"}
-                  </button>
-                </div>
-              </form>
+                  <div className="flex justify-end gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                        isDark
+                          ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-all disabled:opacity-50 ${
+                        isDark
+                          ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500"
+                          : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500"
+                      }`}
+                    >
+                      {isSubmitting
+                        ? "Processing..."
+                        : editingAdmin
+                          ? "Update Admin"
+                          : "Create Admin"}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>,
-      document.body
-    )}
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
 
       {createPortal(
         <AnimatePresence>
@@ -941,61 +944,63 @@ const Frenchiseadmin = () => {
                     : "bg-white border border-gray-200"
                 }`}
               >
-              <div
-                className={`p-6 border-b ${isDark ? "border-slate-800" : "border-gray-200"}`}
-              >
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`p-3 rounded-xl ${isDark ? "bg-red-500/10" : "bg-red-100"}`}
-                  >
-                    <Trash2 className="w-6 h-6 text-red-500" />
-                  </div>
-                  <div>
-                    <h3
-                      className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                <div
+                  className={`p-6 border-b ${isDark ? "border-slate-800" : "border-gray-200"}`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div
+                      className={`p-3 rounded-xl ${isDark ? "bg-red-500/10" : "bg-red-100"}`}
                     >
-                      Delete Franchise Admin
-                    </h3>
-                    <p
-                      className={`text-sm ${isDark ? "text-slate-400" : "text-gray-600"} mt-1`}
-                    >
-                      This action cannot be undone
-                    </p>
+                      <Trash2 className="w-6 h-6 text-red-500" />
+                    </div>
+                    <div>
+                      <h3
+                        className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                      >
+                        Delete Franchise Admin
+                      </h3>
+                      <p
+                        className={`text-sm ${isDark ? "text-slate-400" : "text-gray-600"} mt-1`}
+                      >
+                        This action cannot be undone
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="p-6">
-                <p className={`${isDark ? "text-slate-300" : "text-gray-600"}`}>
-                  Are you sure you want to delete this franchise admin? All
-                  associated data will be permanently removed.
-                </p>
-              </div>
-              <div
-                className={`p-6 border-t flex justify-end gap-3 ${isDark ? "border-slate-800" : "border-gray-200"}`}
-              >
-                <button
-                  onClick={() => setShowDeleteModal(false)}
-                  className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                    isDark
-                      ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
+                <div className="p-6">
+                  <p
+                    className={`${isDark ? "text-slate-300" : "text-gray-600"}`}
+                  >
+                    Are you sure you want to delete this franchise admin? All
+                    associated data will be permanently removed.
+                  </p>
+                </div>
+                <div
+                  className={`p-6 border-t flex justify-end gap-3 ${isDark ? "border-slate-800" : "border-gray-200"}`}
                 >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-red-600 to-pink-600 shadow-lg transition-all hover:scale-105 active:scale-95"
-                >
-                  Yes, Delete
-                </button>
-              </div>
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      isDark
+                        ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-red-600 to-pink-600 shadow-lg transition-all hover:scale-105 active:scale-95"
+                  >
+                    Yes, Delete
+                  </button>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>,
-      document.body
-    )}
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
 
       <style jsx>{`
         @keyframes fadeInUp {
