@@ -409,8 +409,151 @@ const ZoneTickets = () => {
     };
   }, [activeUser?.customerId, token]);
 
+  // Keep activeUserId in a ref to avoid recreating socket listeners
+  const activeUserIdRef = useRef(activeUserId);
+  useEffect(() => {
+    activeUserIdRef.current = activeUserId;
+  }, [activeUserId]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    socket.auth = { token };
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    const handleTicketConnected = (room) => {
+      if (!room) return;
+
+      const newTicket = {
+        id: room._id,
+        ticketId: room._id.slice(-6).toUpperCase(),
+        status: normalizeTicketStatus(room.status),
+        lastMsg: room.lastMessage || "No messages yet",
+        time: room.lastMessageAt || room.createdAt,
+      };
+
+      setUsers((prevUsers) => {
+        const cid = room.customer?._id || room.customer?.userName || "unknown";
+        const exists = prevUsers.some((u) => u.customerId === cid);
+
+        let updated;
+        if (exists) {
+          updated = prevUsers.map((u) => {
+            if (u.customerId === cid) {
+              const ticketExists = u.tickets.some((t) => t.id === newTicket.id);
+              if (ticketExists) return u;
+
+              const isUserActive = activeUserIdRef.current === cid;
+              return {
+                ...u,
+                latestTicketId: newTicket.ticketId,
+                latestMessageTime: newTicket.time,
+                unreadCount: isUserActive ? u.unreadCount : u.unreadCount + 1,
+                tickets: [newTicket, ...u.tickets],
+              };
+            }
+            return u;
+          });
+        } else {
+          const newCustomer = {
+            customerId: cid,
+            name: `${room.customer?.firstName || ""} ${room.customer?.lastName || ""}`.trim() || room.customer?.userName || "Guest User",
+            latestTicketId: newTicket.ticketId,
+            latestMessageTime: newTicket.time,
+            unreadCount: 1,
+            tickets: [newTicket],
+          };
+          updated = [newCustomer, ...prevUsers];
+        }
+
+        return [...updated].sort(
+          (a, b) => new Date(b.latestMessageTime || 0) - new Date(a.latestMessageTime || 0)
+        );
+      });
+    };
+
+    const handleGlobalNewMessage = ({ roomId, message }) => {
+      if (!roomId || !message) return;
+
+      setUsers((prevUsers) => {
+        let found = false;
+        const updated = prevUsers.map((u) => {
+          const hasTicket = u.tickets.some((t) => t.id === roomId);
+          if (hasTicket) {
+            found = true;
+            const isUserActive = activeUserIdRef.current === u.customerId;
+            const isSenderCustomer = message.senderRole === "CUSTOMER";
+
+            return {
+              ...u,
+              latestMessageTime: message.createdAt,
+              unreadCount: (isSenderCustomer && !isUserActive) ? u.unreadCount + 1 : u.unreadCount,
+              tickets: u.tickets.map((t) => {
+                if (t.id === roomId) {
+                  return {
+                    ...t,
+                    lastMsg: message.message || (message.attachments?.length > 0 ? (message.attachments[0].type === "image" ? "📷 Image" : "📎 File") : ""),
+                    time: message.createdAt,
+                  };
+                }
+                return t;
+              }),
+            };
+          }
+          return u;
+        });
+
+        if (!found) return prevUsers;
+
+        return [...updated].sort(
+          (a, b) => new Date(b.latestMessageTime || 0) - new Date(a.latestMessageTime || 0)
+        );
+      });
+    };
+
+    const handleTicketUpdated = (room) => {
+      if (!room) return;
+
+      setUsers((prevUsers) => {
+        return prevUsers.map((u) => {
+          const hasTicket = u.tickets.some((t) => t.id === room._id);
+          if (hasTicket) {
+            return {
+              ...u,
+              tickets: u.tickets.map((t) => {
+                if (t.id === room._id) {
+                  return {
+                    ...t,
+                    status: normalizeTicketStatus(room.status),
+                  };
+                }
+                return t;
+              }),
+            };
+          }
+          return u;
+        });
+      });
+    };
+
+    socket.on("ticket-connected", handleTicketConnected);
+    socket.on("global-new-message", handleGlobalNewMessage);
+    socket.on("ticket-updated", handleTicketUpdated);
+
+    return () => {
+      socket.off("ticket-connected", handleTicketConnected);
+      socket.off("global-new-message", handleGlobalNewMessage);
+      socket.off("ticket-updated", handleTicketUpdated);
+    };
+  }, [token]);
+
   const handleUserSelect = (id) => {
     setActiveUserId(id);
+    setUsers((prevUsers) =>
+      prevUsers.map((u) => (u.customerId === id ? { ...u, unreadCount: 0 } : u))
+    );
     setShowSidebar(false);
   };
 
