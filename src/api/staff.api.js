@@ -1,8 +1,8 @@
 import api from "./axios";
 
 // GET ALL STAFF (ADMIN)
-export const getAllAdminStaff = async () => {
-  const res = await api.get("/api/staff/admin-staff");
+export const getAllAdminStaff = async (params = {}) => {
+  const res = await api.get("/api/staff/admin-staff", { params });
   return res.data;
 };
 

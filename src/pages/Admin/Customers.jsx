@@ -23,7 +23,7 @@ import {
 } from "../../api/customer.api";
 import Lottie from "lottie-react";
 import fadeSlideAnimation from "../../animations/Profile Avatar of Young Boy.json";
-
+import pdfIcon from "../../assets/images/pdf_icon1.jpg";
 const SubscribersPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -193,10 +193,19 @@ const SubscribersPage = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    const nextSubscriber = {
-      ...newSubscriber,
-      [name]: type === "checkbox" ? checked : value,
-    };
+    let nextSubscriber = {};
+    if (name === "phoneNumber") {
+      if (isNaN(value) && value !== "") return; // Only allow numbers
+      nextSubscriber = {
+        ...newSubscriber,
+        [name]: value.replace(/[^0-9]/g, ""),
+      };
+    } else {
+      nextSubscriber = {
+        ...newSubscriber,
+        [name]: type === "checkbox" ? checked : value,
+      };
+    }
     setNewSubscriber(nextSubscriber);
     if (name === "userGroupId") {
       setPaymentForm((prev) => ({
@@ -1462,10 +1471,11 @@ const SubscribersPage = () => {
                       Phone Number
                     </label>
                     <input
-                      type="tel"
+                      type="text"
                       name="phoneNumber"
                       value={newSubscriber.phoneNumber}
                       onChange={handleInputChange}
+                      maxLength={10}
                       className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"}`}
                     />
                   </div>
@@ -2223,34 +2233,38 @@ const SubscribersPage = () => {
                       ],
                     ]
                       .filter(([, url]) => Boolean(url))
-                      .map(([label, url]) => (
-                        <div key={label} className="flex items-start gap-4">
-                          <div
-                            className={`w-16 h-16 rounded-lg overflow-hidden border ${isDark ? "border-slate-800" : "border-gray-200"}`}
-                          >
-                            <img
-                              src={url}
-                              alt={label}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="flex-1">
+                      .map(([label, url]) => {
+                        const type = url.split(".").pop();
+                        return (
+                          <div key={label} className="flex items-start gap-4">
                             <div
-                              className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                              className={`w-16 h-16 rounded-lg overflow-hidden border ${isDark ? "border-slate-800" : "border-gray-200"}`}
                             >
-                              {label}
+                              <img
+                                src={type === "pdf" ? pdfIcon : url}
+                                title={type}
+                                alt={type}
+                                className="w-full h-full object-cover"
+                              />
                             </div>
-                            <a
-                              href={url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className={`text-xs ${isDark ? "text-violet-400" : "text-violet-600"} hover:underline`}
-                            >
-                              View document
-                            </a>
+                            <div className="flex-1">
+                              <div
+                                className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                              >
+                                {label}
+                              </div>
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={`text-xs ${isDark ? "text-violet-400" : "text-violet-600"} hover:underline`}
+                              >
+                                View document
+                              </a>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                   </div>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

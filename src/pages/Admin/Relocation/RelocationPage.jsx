@@ -24,6 +24,57 @@ import {
   deleteRelocationApi,
 } from "../../../api/relocation.api";
 
+// Shimmer Effect Component
+const RowShimmer = ({ isDark }) => (
+  <tr className="animate-pulse border-b border-transparent">
+    {/* Customer Details */}
+    <td className="px-4 py-3 sm:px-6 sm:py-4">
+      <div className="space-y-2">
+        <div className={`h-4 w-28 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded`}></div>
+        <div className={`h-3 w-36 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded`}></div>
+        <div className={`h-3 w-24 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded`}></div>
+      </div>
+    </td>
+
+    {/* Franchise & Group */}
+    <td className="px-4 py-3 sm:px-6 sm:py-4">
+      <div className="space-y-2">
+        <div className={`h-5 w-24 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded-full`}></div>
+        <div className={`h-3 w-20 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded`}></div>
+      </div>
+    </td>
+
+    {/* Relocation Location */}
+    <td className="px-4 py-3 sm:px-6 sm:py-4">
+      <div className="space-y-2">
+        <div className={`h-4 w-32 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded`}></div>
+        <div className={`h-3 w-40 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded`}></div>
+        <div className="flex gap-2 pt-1">
+          <div className={`h-4 w-16 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded`}></div>
+          <div className={`h-4.5 w-5 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded`}></div>
+          <div className={`h-4.5 w-5 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded`}></div>
+        </div>
+      </div>
+    </td>
+
+    {/* Shifting Date */}
+    <td className="px-4 py-3 sm:px-6 sm:py-4">
+      <div className="flex items-center gap-2">
+        <div className={`w-3.5 h-3.5 rounded-full ${isDark ? "bg-slate-800" : "bg-gray-200"}`}></div>
+        <div className={`h-3.5 w-16 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded`}></div>
+      </div>
+    </td>
+
+    {/* Actions */}
+    <td className="px-4 py-3 sm:px-6 sm:py-4 text-right">
+      <div className="flex items-center justify-end gap-2.5">
+        <div className={`h-8 w-20 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded-xl`}></div>
+        <div className={`h-8 w-20 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded-xl`}></div>
+      </div>
+    </td>
+  </tr>
+);
+
 const RelocationPage = () => {
   const { isDark } = useTheme();
   const { user } = useAuth();
@@ -286,32 +337,7 @@ const RelocationPage = () => {
         className={`rounded-xl border overflow-hidden transition-all duration-300
           ${isDark ? "bg-slate-900/40 border-slate-800" : "bg-white border-gray-200"}`}
       >
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 space-y-4">
-            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-            <p
-              className={`text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}
-            >
-              Loading relocation logs...
-            </p>
-          </div>
-        ) : filteredItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <MapPin
-              className={`w-12 h-12 mb-3 ${isDark ? "text-slate-700" : "text-gray-300"}`}
-            />
-            <p
-              className={`text-base font-semibold ${isDark ? "text-slate-300" : "text-gray-700"}`}
-            >
-              No relocation records found
-            </p>
-            <p
-              className={`text-xs ${isDark ? "text-slate-500" : "text-gray-400"} mt-1`}
-            >
-              No requests are currently logged under the selected state.
-            </p>
-          </div>
-        ) : (
+        {loading || filteredItems.length > 0 ? (
           <div className="scrollbar-hide overflow-x-auto pb-4">
             <table className="w-full min-w-[1000px] text-left border-collapse">
               <thead>
@@ -339,217 +365,239 @@ const RelocationPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-transparent">
-                {filteredItems.map((item) => {
-                  const name =
-                    `${item.userId?.firstName || ""} ${item.userId?.lastName || ""}`.trim() ||
-                    item.userId?.userName ||
-                    "N/A";
-                  const email = item.userId?.emailId || "N/A";
-                  const phone = item.userId?.phoneNumber || "N/A";
+                {loading ? (
+                  [...Array(limit || 10)].map((_, i) => (
+                    <RowShimmer key={i} isDark={isDark} />
+                  ))
+                ) : (
+                  filteredItems.map((item) => {
+                    const name =
+                      `${item.userId?.firstName || ""} ${item.userId?.lastName || ""}`.trim() ||
+                      item.userId?.userName ||
+                      "N/A";
+                    const email = item.userId?.emailId || "N/A";
+                    const phone = item.userId?.phoneNumber || "N/A";
 
-                  return (
-                    <tr
-                      key={item._id}
-                      className={`text-sm transition-all duration-200 hover:bg-blue-500/[0.02]
-                        ${isDark ? "text-slate-300 hover:text-white" : "text-gray-700 hover:text-gray-900"}`}
-                    >
-                      {/* Customer contact Info */}
-                      <td className="px-4 py-3 sm:px-6 sm:py-4">
-                        <div>
-                          <p className="font-semibold">{name}</p>
-                          <p
-                            className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}
-                          >
-                            {email}
-                          </p>
-                          <p
-                            className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}
-                          >
-                            {phone}
-                          </p>
-                        </div>
-                      </td>
-
-                      {/* Group and AccountId */}
-                      <td className="px-4 py-3 sm:px-6 sm:py-4">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border
-                            ${
-                              isDark
-                                ? "bg-slate-800 border-slate-700 text-slate-300"
-                                : "bg-gray-50 border-gray-200 text-gray-600"
-                            }`}
-                        >
-                          Franchise: {item.accountId}
-                        </span>
-                        <p
-                          className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}
-                        >
-                          Group ID: {item.userGroupId}
-                        </p>
-                      </td>
-
-                      {/* Address */}
-                      <td className="px-4 py-3 sm:px-6 sm:py-4">
-                        <p className="font-medium">
-                          {item.installation_address_city}
-                        </p>
-                        <p
-                          className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}
-                        >
-                          PIN: {item.installation_address_pin} •{" "}
-                          {item.installation_address_state}
-                        </p>
-                        {item.latitude && item.longitude && (
-                          <div className="flex items-center gap-1.5 mt-2">
-                            <span
-                              className={`text-[10px] font-mono px-1.5 py-0.5 rounded border
-                              ${
-                                isDark
-                                  ? "bg-slate-800/80 border-slate-700 text-slate-400"
-                                  : "bg-gray-100 border-gray-200 text-gray-600"
-                              }`}
+                    return (
+                      <tr
+                        key={item._id}
+                        className={`text-sm transition-all duration-200 hover:bg-blue-500/[0.02]
+                          ${isDark ? "text-slate-300 hover:text-white" : "text-gray-700 hover:text-gray-900"}`}
+                      >
+                        {/* Customer contact Info */}
+                        <td className="px-4 py-3 sm:px-6 sm:py-4">
+                          <div>
+                            <p className="font-semibold">{name}</p>
+                            <p
+                              className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}
                             >
-                              {item.latitude.toFixed(4)},{" "}
-                              {item.longitude.toFixed(4)}
-                            </span>
-                            <button
-                              onClick={(e) =>
-                                handleCopyLink(
-                                  item._id,
-                                  item.latitude,
-                                  item.longitude,
-                                  e,
-                                )
-                              }
-                              title="Copy Google Maps Link"
-                              className={`p-1 rounded transition-all duration-200 hover:scale-110 active:scale-90
-                                ${
-                                  isDark
-                                    ? "hover:bg-slate-800 hover:text-white text-slate-400"
-                                    : "hover:bg-gray-100 hover:text-gray-900 text-gray-500"
-                                }`}
+                              {email}
+                            </p>
+                            <p
+                              className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}
                             >
-                              {copiedId === item._id ? (
-                                <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-                              ) : (
-                                <Copy className="w-3.5 h-3.5" />
-                              )}
-                            </button>
-                            <a
-                              href={`https://www.google.com/maps?q=${item.latitude},${item.longitude}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              title="Open in Google Maps"
-                              className={`p-1 rounded transition-all duration-200 hover:scale-110 active:scale-90
-                                ${
-                                  isDark
-                                    ? "hover:bg-slate-800 hover:text-white text-slate-400"
-                                    : "hover:bg-gray-100 hover:text-gray-900 text-gray-500"
-                                }`}
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </a>
+                              {phone}
+                            </p>
                           </div>
-                        )}
-                      </td>
+                        </td>
 
-                      {/* Shift Date */}
-                      <td className="px-4 py-3 sm:px-6 sm:py-4">
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <Calendar className="w-3.5 h-3.5 text-blue-500" />
-                          <span>
-                            {new Date(item.sifted_date).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Actions */}
-                      <td className="px-4 py-3 sm:px-6 sm:py-4 text-right">
-                        <div className="flex items-center justify-end gap-2.5">
-                          {/* View details */}
-                          <button
-                            onClick={() => setSelectedRequest(item)}
-                            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold shadow-sm transition-all duration-200 hover:scale-105 active:scale-95
+                        {/* Group and AccountId */}
+                        <td className="px-4 py-3 sm:px-6 sm:py-4">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border
                               ${
                                 isDark
-                                  ? "bg-slate-800/80 border-slate-700 hover:bg-slate-700/80 text-blue-400 hover:text-blue-300"
-                                  : "bg-white border-gray-200 hover:bg-gray-50 text-blue-600 hover:text-blue-700"
+                                  ? "bg-slate-800 border-slate-700 text-slate-300"
+                                  : "bg-gray-50 border-gray-200 text-gray-600"
                               }`}
                           >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>Details</span>
-                          </button>
+                            Franchise: {item.accountId}
+                          </span>
+                          <p
+                            className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                          >
+                            Group ID: {item.userGroupId}
+                          </p>
+                        </td>
 
-                          {/* REQUEST TAB controls */}
-                          {activeTab === "REQUEST" && (
-                            <>
-                              <button
-                                disabled={actionLoading === item._id}
-                                onClick={(e) => handleApprove(item._id, e)}
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/25 transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50"
+                        {/* Address */}
+                        <td className="px-4 py-3 sm:px-6 sm:py-4">
+                          <p className="font-medium">
+                            {item.installation_address_city}
+                          </p>
+                          <p
+                            className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                          >
+                            PIN: {item.installation_address_pin} •{" "}
+                            {item.installation_address_state}
+                          </p>
+                          {item.latitude && item.longitude && (
+                            <div className="flex items-center gap-1.5 mt-2">
+                              <span
+                                className={`text-[10px] font-mono px-1.5 py-0.5 rounded border
+                                ${
+                                  isDark
+                                    ? "bg-slate-800/80 border-slate-700 text-slate-400"
+                                    : "bg-gray-100 border-gray-200 text-gray-600"
+                                }`}
                               >
-                                {actionLoading === item._id ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                  <CheckCircle className="w-3.5 h-3.5" />
-                                )}
-                                <span>Approve</span>
-                              </button>
-
+                                {item.latitude.toFixed(4)},{" "}
+                                {item.longitude.toFixed(4)}
+                              </span>
                               <button
-                                disabled={actionLoading === item._id}
-                                onClick={(e) => handleReject(item._id, e)}
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-xs font-bold shadow-md shadow-rose-500/10 hover:shadow-rose-500/25 transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50"
+                                onClick={(e) =>
+                                  handleCopyLink(
+                                    item._id,
+                                    item.latitude,
+                                    item.longitude,
+                                    e,
+                                  )
+                                }
+                                title="Copy Google Maps Link"
+                                className={`p-1 rounded transition-all duration-200 hover:scale-110 active:scale-90
+                                  ${
+                                    isDark
+                                      ? "hover:bg-slate-800 hover:text-white text-slate-400"
+                                      : "hover:bg-gray-100 hover:text-gray-900 text-gray-500"
+                                  }`}
                               >
-                                {actionLoading === item._id ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                {copiedId === item._id ? (
+                                  <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
                                 ) : (
-                                  <XCircle className="w-3.5 h-3.5" />
+                                  <Copy className="w-3.5 h-3.5" />
                                 )}
-                                <span>Reject</span>
                               </button>
-                            </>
+                              <a
+                                href={`https://www.google.com/maps?q=${item.latitude},${item.longitude}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                title="Open in Google Maps"
+                                className={`p-1 rounded transition-all duration-200 hover:scale-110 active:scale-90
+                                  ${
+                                    isDark
+                                      ? "hover:bg-slate-800 hover:text-white text-slate-400"
+                                      : "hover:bg-gray-100 hover:text-gray-900 text-gray-500"
+                                  }`}
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            </div>
                           )}
+                        </td>
 
-                          {/* PENDING TAB controls */}
-                          {activeTab === "PENDING" && (
-                            <>
-                              <button
-                                disabled={actionLoading === item._id}
-                                onClick={(e) => handleComplete(item._id, e)}
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/25 transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50"
-                              >
-                                {actionLoading === item._id ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                  <CheckCircle className="w-3.5 h-3.5" />
-                                )}
-                                <span>Complete</span>
-                              </button>
+                        {/* Shift Date */}
+                        <td className="px-4 py-3 sm:px-6 sm:py-4">
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                            <span>
+                              {new Date(item.sifted_date).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </td>
 
-                              <button
-                                disabled={actionLoading === item._id}
-                                onClick={(e) => handleReject(item._id, e)}
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-xs font-bold shadow-md shadow-rose-500/10 hover:shadow-rose-500/25 transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50"
-                              >
-                                {actionLoading === item._id ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                  <XCircle className="w-3.5 h-3.5" />
-                                )}
-                                <span>Reject</span>
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        {/* Actions */}
+                        <td className="px-4 py-3 sm:px-6 sm:py-4 text-right">
+                          <div className="flex items-center justify-end gap-2.5">
+                            {/* View details */}
+                            <button
+                              onClick={() => setSelectedRequest(item)}
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold shadow-sm transition-all duration-200 hover:scale-105 active:scale-95
+                                ${
+                                  isDark
+                                    ? "bg-slate-800/80 border-slate-700 hover:bg-slate-700/80 text-blue-400 hover:text-blue-300"
+                                    : "bg-white border-gray-200 hover:bg-gray-50 text-blue-600 hover:text-blue-700"
+                                }`}
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Details</span>
+                            </button>
+
+                            {/* REQUEST TAB controls */}
+                            {activeTab === "REQUEST" && (
+                              <>
+                                <button
+                                  disabled={actionLoading === item._id}
+                                  onClick={(e) => handleApprove(item._id, e)}
+                                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/25 transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50"
+                                >
+                                  {actionLoading === item._id ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <CheckCircle className="w-3.5 h-3.5" />
+                                  )}
+                                  <span>Approve</span>
+                                </button>
+
+                                <button
+                                  disabled={actionLoading === item._id}
+                                  onClick={(e) => handleReject(item._id, e)}
+                                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-xs font-bold shadow-md shadow-rose-500/10 hover:shadow-rose-500/25 transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50"
+                                >
+                                  {actionLoading === item._id ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <XCircle className="w-3.5 h-3.5" />
+                                  )}
+                                  <span>Reject</span>
+                                </button>
+                              </>
+                            )}
+
+                            {/* PENDING TAB controls */}
+                            {activeTab === "PENDING" && (
+                              <>
+                                <button
+                                  disabled={actionLoading === item._id}
+                                  onClick={(e) => handleComplete(item._id, e)}
+                                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/25 transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50"
+                                >
+                                  {actionLoading === item._id ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <CheckCircle className="w-3.5 h-3.5" />
+                                  )}
+                                  <span>Complete</span>
+                                </button>
+
+                                <button
+                                  disabled={actionLoading === item._id}
+                                  onClick={(e) => handleReject(item._id, e)}
+                                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-xs font-bold shadow-md shadow-rose-500/10 hover:shadow-rose-500/25 transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50"
+                                >
+                                  {actionLoading === item._id ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <XCircle className="w-3.5 h-3.5" />
+                                  )}
+                                  <span>Reject</span>
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <MapPin
+              className={`w-12 h-12 mb-3 ${isDark ? "text-slate-700" : "text-gray-300"}`}
+            />
+            <p
+              className={`text-base font-semibold ${isDark ? "text-slate-300" : "text-gray-700"}`}
+            >
+              No relocation records found
+            </p>
+            <p
+              className={`text-xs ${isDark ? "text-slate-500" : "text-gray-400"} mt-1`}
+            >
+              No requests are currently logged under the selected state.
+            </p>
           </div>
         )}
       </div>

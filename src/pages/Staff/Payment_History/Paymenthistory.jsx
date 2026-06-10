@@ -770,7 +770,7 @@ const BillingPage = () => {
                     >
                       <p>
                         <span className="font-semibold">Payment ID:</span>{" "}
-                        {selectedPayment?.paymentId ||
+                        {selectedPayment?.razorpayPaymentId ||
                           selectedPayment?._id ||
                           "--"}
                       </p>
@@ -799,6 +799,13 @@ const BillingPage = () => {
                             selectedPayment?.planAmount ??
                             selectedPayment?.plan?.planAmount,
                           selectedPayment?.currency || "INR",
+                        )}
+                      </p>
+                      <p>
+                        <span className="font-semibold"> Plateform Fees:</span>{" "}
+                        {formatAmount(
+                          selectedPayment?.plan?.planAmount -
+                            selectedPayment?.plan?.totalPrice || 0,
                         )}
                       </p>
                       <p>

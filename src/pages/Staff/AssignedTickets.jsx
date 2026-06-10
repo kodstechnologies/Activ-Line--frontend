@@ -46,7 +46,7 @@ const normalizeMessageForChat = (msg) => {
 
 const AssignedTickets = () => {
   const { isDark } = useTheme();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   const [users, setUsers] = useState([]);
   const [activeUserId, setActiveUserId] = useState(null);
@@ -258,6 +258,170 @@ const AssignedTickets = () => {
       });
     };
   }, [activeUser?.customerId, token]);
+
+  // Keep activeUserId in a ref to avoid recreating socket listeners
+  const activeUserIdRef = React.useRef(activeUserId);
+  useEffect(() => {
+    activeUserIdRef.current = activeUserId;
+  }, [activeUserId]);
+
+  const handleSelectUser = (customerId) => {
+    setActiveUserId(customerId);
+    setUsers((prevUsers) =>
+      prevUsers.map((u) =>
+        u.customerId === customerId ? { ...u, unreadCount: 0 } : u
+      )
+    );
+  };
+
+  useEffect(() => {
+    if (!token || !user) return;
+
+    socket.auth = { token };
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    const handleTicketUpdated = (room) => {
+      if (!room) return;
+
+      const staffId = user._id || user.id;
+      const isAssignedToMe = room.assignedStaff?._id === staffId;
+
+      setUsers((prevUsers) => {
+        const cid = room.customer?._id || room.customer?.userName || "unknown";
+        const exists = prevUsers.some((u) => u.customerId === cid);
+
+        if (isAssignedToMe) {
+          const newTicket = {
+            _id: room._id,
+            ticketId: room._id.slice(-6).toUpperCase(),
+            issue: room.issue || "Customer Support",
+            status: room.status,
+            createdAt: room.createdAt,
+          };
+
+          let updated;
+          if (exists) {
+            updated = prevUsers.map((u) => {
+              if (u.customerId === cid) {
+                const ticketExists = u.tickets.some((t) => t._id === newTicket._id);
+                if (ticketExists) {
+                  return {
+                    ...u,
+                    tickets: u.tickets.map((t) =>
+                      t._id === newTicket._id ? { ...t, status: room.status } : t
+                    ),
+                  };
+                }
+
+                const isUserActive = activeUserIdRef.current === cid;
+                return {
+                  ...u,
+                  latestTicketId: newTicket.ticketId,
+                  latestMessageTime: room.lastMessageAt || room.createdAt,
+                  unreadCount: isUserActive ? u.unreadCount : u.unreadCount + 1,
+                  tickets: [newTicket, ...u.tickets],
+                };
+              }
+              return u;
+            });
+          } else {
+            const newCustomer = {
+              customerId: cid,
+              customerName: room.customer?.userName || "Unknown Customer",
+              customerEmail: room.customer?.emailId,
+              customerPhone: room.customer?.phoneNumber,
+              latestTicketId: newTicket.ticketId,
+              latestMessageTime: room.lastMessageAt || room.createdAt,
+              unreadCount: 1,
+              tickets: [newTicket],
+            };
+            updated = [newCustomer, ...prevUsers];
+          }
+
+          return [...updated].sort(
+            (a, b) => new Date(b.latestMessageTime || 0) - new Date(a.latestMessageTime || 0)
+          );
+        } else {
+          if (!exists) return prevUsers;
+
+          let shouldResetActive = false;
+          const updated = prevUsers
+            .map((u) => {
+              if (u.customerId === cid) {
+                const updatedTickets = u.tickets.filter((t) => t._id !== room._id);
+
+                if (activeUserIdRef.current === cid && room._id === activeTicketId) {
+                  shouldResetActive = true;
+                }
+
+                return {
+                  ...u,
+                  tickets: updatedTickets,
+                };
+              }
+              return u;
+            })
+            .filter((u) => u.tickets.length > 0);
+
+          if (shouldResetActive) {
+            setActiveUserId(null);
+            setActiveTicketId(null);
+          }
+
+          return updated;
+        }
+      });
+    };
+
+    const handleGlobalNewMessage = ({ roomId, message }) => {
+      if (!roomId || !message) return;
+
+      setUsers((prevUsers) => {
+        let found = false;
+        const updated = prevUsers.map((u) => {
+          const hasTicket = u.tickets.some((t) => t._id === roomId);
+          if (hasTicket) {
+            found = true;
+            const isUserActive = activeUserIdRef.current === u.customerId;
+            const isSenderCustomer = message.senderRole === "CUSTOMER";
+
+            return {
+              ...u,
+              latestMessageTime: message.createdAt,
+              unreadCount: (isSenderCustomer && !isUserActive) ? u.unreadCount + 1 : u.unreadCount,
+              tickets: u.tickets.map((t) => {
+                if (t._id === roomId) {
+                  return {
+                    ...t,
+                    lastMessage: message.message || (message.attachments?.length > 0 ? (message.attachments[0].type === "image" ? "📷 Image" : "📎 File") : ""),
+                    lastMessageTime: message.createdAt,
+                  };
+                }
+                return t;
+              }),
+            };
+          }
+          return u;
+        });
+
+        if (!found) return prevUsers;
+
+        return [...updated].sort(
+          (a, b) => new Date(b.latestMessageTime || 0) - new Date(a.latestMessageTime || 0)
+        );
+      });
+    };
+
+    socket.on("ticket-updated", handleTicketUpdated);
+    socket.on("global-new-message", handleGlobalNewMessage);
+
+    return () => {
+      socket.off("ticket-updated", handleTicketUpdated);
+      socket.off("global-new-message", handleGlobalNewMessage);
+    };
+  }, [token, user]);
 
   const sendMessage = ({ message, attachments }) => {
     if (
@@ -571,7 +735,7 @@ const AssignedTickets = () => {
                   <div
                     key={u.customerId}
                     onClick={() => {
-                      setActiveUserId(u.customerId);
+                      handleSelectUser(u.customerId);
                       if (window.innerWidth < 1024) setIsSidebarOpen(false);
                     }}
                     className={`

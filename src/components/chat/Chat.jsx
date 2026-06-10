@@ -1352,44 +1352,52 @@ const Chat = ({
               }}
               className="flex items-end gap-2 sm:gap-3"
             >
-              <div className="flex-1 min-w-0 relative">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current.click()}
-                  className={`absolute left-3 bottom-3 p-1.5 rounded-lg transition ${
+              {selectedFiles.length === 0 ? (
+                <div className="flex-1 min-w-0 relative">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current.click()}
+                    className={`absolute left-3 bottom-3 p-1.5 rounded-lg transition ${
+                      darkMode
+                        ? "text-gray-400 hover:text-blue-400"
+                        : "text-gray-500 hover:text-blue-600"
+                    }`}
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </button>
+
+                  <textarea
+                    ref={inputRef}
+                    value={inputMsg}
+                    onChange={(e) => setInputMsg(e.target.value)}
+                    onKeyDown={handleKeyPress}
+                    onPaste={handlePaste}
+                    placeholder="Type your message..."
+                    rows={1}
+                    className={`w-full pl-11 sm:pl-12 pr-3 sm:pr-4 py-3 rounded-xl resize-none scrollbar-hide transition-all duration-300 text-sm sm:text-base leading-5 ${
+                      darkMode
+                        ? "bg-gray-900 text-white placeholder-gray-500 border border-gray-800"
+                        : "bg-white text-gray-900 placeholder-gray-400 border border-gray-300"
+                    } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    style={{ maxHeight: "120px", minHeight: "48px" }}
+                    onInput={(e) => {
+                      e.target.style.height = "auto";
+                      e.target.style.height =
+                        Math.min(e.target.scrollHeight, 120) + "px";
+                    }}
+                  />
+                </div>
+              ) : (
+                <div
+                  className={`flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-all duration-300 ${
                     darkMode
-                      ? "text-gray-400 hover:text-blue-400"
-                      : "text-gray-500 hover:text-blue-600"
+                      ? "bg-gray-900/40 border-gray-800 text-gray-400"
+                      : "bg-gray-50 border-gray-200 text-gray-500"
                   }`}
                 >
-                  <Paperclip className="w-4 h-4" />
-                </button>
-
-                <textarea
-                  ref={inputRef}
-                  value={inputMsg}
-                  onChange={(e) => setInputMsg(e.target.value)}
-                  onKeyDown={handleKeyPress}
-                  onPaste={handlePaste}
-                  placeholder={
-                    selectedFiles.length > 0
-                      ? "Add a caption..."
-                      : "Type your message..."
-                  }
-                  rows={1}
-                  className={`w-full pl-11 sm:pl-12 pr-3 sm:pr-4 py-3 rounded-xl resize-none scrollbar-hide transition-all duration-300 text-sm sm:text-base leading-5 ${
-                    darkMode
-                      ? "bg-gray-900 text-white placeholder-gray-500 border border-gray-800"
-                      : "bg-white text-gray-900 placeholder-gray-400 border border-gray-300"
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  style={{ maxHeight: "120px", minHeight: "48px" }}
-                  onInput={(e) => {
-                    e.target.style.height = "auto";
-                    e.target.style.height =
-                      Math.min(e.target.scrollHeight, 120) + "px";
-                  }}
-                />
-              </div>
+                  Ready to send {selectedFiles.length} file{selectedFiles.length > 1 ? "s" : ""}
+                </div>
+              )}
 
               <button
                 type="submit"

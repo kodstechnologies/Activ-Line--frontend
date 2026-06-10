@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useTheme } from "../../../context/ThemeContext";
 import Lottie from "lottie-react";
 import emailAnimation from "../../../animations/Email.json";
@@ -604,273 +605,282 @@ export default function AdminNotifications() {
       </div>
 
       {/* Notification Detail Modal */}
-      <AnimatePresence>
-        {selectedNotification && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-          >
+      {createPortal(
+        <AnimatePresence>
+          {selectedNotification && (
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className={`relative w-full max-w-2xl rounded-2xl backdrop-blur-2xl border shadow-2xl overflow-hidden
-                ${isDark 
-                  ? "bg-white/10 border-white/20" 
-                  : "bg-white/90 border-gray-200"
-                }`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
             >
-              <div className="p-6">
-                {/* Modal Header */}
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${
-                      selectedNotification.category === "ticket" 
-                        ? "from-blue-500 to-indigo-600"
-                        : "from-emerald-500 to-teal-600"
-                    } flex items-center justify-center shadow-lg`}>
-                      <selectedNotification.icon className="w-7 h-7 text-white" />
-                    </div>
-                    <div>
-                      <h2 className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
-                        {selectedNotification.title}
-                      </h2>
-                      <div className={`flex items-center gap-2 mt-1 text-sm ${isDark ? "text-white/60" : "text-gray-500"}`}>
-                        <Clock className="w-3 h-3" />
-                        {getTimeAgo(selectedNotification.createdAt)}
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className={`relative w-full max-w-2xl rounded-2xl backdrop-blur-2xl border shadow-2xl overflow-hidden
+                  ${isDark 
+                    ? "bg-white/10 border-white/20" 
+                    : "bg-white/90 border-gray-200"
+                  }`}
+              >
+                <div className="p-6">
+                  {/* Modal Header */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${
+                        selectedNotification.category === "ticket" 
+                          ? "from-blue-500 to-indigo-600"
+                          : "from-emerald-500 to-teal-600"
+                      } flex items-center justify-center shadow-lg`}>
+                        <selectedNotification.icon className="w-7 h-7 text-white" />
+                      </div>
+                      <div>
+                        <h2 className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
+                          {selectedNotification.title}
+                        </h2>
+                        <div className={`flex items-center gap-2 mt-1 text-sm ${isDark ? "text-white/60" : "text-gray-500"}`}>
+                          <Clock className="w-3 h-3" />
+                          {getTimeAgo(selectedNotification.createdAt)}
+                        </div>
                       </div>
                     </div>
+                    <motion.button 
+                      whileHover={{ scale: 1.1, rotate: 90 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setSelectedNotification(null)}
+                      className={`p-2 rounded-full transition-colors ${
+                        isDark ? "hover:bg-white/10" : "hover:bg-gray-100"
+                      }`}
+                    >
+                      <X className="w-5 h-5" />
+                    </motion.button>
                   </div>
-                  <motion.button 
-                    whileHover={{ scale: 1.1, rotate: 90 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setSelectedNotification(null)}
-                    className={`p-2 rounded-full transition-colors ${
-                      isDark ? "hover:bg-white/10" : "hover:bg-gray-100"
-                    }`}
-                  >
-                    <X className="w-5 h-5" />
-                  </motion.button>
-                </div>
 
-                {/* Modal Body */}
-                <div className="mt-6 space-y-4">
-                  <p className={`text-lg font-medium ${isDark ? "text-white/90" : "text-gray-900"}`}>
-                    {selectedNotification.message}
-                  </p>
-                  <p className={`${isDark ? "text-white/60" : "text-gray-700"}`}>
-                    {selectedNotification.description}
-                  </p>
+                  {/* Modal Body */}
+                  <div className="mt-6 space-y-4">
+                    <p className={`text-lg font-medium ${isDark ? "text-white/90" : "text-gray-900"}`}>
+                      {selectedNotification.message}
+                    </p>
+                    <p className={`${isDark ? "text-white/60" : "text-gray-700"}`}>
+                      {selectedNotification.description}
+                    </p>
 
-                  {selectedNotification.data && Object.keys(selectedNotification.data).length > 0 && (
-                    <div className={`p-4 rounded-lg backdrop-blur-sm ${isDark ? "bg-white/5" : "bg-gray-50"}`}>
-                      <h4 className={`font-semibold mb-3 ${isDark ? "text-white" : "text-gray-900"}`}>
-                        Additional Data
-                      </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                        {Object.entries(selectedNotification.data).map(([key, value]) => (
-                          <div key={key} className="flex flex-col">
-                            <span className={`text-xs uppercase ${isDark ? "text-white/40" : "text-gray-500"}`}>
-                              {key.replace(/_/g, ' ')}
-                            </span>
-                            <span className={`font-medium mt-0.5 ${isDark ? "text-white/80" : "text-gray-700"}`}>
-                              {String(value)}
-                            </span>
-                          </div>
-                        ))}
+                    {selectedNotification.data && Object.keys(selectedNotification.data).length > 0 && (
+                      <div className={`p-4 rounded-lg backdrop-blur-sm ${isDark ? "bg-white/5" : "bg-gray-50"}`}>
+                        <h4 className={`font-semibold mb-3 ${isDark ? "text-white" : "text-gray-900"}`}>
+                          Additional Data
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                          {Object.entries(selectedNotification.data).map(([key, value]) => (
+                            <div key={key} className="flex flex-col">
+                              <span className={`text-xs uppercase ${isDark ? "text-white/40" : "text-gray-500"}`}>
+                                {key.replace(/_/g, ' ')}
+                              </span>
+                              <span className={`font-medium mt-0.5 ${isDark ? "text-white/80" : "text-gray-700"}`}>
+                                {String(value)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  
-                  {/* Action Buttons in Modal */}
-                  <div className="flex gap-3 pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}">
-                    {selectedNotification.unread && (
+                    )}
+                    
+                    {/* Action Buttons in Modal */}
+                    <div className="flex gap-3 pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}">
+                      {selectedNotification.unread && (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => {
+                            markAsRead(selectedNotification._id);
+                            setSelectedNotification(prev => ({
+                              ...prev,
+                              isRead: true,
+                              unread: false
+                            }));
+                          }}
+                          disabled={processingIds.has(selectedNotification._id)}
+                          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-emerald-500/25 disabled:opacity-50"
+                        >
+                          <Check className="w-4 h-4" />
+                          Mark as Read
+                        </motion.button>
+                      )}
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => {
-                          markAsRead(selectedNotification._id);
-                          setSelectedNotification(prev => ({
-                            ...prev,
-                            isRead: true,
-                            unread: false
-                          }));
-                        }}
+                        onClick={() => setShowDeleteConfirm(selectedNotification._id)}
                         disabled={processingIds.has(selectedNotification._id)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-emerald-500/25 disabled:opacity-50"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-rose-500/25 disabled:opacity-50"
                       >
-                        <Check className="w-4 h-4" />
-                        Mark as Read
+                        <Trash2 className="w-4 h-4" />
+                        Delete
                       </motion.button>
-                    )}
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setShowDeleteConfirm(selectedNotification._id)}
-                      disabled={processingIds.has(selectedNotification._id)}
-                      className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-rose-500/25 disabled:opacity-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete
-                    </motion.button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Delete Single Notification Confirmation Modal */}
-      <AnimatePresence>
-        {showDeleteConfirm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
-          >
+      {createPortal(
+        <AnimatePresence>
+          {showDeleteConfirm && (
             <motion.div
-              initial={{ scale: 0.9, y: -20, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.9, y: 20, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className={`w-full max-w-md rounded-2xl backdrop-blur-2xl border shadow-2xl overflow-hidden
-                ${isDark
-                  ? "bg-white/10 border-white/20"
-                  : "bg-white/90 border-gray-200"
-                }`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
             >
-              {/* Header */}
-              <div className={`p-6 border-b flex items-center gap-4 ${isDark ? "border-white/10" : "border-gray-200"}`}>
-                <motion.div
-                  animate={{ scale: [1, 1.2, 1], rotate: [0, -10, 10, 0] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                  className={`p-3 rounded-xl ${isDark ? "bg-rose-500/20" : "bg-rose-100"}`}
-                >
-                  <AlertTriangle className="w-6 h-6 text-rose-500" />
-                </motion.div>
-                <div>
-                  <h3 className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
-                    Delete Notification
-                  </h3>
-                  <p className={`text-sm mt-1 ${isDark ? "text-white/60" : "text-gray-600"}`}>
-                    This action cannot be undone.
+              <motion.div
+                initial={{ scale: 0.9, y: -20, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.9, y: 20, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className={`w-full max-w-md rounded-2xl backdrop-blur-2xl border shadow-2xl overflow-hidden
+                  ${isDark
+                    ? "bg-white/10 border-white/20"
+                    : "bg-white/90 border-gray-200"
+                  }`}
+              >
+                {/* Header */}
+                <div className={`p-6 border-b flex items-center gap-4 ${isDark ? "border-white/10" : "border-gray-200"}`}>
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1], rotate: [0, -10, 10, 0] }}
+                    transition={{ repeat: Infinity, duration: 2 }}
+                    className={`p-3 rounded-xl ${isDark ? "bg-rose-500/20" : "bg-rose-100"}`}
+                  >
+                    <AlertTriangle className="w-6 h-6 text-rose-500" />
+                  </motion.div>
+                  <div>
+                    <h3 className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
+                      Delete Notification
+                    </h3>
+                    <p className={`text-sm mt-1 ${isDark ? "text-white/60" : "text-gray-600"}`}>
+                      This action cannot be undone.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div className="p-6">
+                  <p className={`${isDark ? "text-white/80" : "text-gray-700"}`}>
+                    Are you sure you want to delete this notification? This will permanently remove it from your history.
                   </p>
                 </div>
-              </div>
 
-              {/* Body */}
-              <div className="p-6">
-                <p className={`${isDark ? "text-white/80" : "text-gray-700"}`}>
-                  Are you sure you want to delete this notification? This will permanently remove it from your history.
-                </p>
-              </div>
-
-              {/* Footer */}
-              <div className={`p-4 flex justify-end gap-3 ${isDark ? "bg-white/5" : "bg-gray-50"}`}>
-                <motion.button 
-                  whileHover={{ scale: 1.05 }} 
-                  whileTap={{ scale: 0.95 }} 
-                  onClick={() => setShowDeleteConfirm(null)} 
-                  className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all backdrop-blur-sm
-                    ${isDark 
-                      ? "bg-white/10 text-white/80 hover:bg-white/20 border border-white/20" 
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                >
-                  Cancel
-                </motion.button>
-                <motion.button 
-                  whileHover={{ scale: 1.05, boxShadow: "0 8px 20px -5px rgba(239, 68, 68, 0.4)" }} 
-                  whileTap={{ scale: 0.95 }} 
-                  onClick={() => deleteNotification(showDeleteConfirm)} 
-                  className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-red-600 shadow-lg shadow-rose-500/30 transition-all hover:shadow-rose-500/40"
-                >
-                  Yes, Delete
-                </motion.button>
-              </div>
+                {/* Footer */}
+                <div className={`p-4 flex justify-end gap-3 ${isDark ? "bg-white/5" : "bg-gray-50"}`}>
+                  <motion.button 
+                    whileHover={{ scale: 1.05 }} 
+                    whileTap={{ scale: 0.95 }} 
+                    onClick={() => setShowDeleteConfirm(null)} 
+                    className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all backdrop-blur-sm
+                      ${isDark 
+                        ? "bg-white/10 text-white/80 hover:bg-white/20 border border-white/20" 
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button 
+                    whileHover={{ scale: 1.05, boxShadow: "0 8px 20px -5px rgba(239, 68, 68, 0.4)" }} 
+                    whileTap={{ scale: 0.95 }} 
+                    onClick={() => deleteNotification(showDeleteConfirm)} 
+                    className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-red-600 shadow-lg shadow-rose-500/30 transition-all hover:shadow-rose-500/40"
+                  >
+                    Yes, Delete
+                  </motion.button>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Clear All Confirmation Modal */}
-      <AnimatePresence>
-        {showClearConfirm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
-          >
+      {createPortal(
+        <AnimatePresence>
+          {showClearConfirm && (
             <motion.div
-              initial={{ scale: 0.9, y: -20, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.9, y: 20, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className={`w-full max-w-md rounded-2xl backdrop-blur-2xl border shadow-2xl overflow-hidden
-                ${isDark
-                  ? "bg-white/10 border-white/20"
-                  : "bg-white/90 border-gray-200"
-                }`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
             >
-              {/* Header */}
-              <div className={`p-6 border-b flex items-center gap-4 ${isDark ? "border-white/10" : "border-gray-200"}`}>
-                <motion.div
-                  animate={{ scale: [1, 1.2, 1], rotate: [0, -10, 10, 0] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                  className={`p-3 rounded-xl ${isDark ? "bg-rose-500/20" : "bg-rose-100"}`}
-                >
-                  <AlertTriangle className="w-6 h-6 text-rose-500" />
-                </motion.div>
-                <div>
-                  <h3 className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
-                    Confirm Deletion
-                  </h3>
-                  <p className={`text-sm mt-1 ${isDark ? "text-white/60" : "text-gray-600"}`}>
-                    This action cannot be undone.
+              <motion.div
+                initial={{ scale: 0.9, y: -20, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.9, y: 20, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className={`w-full max-w-md rounded-2xl backdrop-blur-2xl border shadow-2xl overflow-hidden
+                  ${isDark
+                    ? "bg-white/10 border-white/20"
+                    : "bg-white/90 border-gray-200"
+                  }`}
+              >
+                {/* Header */}
+                <div className={`p-6 border-b flex items-center gap-4 ${isDark ? "border-white/10" : "border-gray-200"}`}>
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1], rotate: [0, -10, 10, 0] }}
+                    transition={{ repeat: Infinity, duration: 2 }}
+                    className={`p-3 rounded-xl ${isDark ? "bg-rose-500/20" : "bg-rose-100"}`}
+                  >
+                    <AlertTriangle className="w-6 h-6 text-rose-500" />
+                  </motion.div>
+                  <div>
+                    <h3 className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
+                      Confirm Deletion
+                    </h3>
+                    <p className={`text-sm mt-1 ${isDark ? "text-white/60" : "text-gray-600"}`}>
+                      This action cannot be undone.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div className="p-6">
+                  <p className={`${isDark ? "text-white/80" : "text-gray-700"}`}>
+                    Are you sure you want to delete all notifications? This will permanently remove all entries from your history.
                   </p>
                 </div>
-              </div>
 
-              {/* Body */}
-              <div className="p-6">
-                <p className={`${isDark ? "text-white/80" : "text-gray-700"}`}>
-                  Are you sure you want to delete all notifications? This will permanently remove all entries from your history.
-                </p>
-              </div>
-
-              {/* Footer */}
-              <div className={`p-4 flex justify-end gap-3 ${isDark ? "bg-white/5" : "bg-gray-50"}`}>
-                <motion.button 
-                  whileHover={{ scale: 1.05 }} 
-                  whileTap={{ scale: 0.95 }} 
-                  onClick={() => setShowClearConfirm(false)} 
-                  className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all backdrop-blur-sm
-                    ${isDark 
-                      ? "bg-white/10 text-white/80 hover:bg-white/20 border border-white/20" 
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                >
-                  Cancel
-                </motion.button>
-                <motion.button 
-                  whileHover={{ scale: 1.05, boxShadow: "0 8px 20px -5px rgba(239, 68, 68, 0.4)" }} 
-                  whileTap={{ scale: 0.95 }} 
-                  onClick={handleConfirmClearAll} 
-                  className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-red-600 shadow-lg shadow-rose-500/30 transition-all hover:shadow-rose-500/40"
-                >
-                  Yes, Delete All
-                </motion.button>
-              </div>
+                {/* Footer */}
+                <div className={`p-4 flex justify-end gap-3 ${isDark ? "bg-white/5" : "bg-gray-50"}`}>
+                  <motion.button 
+                    whileHover={{ scale: 1.05 }} 
+                    whileTap={{ scale: 0.95 }} 
+                    onClick={() => setShowClearConfirm(false)} 
+                    className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all backdrop-blur-sm
+                      ${isDark 
+                        ? "bg-white/10 text-white/80 hover:bg-white/20 border border-white/20" 
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button 
+                    whileHover={{ scale: 1.05, boxShadow: "0 8px 20px -5px rgba(239, 68, 68, 0.4)" }} 
+                    whileTap={{ scale: 0.95 }} 
+                    onClick={handleConfirmClearAll} 
+                    className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-red-600 shadow-lg shadow-rose-500/30 transition-all hover:shadow-rose-500/40"
+                  >
+                    Yes, Delete All
+                  </motion.button>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       <style jsx>{`
         @keyframes blob {

@@ -180,6 +180,20 @@ const ZoneTickets = () => {
   const [isTicketListOpen, setIsTicketListOpen] = useState(false);
   const ticketListRef = useRef(null);
 
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [previewUrls, setPreviewUrls] = useState([]);
+
+  useEffect(() => {
+    const urls = selectedFiles.map((file) => ({
+      file,
+      url: URL.createObjectURL(file),
+    }));
+    setPreviewUrls(urls);
+    return () => {
+      urls.forEach((p) => URL.revokeObjectURL(p.url));
+    };
+  }, [selectedFiles]);
+
   const activeUser = users.find((u) => u.customerId === activeUserId);
   const activeTicket =
     activeUser?.tickets?.find((t) => t.id === activeTicketId) ||
@@ -395,34 +409,162 @@ const ZoneTickets = () => {
     };
   }, [activeUser?.customerId, token]);
 
+  // Keep activeUserId in a ref to avoid recreating socket listeners
+  const activeUserIdRef = useRef(activeUserId);
+  useEffect(() => {
+    activeUserIdRef.current = activeUserId;
+  }, [activeUserId]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    socket.auth = { token };
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    const handleTicketConnected = (room) => {
+      if (!room) return;
+
+      const newTicket = {
+        id: room._id,
+        ticketId: room._id.slice(-6).toUpperCase(),
+        status: normalizeTicketStatus(room.status),
+        lastMsg: room.lastMessage || "No messages yet",
+        time: room.lastMessageAt || room.createdAt,
+      };
+
+      setUsers((prevUsers) => {
+        const cid = room.customer?._id || room.customer?.userName || "unknown";
+        const exists = prevUsers.some((u) => u.customerId === cid);
+
+        let updated;
+        if (exists) {
+          updated = prevUsers.map((u) => {
+            if (u.customerId === cid) {
+              const ticketExists = u.tickets.some((t) => t.id === newTicket.id);
+              if (ticketExists) return u;
+
+              const isUserActive = activeUserIdRef.current === cid;
+              return {
+                ...u,
+                latestTicketId: newTicket.ticketId,
+                latestMessageTime: newTicket.time,
+                unreadCount: isUserActive ? u.unreadCount : u.unreadCount + 1,
+                tickets: [newTicket, ...u.tickets],
+              };
+            }
+            return u;
+          });
+        } else {
+          const newCustomer = {
+            customerId: cid,
+            name: `${room.customer?.firstName || ""} ${room.customer?.lastName || ""}`.trim() || room.customer?.userName || "Guest User",
+            latestTicketId: newTicket.ticketId,
+            latestMessageTime: newTicket.time,
+            unreadCount: 1,
+            tickets: [newTicket],
+          };
+          updated = [newCustomer, ...prevUsers];
+        }
+
+        return [...updated].sort(
+          (a, b) => new Date(b.latestMessageTime || 0) - new Date(a.latestMessageTime || 0)
+        );
+      });
+    };
+
+    const handleGlobalNewMessage = ({ roomId, message }) => {
+      if (!roomId || !message) return;
+
+      setUsers((prevUsers) => {
+        let found = false;
+        const updated = prevUsers.map((u) => {
+          const hasTicket = u.tickets.some((t) => t.id === roomId);
+          if (hasTicket) {
+            found = true;
+            const isUserActive = activeUserIdRef.current === u.customerId;
+            const isSenderCustomer = message.senderRole === "CUSTOMER";
+
+            return {
+              ...u,
+              latestMessageTime: message.createdAt,
+              unreadCount: (isSenderCustomer && !isUserActive) ? u.unreadCount + 1 : u.unreadCount,
+              tickets: u.tickets.map((t) => {
+                if (t.id === roomId) {
+                  return {
+                    ...t,
+                    lastMsg: message.message || (message.attachments?.length > 0 ? (message.attachments[0].type === "image" ? "📷 Image" : "📎 File") : ""),
+                    time: message.createdAt,
+                  };
+                }
+                return t;
+              }),
+            };
+          }
+          return u;
+        });
+
+        if (!found) return prevUsers;
+
+        return [...updated].sort(
+          (a, b) => new Date(b.latestMessageTime || 0) - new Date(a.latestMessageTime || 0)
+        );
+      });
+    };
+
+    const handleTicketUpdated = (room) => {
+      if (!room) return;
+
+      setUsers((prevUsers) => {
+        return prevUsers.map((u) => {
+          const hasTicket = u.tickets.some((t) => t.id === room._id);
+          if (hasTicket) {
+            return {
+              ...u,
+              tickets: u.tickets.map((t) => {
+                if (t.id === room._id) {
+                  return {
+                    ...t,
+                    status: normalizeTicketStatus(room.status),
+                  };
+                }
+                return t;
+              }),
+            };
+          }
+          return u;
+        });
+      });
+    };
+
+    socket.on("ticket-connected", handleTicketConnected);
+    socket.on("global-new-message", handleGlobalNewMessage);
+    socket.on("ticket-updated", handleTicketUpdated);
+
+    return () => {
+      socket.off("ticket-connected", handleTicketConnected);
+      socket.off("global-new-message", handleGlobalNewMessage);
+      socket.off("ticket-updated", handleTicketUpdated);
+    };
+  }, [token]);
+
   const handleUserSelect = (id) => {
     setActiveUserId(id);
+    setUsers((prevUsers) =>
+      prevUsers.map((u) => (u.customerId === id ? { ...u, unreadCount: 0 } : u))
+    );
     setShowSidebar(false);
   };
 
-  const handleSend = () => {
-    const message = input.trim();
-    if (!message || !activeTicketId) return;
-
-    socket.emit("send-message", {
-      roomId: activeTicketId,
-      message,
-      messageType: "TEXT",
-    });
-
-    setInput("");
-  };
-
-  const handleFileUpload = async (e) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length || !activeTicketId) {
-      e.target.value = "";
+  const handleSend = async () => {
+    if ((!input.trim() && selectedFiles.length === 0) || !activeTicketId)
       return;
-    }
 
-    try {
-      const attachments = await Promise.all(
-        files.map(async (file) => {
+    let attachments = [];
+    if (selectedFiles.length > 0) {
+      attachments = await Promise.all(
+        selectedFiles.map(async (file) => {
           const buffer = Array.from(new Uint8Array(await file.arrayBuffer()));
           return {
             name: file.name,
@@ -433,17 +575,38 @@ const ZoneTickets = () => {
           };
         }),
       );
-
-      socket.emit("send-message", {
-        roomId: activeTicketId,
-        message: "",
-        attachments,
-      });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      e.target.value = "";
     }
+
+    socket.emit("send-message", {
+      roomId: activeTicketId,
+      message: input.trim(),
+      attachments,
+    });
+
+    setInput("");
+    setSelectedFiles([]);
+  };
+
+  const handleFileUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length || !activeTicketId) {
+      e.target.value = "";
+      return;
+    }
+
+    const MAX_SIZE = 5 * 1025 * 1025; // 5MB limit
+    const validFiles = files.filter((file) => {
+      if (file.size > MAX_SIZE) {
+        alert(`${file.name} is too large (max 5MB)`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length > 0) {
+      setSelectedFiles((prev) => [...prev, ...validFiles]);
+    }
+    e.target.value = "";
   };
 
   const handleStatusChange = async (status) => {
@@ -1239,7 +1402,7 @@ const ZoneTickets = () => {
                         >
                           {activeUser.tickets.map((t) => {
                             const isSelected = t.id === activeTicketId;
-                            const isClosed = ["RESOLVED", "ASSIGNED"].includes(
+                            const isClosedStatus = ["RESOLVED", "ASSIGNED"].includes(
                               t.status,
                             );
 
@@ -1247,7 +1410,6 @@ const ZoneTickets = () => {
                               <button
                                 key={t.id}
                                 type="button"
-                                disabled={isClosed}
                                 onClick={() => {
                                   setActiveTicketId(t.id);
                                   setIsTicketListOpen(false);
@@ -1257,11 +1419,9 @@ const ZoneTickets = () => {
                                     ? isDark
                                       ? "bg-blue-600/20 text-blue-400 font-semibold"
                                       : "bg-blue-50 text-blue-600 font-semibold"
-                                    : isClosed
-                                      ? "opacity-50 cursor-not-allowed text-gray-500"
-                                      : isDark
-                                        ? "hover:bg-gray-800 text-gray-300"
-                                        : "hover:bg-gray-50 text-gray-700"
+                                    : isDark
+                                      ? "hover:bg-gray-800 text-gray-300"
+                                      : "hover:bg-gray-50 text-gray-700"
                                 }`}
                               >
                                 <span className="truncate">
@@ -1269,7 +1429,7 @@ const ZoneTickets = () => {
                                 </span>
                                 <span
                                   className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ${
-                                    isClosed
+                                    isClosedStatus
                                       ? isDark
                                         ? "bg-gray-800/40 text-gray-500"
                                         : "bg-gray-100 text-gray-400"
@@ -1292,22 +1452,81 @@ const ZoneTickets = () => {
                     </div>
                   </div>
 
+                  {/* Selected Files Preview Area */}
+                  {selectedFiles.length > 0 && (
+                    <div className="flex gap-3 py-2 overflow-x-auto scrollbar-hide mb-2 border-b border-gray-700/20">
+                      {selectedFiles.map((file, idx) => (
+                        <div
+                          key={idx}
+                          className={`relative flex-shrink-0 w-16 h-16 rounded-lg border overflow-hidden group/preview shadow-sm ${
+                            isDark
+                              ? "bg-gray-800 border-gray-700"
+                              : "bg-gray-50 border-gray-200"
+                          }`}
+                        >
+                          {file.type.startsWith("image/") ? (
+                            <img
+                              src={previewUrls[idx]?.url}
+                              alt="preview"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center p-1 text-center">
+                              <FileText className="w-6 h-6 text-blue-500 mb-1" />
+                              <span
+                                className={`text-[9px] leading-tight truncate w-full px-1 ${
+                                  isDark ? "text-gray-300" : "text-gray-600"
+                                }`}
+                              >
+                                {file.name}
+                              </span>
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedFiles((prev) =>
+                                prev.filter((_, i) => i !== idx),
+                              )
+                            }
+                            className="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5 opacity-0 group-hover/preview:opacity-100 transition-opacity hover:bg-red-500 backdrop-blur-sm"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="flex gap-2 items-center">
-                    <input
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                      placeholder="Type your message..."
-                      className={`
-                        flex-1 px-4 py-2.5 rounded-xl border text-sm
-                        transition-all focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none
-                        ${
+                    {selectedFiles.length === 0 ? (
+                      <input
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                        placeholder="Type your message..."
+                        className={`
+                          flex-1 px-4 py-2.5 rounded-xl border text-sm
+                          transition-all focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none
+                          ${
+                            isDark
+                              ? "bg-gray-800 border-gray-700 text-white placeholder-gray-500"
+                              : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400"
+                          }
+                        `}
+                      />
+                    ) : (
+                      <div
+                        className={`flex-1 py-2.5 px-4 rounded-xl border text-sm font-medium transition-all duration-300 ${
                           isDark
-                            ? "bg-gray-800 border-gray-700 text-white placeholder-gray-500"
-                            : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400"
-                        }
-                      `}
-                    />
+                            ? "bg-gray-800/40 border-gray-750 text-gray-400"
+                            : "bg-gray-50 border-gray-200 text-gray-500"
+                        }`}
+                      >
+                        Ready to send {selectedFiles.length} file
+                        {selectedFiles.length > 1 ? "s" : ""}
+                      </div>
+                    )}
 
                     <input
                       type="file"
@@ -1335,11 +1554,11 @@ const ZoneTickets = () => {
 
                     <button
                       onClick={handleSend}
-                      disabled={!input.trim()}
+                      disabled={!input.trim() && selectedFiles.length === 0}
                       className={`
                         p-2.5 rounded-xl transition
                         ${
-                          input.trim()
+                          input.trim() || selectedFiles.length > 0
                             ? isDark
                               ? "bg-blue-600 text-white hover:bg-blue-700 hover:scale-105"
                               : "bg-blue-500 text-white hover:bg-blue-600 hover:scale-105"

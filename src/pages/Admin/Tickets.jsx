@@ -91,7 +91,7 @@ const Tickets = () => {
         // Group by Customer
         const groupedUsers = [];
         const userMap = new Map();
-
+        console.log("Mapped rooms:", mapped);
         mapped.forEach((t) => {
           const cid = t.customerId;
           if (!userMap.has(cid)) {
@@ -205,6 +205,166 @@ const Tickets = () => {
     getAssignedRoomsCount()
       .then((count) => setAssignedRoomCount(count))
       .catch(() => setAssignedRoomCount(0));
+  }, [token]);
+
+  // Keep activeUserId in a ref to avoid recreating socket listeners
+  const activeUserIdRef = React.useRef(activeUserId);
+  useEffect(() => {
+    activeUserIdRef.current = activeUserId;
+  }, [activeUserId]);
+
+  const handleSelectUser = (customerId) => {
+    setActiveUserId(customerId);
+    setUsers((prevUsers) =>
+      prevUsers.map((u) =>
+        u.customerId === customerId ? { ...u, unreadCount: 0 } : u
+      )
+    );
+  };
+
+  useEffect(() => {
+    if (!token) return;
+
+    socket.auth = { token };
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    const handleTicketConnected = (room) => {
+      if (!room) return;
+
+      const newTicket = {
+        _id: room._id,
+        ticketId: room._id.slice(-6).toUpperCase(),
+        issue: "Customer Support Chat",
+        customerId: room.customer?._id || room.customer?.userName || "unknown",
+        customerName: room.customer?.userName || "Guest User",
+        customerEmail: room.customer?.emailId,
+        customerPhone: room.customer?.phoneNumber,
+        status: room.status || "OPEN",
+        assignedTo: room.assignedStaff?._id || null,
+        lastMessage: room.lastMessage || "No messages yet",
+        lastMessageTime: room.lastMessageAt || room.createdAt,
+        unreadCount: 1,
+        createdAt: room.createdAt,
+      };
+
+      setUsers((prevUsers) => {
+        const cid = newTicket.customerId;
+        const exists = prevUsers.some((u) => u.customerId === cid);
+
+        let updated;
+        if (exists) {
+          updated = prevUsers.map((u) => {
+            if (u.customerId === cid) {
+              const ticketExists = u.tickets.some((t) => t._id === newTicket._id);
+              if (ticketExists) return u;
+
+              const isUserActive = activeUserIdRef.current === cid;
+              return {
+                ...u,
+                latestTicketId: newTicket.ticketId,
+                latestMessageTime: newTicket.lastMessageTime,
+                unreadCount: isUserActive ? u.unreadCount : u.unreadCount + 1,
+                tickets: [newTicket, ...u.tickets],
+              };
+            }
+            return u;
+          });
+        } else {
+          const newCustomer = {
+            customerId: cid,
+            customerName: newTicket.customerName,
+            customerEmail: newTicket.customerEmail,
+            customerPhone: newTicket.customerPhone,
+            latestTicketId: newTicket.ticketId,
+            latestMessageTime: newTicket.lastMessageTime,
+            unreadCount: 1,
+            tickets: [newTicket],
+          };
+          updated = [newCustomer, ...prevUsers];
+        }
+
+        return [...updated].sort(
+          (a, b) => new Date(b.latestMessageTime || 0) - new Date(a.latestMessageTime || 0)
+        );
+      });
+    };
+
+    const handleGlobalNewMessage = ({ roomId, message }) => {
+      if (!roomId || !message) return;
+
+      setUsers((prevUsers) => {
+        let found = false;
+        const updated = prevUsers.map((u) => {
+          const hasTicket = u.tickets.some((t) => t._id === roomId);
+          if (hasTicket) {
+            found = true;
+            const isUserActive = activeUserIdRef.current === u.customerId;
+            const isSenderCustomer = message.senderRole === "CUSTOMER";
+
+            return {
+              ...u,
+              latestMessageTime: message.createdAt,
+              unreadCount: (isSenderCustomer && !isUserActive) ? u.unreadCount + 1 : u.unreadCount,
+              tickets: u.tickets.map((t) => {
+                if (t._id === roomId) {
+                  return {
+                    ...t,
+                    lastMessage: message.message || (message.attachments?.length > 0 ? (message.attachments[0].type === "image" ? "📷 Image" : "📎 File") : ""),
+                    lastMessageTime: message.createdAt,
+                  };
+                }
+                return t;
+              }),
+            };
+          }
+          return u;
+        });
+
+        if (!found) return prevUsers;
+
+        return [...updated].sort(
+          (a, b) => new Date(b.latestMessageTime || 0) - new Date(a.latestMessageTime || 0)
+        );
+      });
+    };
+
+    const handleTicketUpdated = (room) => {
+      if (!room) return;
+
+      setUsers((prevUsers) => {
+        return prevUsers.map((u) => {
+          const hasTicket = u.tickets.some((t) => t._id === room._id);
+          if (hasTicket) {
+            return {
+              ...u,
+              tickets: u.tickets.map((t) => {
+                if (t._id === room._id) {
+                  return {
+                    ...t,
+                    status: room.status,
+                    assignedTo: room.assignedStaff?._id || room.assignedFranchiseAdmin?._id || null,
+                  };
+                }
+                return t;
+              }),
+            };
+          }
+          return u;
+        });
+      });
+    };
+
+    socket.on("ticket-connected", handleTicketConnected);
+    socket.on("global-new-message", handleGlobalNewMessage);
+    socket.on("ticket-updated", handleTicketUpdated);
+
+    return () => {
+      socket.off("ticket-connected", handleTicketConnected);
+      socket.off("global-new-message", handleGlobalNewMessage);
+      socket.off("ticket-updated", handleTicketUpdated);
+    };
   }, [token]);
 
   useEffect(() => {
@@ -394,7 +554,6 @@ const Tickets = () => {
 
     return statsMap;
   }, [users, staffList]);
-
   if (!token) {
     return (
       <div className="h-[calc(100dvh-120px)] min-h-[420px] flex items-center justify-center px-4">
@@ -644,7 +803,7 @@ const Tickets = () => {
                     <div
                       key={u.customerId}
                       onClick={() => {
-                        setActiveUserId(u.customerId);
+                        handleSelectUser(u.customerId);
                         if (window.innerWidth < 1024) setIsSidebarOpen(false);
                       }}
                       className={`
@@ -824,6 +983,7 @@ const Tickets = () => {
           {activeUser ? (
             <div className="flex-1 min-h-0 overflow-hidden animate-fade-in">
               <Chat
+                key={activeTicket?.customerId} // Force remount when ticket changes
                 ticket={activeTicket}
                 userTickets={activeUser.tickets}
                 onTicketSelect={(tId) => setActiveTicketId(tId)}
@@ -848,6 +1008,7 @@ const Tickets = () => {
                 createdAt={activeUser.tickets?.[0]?.createdAt}
                 loading={loadingMessages}
                 zigzagStatuses={["ASSIGNED", "RESOLVED"]}
+                selectableStatuses={["OPEN", "ASSIGNED", "IN_PROGRESS"]}
                 onBack={() => setIsSidebarOpen(true)}
               />
             </div>

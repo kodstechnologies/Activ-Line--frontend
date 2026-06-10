@@ -116,7 +116,7 @@ const Staff = () => {
   const fetchStaffs = async () => {
     setIsLoading(true);
     try {
-      const res = await getAllAdminStaff();
+      const res = await getAllAdminStaff({ role: "SUPER_ADMIN,ADMIN,ADMIN_STAFF" });
       const normalized = res.data.map((s) => ({
         ...s,
         status: normalizeStatus(s.status),
