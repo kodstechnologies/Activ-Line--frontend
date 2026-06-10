@@ -1,21 +1,26 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useTheme } from "../../../context/ThemeContext";
 import Lottie from "lottie-react";
 import emailAnimation from "../../../animations/Email.json";
 import notificationAnimation from "../../../animations/Email.json";
-import { Bell, Check, X, AlertTriangle, Trash2, Mail, MailOpen, Clock, Eye, Sparkles } from "lucide-react";
+import { Bell, Check, X, AlertTriangle, Trash2, Mail, MailOpen, Clock, Eye, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   getNotificationsApi,
   markNotificationReadApi,
   deleteNotificationApi,
   deleteAllNotificationsApi,
   markAllNotificationsReadApi,
+  getUnreadCountApi,
 } from "../../../api/notification.api";
 import { motion, AnimatePresence } from "framer-motion";
 
+const ITEMS_PER_PAGE = 20;
+
 export default function AdminNotifications() {
   const { isDark } = useTheme();
+
+  // Current-page notifications (from server)
   const [notifications, setNotifications] = useState([]);
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,6 +28,20 @@ export default function AdminNotifications() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [filter, setFilter] = useState("all");
+
+  // Server-side pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalAll, setTotalAll] = useState(0);
+  const [totalUnread, setTotalUnread] = useState(0);
+
+  // Derived
+  const totalRead = Math.max(0, totalAll - totalUnread);
+
+  // Keep filter accessible inside callbacks without stale closure
+  const filterRef = useRef(filter);
+  useEffect(() => { filterRef.current = filter; }, [filter]);
 
   const normalizeNotifications = useCallback((data) => {
     return data.map((n) => ({
@@ -36,44 +55,75 @@ export default function AdminNotifications() {
     }));
   }, []);
 
-  const fetchNotifications = useCallback(async () => {
+  /**
+   * Fetch unread count from the dedicated endpoint (source of truth for badges).
+   */
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const count = await getUnreadCountApi();
+      setTotalUnread(count);
+    } catch (err) {
+      console.error("Failed to fetch unread count", err);
+    }
+  }, []);
+
+  /**
+   * Fetch one page of notifications from the server.
+   * @param {number} page - 1-based page number
+   * @param {string} [activeFilter] - "all" | "unread" | "read"
+   */
+  const fetchNotifications = useCallback(async (page = 1, activeFilter) => {
+    const currentFilter = activeFilter !== undefined ? activeFilter : filterRef.current;
     try {
       setLoading(true);
-      const data = await getNotificationsApi();
-      setNotifications(normalizeNotifications(data));
+      const isRead =
+        currentFilter === "unread" ? false
+        : currentFilter === "read" ? true
+        : undefined;
+      const { data, meta } = await getNotificationsApi(page, ITEMS_PER_PAGE, isRead);
+      setNotifications(normalizeNotifications(data || []));
+      const total = meta?.total || 0;
+      setTotalItems(total);
+      setTotalPages(meta?.totalPages || 1);
+      if (currentFilter === "all") {
+        setTotalAll(total);
+      }
+      setCurrentPage(page);
     } catch (err) {
       console.error("Failed to load notifications", err);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
   }, [normalizeNotifications]);
 
-  // Fetch notifications
+  // Initial load
   useEffect(() => {
-    fetchNotifications();
+    fetchNotifications(1, "all");
+    fetchUnreadCount();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * Change filter tab — always resets to page 1 and re-fetches from server.
+   */
+  const handleFilterChange = useCallback((newFilter) => {
+    setFilter(newFilter);
+    fetchNotifications(1, newFilter);
   }, [fetchNotifications]);
 
-  const unreadCount = useMemo(
-    () => notifications.reduce((count, n) => (!n.isRead ? count + 1 : count), 0),
-    [notifications]
-  );
-
-  const readCount = useMemo(
-    () => notifications.length - unreadCount,
-    [notifications.length, unreadCount]
-  );
-
-  const filteredNotifications = useMemo(() => {
-    return notifications.filter((n) => {
-      if (filter === "unread") return !n.isRead;
-      if (filter === "read") return n.isRead;
-      return true;
-    });
-  }, [notifications, filter]);
+  /**
+   * Navigate to a different page — fetches that page from the server.
+   */
+  const handlePageChange = useCallback((page) => {
+    if (page < 1 || page > totalPages) return;
+    fetchNotifications(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [totalPages, fetchNotifications]);
 
   const markAsRead = useCallback(async (id, e) => {
     if (e) e.stopPropagation();
-    
+
     const notification = notifications.find((n) => n._id === id);
     if (!notification || notification.isRead) return;
 
@@ -81,19 +131,15 @@ export default function AdminNotifications() {
 
     try {
       await markNotificationReadApi(id);
-      
+
+      // Optimistic update for current page
       setNotifications((prev) =>
-        prev.map((n) =>
-          n._id === id ? { ...n, isRead: true, unread: false } : n
-        )
+        prev.map((n) => n._id === id ? { ...n, isRead: true, unread: false } : n)
       );
-      
+      setTotalUnread(prev => Math.max(0, prev - 1));
+
       if (selectedNotification?._id === id) {
-        setSelectedNotification(prev => ({
-          ...prev,
-          isRead: true,
-          unread: false
-        }));
+        setSelectedNotification(prev => ({ ...prev, isRead: true, unread: false }));
       }
     } catch (err) {
       console.error("Failed to mark read", err);
@@ -107,38 +153,54 @@ export default function AdminNotifications() {
   }, [notifications, selectedNotification]);
 
   const markAllAsRead = useCallback(async () => {
-    const unread = notifications.filter((n) => !n.isRead);
-    if (!unread.length) return;
+    if (totalUnread === 0) return;
 
     try {
-      const unreadIds = unread.map(n => n._id);
-      setProcessingIds(new Set(unreadIds));
-      
-      await markAllNotificationsReadApi(unread);
+      const currentUnreadIds = notifications.filter(n => !n.isRead).map(n => n._id);
+      setProcessingIds(new Set(currentUnreadIds));
 
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, isRead: true, unread: false }))
-      );
+      await markAllNotificationsReadApi();
+
+      setTotalUnread(0);
+
+      // If on unread filter, items will disappear → re-fetch page 1
+      if (filterRef.current === "unread") {
+        fetchNotifications(1, "unread");
+      } else {
+        // Optimistically mark all current-page items as read
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true, unread: false })));
+      }
     } catch (err) {
       console.error("Failed to mark all as read", err);
+      fetchNotifications(currentPage);
+      fetchUnreadCount();
     } finally {
       setProcessingIds(new Set());
     }
-  }, [notifications]);
+  }, [notifications, totalUnread, currentPage, fetchNotifications, fetchUnreadCount]);
 
   const deleteNotification = useCallback(async (id) => {
+    const notif = notifications.find(n => n._id === id);
     setProcessingIds(prev => new Set([...prev, id]));
 
     try {
       await deleteNotificationApi(id);
-      
-      setNotifications((prev) => prev.filter((n) => n._id !== id));
-      
-      if (selectedNotification?._id === id) {
-        setSelectedNotification(null);
+
+      // Optimistically update counts
+      setTotalItems(prev => Math.max(0, prev - 1));
+      setTotalAll(prev => Math.max(0, prev - 1));
+      if (notif && !notif.isRead) {
+        setTotalUnread(prev => Math.max(0, prev - 1));
       }
+
+      if (selectedNotification?._id === id) setSelectedNotification(null);
+
+      // If this was the only item on the current page, go back one page
+      const isLastOnPage = notifications.length === 1 && currentPage > 1;
+      fetchNotifications(isLastOnPage ? currentPage - 1 : currentPage);
     } catch (err) {
       console.error("Failed to delete notification", err);
+      fetchNotifications(currentPage);
     } finally {
       setProcessingIds(prev => {
         const newSet = new Set(prev);
@@ -147,7 +209,7 @@ export default function AdminNotifications() {
       });
       setShowDeleteConfirm(null);
     }
-  }, [selectedNotification]);
+  }, [notifications, currentPage, selectedNotification, fetchNotifications]);
 
   const showDeleteConfirmation = useCallback((id, e) => {
     if (e) e.stopPropagation();
@@ -155,9 +217,9 @@ export default function AdminNotifications() {
   }, []);
 
   const clearAll = useCallback(async () => {
-    if (notifications.length === 0 || processingIds.size > 0) return;
+    if (totalItems === 0 || processingIds.size > 0) return;
     setShowClearConfirm(true);
-  }, [notifications.length, processingIds.size]);
+  }, [totalItems, processingIds.size]);
 
   const handleConfirmClearAll = useCallback(async () => {
     setShowClearConfirm(false);
@@ -165,12 +227,18 @@ export default function AdminNotifications() {
       setProcessingIds(new Set(notifications.map(n => n._id)));
       await deleteAllNotificationsApi();
       setNotifications([]);
+      setTotalItems(0);
+      setTotalAll(0);
+      setTotalUnread(0);
+      setTotalPages(1);
+      setCurrentPage(1);
     } catch (err) {
       console.error("Failed to clear notifications", err);
+      fetchNotifications(currentPage);
     } finally {
       setProcessingIds(new Set());
     }
-  }, [notifications]);
+  }, [notifications, currentPage, fetchNotifications]);
 
   const handleNotificationClick = useCallback((notification) => {
     setSelectedNotification(notification);
@@ -193,6 +261,10 @@ export default function AdminNotifications() {
     if (diffDays < 7) return `${diffDays}d ago`;
     return date.toLocaleDateString();
   }, []);
+
+  // Pagination display helpers
+  const paginationStart = totalItems === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1;
+  const paginationEnd = (currentPage - 1) * ITEMS_PER_PAGE + notifications.length;
 
   return (
     <div className={`w-full min-h-screen relative overflow-hidden ${
@@ -245,14 +317,14 @@ export default function AdminNotifications() {
                       Notifications
                     </h1>
                     <p className={`text-sm mt-1 ${isDark ? "text-white/60" : "text-gray-600"}`}>
-                      {unreadCount} unread of {notifications.length} total notifications
+                      {totalUnread} unread of {totalItems} total notifications
                     </p>
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-3">
-                {unreadCount > 0 && (
+                {totalUnread > 0 && (
                   <button
                     onClick={markAllAsRead}
                     disabled={processingIds.size > 0}
@@ -270,7 +342,7 @@ export default function AdminNotifications() {
                     </div>
                   </button>
                 )}
-                {notifications.length > 0 && (
+                {totalItems > 0 && (
                   <button
                     onClick={clearAll}
                     disabled={processingIds.size > 0}
@@ -304,7 +376,7 @@ export default function AdminNotifications() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className={`text-sm font-medium ${isDark ? "text-white/60" : "text-gray-600"}`}>Total</p>
-                    <p className={`text-4xl font-bold mt-2 ${isDark ? "text-white" : "text-gray-900"}`}>{notifications.length}</p>
+                    <p className={`text-4xl font-bold mt-2 ${isDark ? "text-white" : "text-gray-900"}`}>{totalAll}</p>
                   </div>
                   <div className={`w-14 h-14 rounded-2xl backdrop-blur-sm flex items-center justify-center ${
                     isDark 
@@ -327,7 +399,7 @@ export default function AdminNotifications() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className={`text-sm font-medium ${isDark ? "text-emerald-300" : "text-emerald-600"}`}>Unread</p>
-                    <p className={`text-4xl font-bold mt-2 ${isDark ? "text-emerald-400" : "text-emerald-700"}`}>{unreadCount}</p>
+                    <p className={`text-4xl font-bold mt-2 ${isDark ? "text-emerald-400" : "text-emerald-700"}`}>{totalUnread}</p>
                   </div>
                   <div className={`w-14 h-14 rounded-2xl backdrop-blur-sm flex items-center justify-center ${
                     isDark 
@@ -350,7 +422,7 @@ export default function AdminNotifications() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className={`text-sm font-medium ${isDark ? "text-blue-300" : "text-blue-600"}`}>Read</p>
-                    <p className={`text-4xl font-bold mt-2 ${isDark ? "text-blue-400" : "text-blue-700"}`}>{readCount}</p>
+                    <p className={`text-4xl font-bold mt-2 ${isDark ? "text-blue-400" : "text-blue-700"}`}>{totalRead}</p>
                   </div>
                   <div className={`w-14 h-14 rounded-2xl backdrop-blur-sm flex items-center justify-center ${
                     isDark 
@@ -368,12 +440,12 @@ export default function AdminNotifications() {
           <div className="flex gap-3 mb-6">
             {[
               { id: "all", label: "All", icon: Bell },
-              { id: "unread", label: "Unread", icon: Mail, count: unreadCount },
-              { id: "read", label: "Read", icon: Eye, count: readCount },
+              { id: "unread", label: "Unread", icon: Mail, count: totalUnread },
+              { id: "read", label: "Read", icon: Eye, count: totalRead },
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setFilter(tab.id)}
+                onClick={() => handleFilterChange(tab.id)}
                 className={`relative px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300
                   ${filter === tab.id
                     ? isDark
@@ -427,7 +499,7 @@ export default function AdminNotifications() {
                     Loading notifications...
                   </p>
                 </div>
-              ) : filteredNotifications.length === 0 ? (
+              ) : notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-32">
                   <div className="relative">
                     <div className={`w-32 h-32 rounded-full backdrop-blur-sm flex items-center justify-center ${
@@ -452,7 +524,7 @@ export default function AdminNotifications() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {filteredNotifications.map((notification, index) => (
+                  {notifications.map((notification, index) => (
                     <motion.div
                       key={notification._id}
                       initial={{ opacity: 0, y: 20 }}
@@ -592,12 +664,104 @@ export default function AdminNotifications() {
               )}
             </div>
 
-            {/* Footer */}
-            {notifications.length > 0 && (
-              <div className={`p-4 border-t backdrop-blur-sm ${isDark ? "border-white/10" : "border-gray-200"}`}>
-                <p className={`text-xs text-center ${isDark ? "text-white/40" : "text-gray-500"}`}>
-                  Showing {filteredNotifications.length} of {notifications.length} notification{notifications.length !== 1 ? "s" : ""}
-                </p>
+            {/* Pagination Controls */}
+            {totalItems > 0 && (
+              <div
+                className={`mt-2 flex-shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t ${
+                  isDark ? "border-white/10" : "border-gray-200"
+                }`}
+              >
+                <div
+                  className={`text-sm ${isDark ? "text-slate-400" : "text-gray-600"}`}
+                >
+                  Showing{" "}
+                  <span className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+                    {paginationStart}
+                  </span>{" "}
+                  to{" "}
+                  <span className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+                    {paginationEnd}
+                  </span>{" "}
+                  of{" "}
+                  <span className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+                    {totalItems}
+                  </span>{" "}
+                  entries
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      currentPage === 1
+                        ? isDark
+                          ? "bg-slate-800 text-slate-600 cursor-not-allowed"
+                          : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : isDark
+                          ? "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+                          : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
+                    }`}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter((page) => {
+                        if (page === 1 || page === totalPages) return true;
+                        if (Math.abs(page - currentPage) <= 1) return true;
+                        return false;
+                      })
+                      .map((page, index, array) => {
+                        const showEllipsisBefore =
+                          index > 0 && array[index - 1] !== page - 1;
+                        return (
+                          <React.Fragment key={page}>
+                            {showEllipsisBefore && (
+                              <span
+                                className={`px-2 text-sm ${
+                                  isDark ? "text-slate-500" : "text-gray-500"
+                                }`}
+                              >
+                                ...
+                              </span>
+                            )}
+                            <button
+                              onClick={() => handlePageChange(page)}
+                              className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${
+                                currentPage === page
+                                  ? isDark
+                                    ? "bg-blue-600 text-white border-blue-500"
+                                    : "bg-purple-600 text-white border-purple-500"
+                                  : isDark
+                                    ? "border-slate-700 text-slate-300 hover:bg-slate-800"
+                                    : "border-purple-200 text-purple-700 hover:bg-purple-50"
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          </React.Fragment>
+                        );
+                      })}
+                  </div>
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      currentPage === totalPages
+                        ? isDark
+                          ? "bg-slate-800 text-slate-600 cursor-not-allowed"
+                          : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : isDark
+                          ? "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+                          : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
+                    }`}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -688,7 +852,7 @@ export default function AdminNotifications() {
                     )}
                     
                     {/* Action Buttons in Modal */}
-                    <div className="flex gap-3 pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}">
+                    <div className={`flex gap-3 pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
                       {selectedNotification.unread && (
                         <motion.button
                           whileHover={{ scale: 1.05 }}

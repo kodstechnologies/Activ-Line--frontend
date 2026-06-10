@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
   Bell,
@@ -13,6 +13,8 @@ import {
   Clock,
   Eye,
   AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useTheme } from "../../../context/ThemeContext";
 import Lottie from "lottie-react";
@@ -25,7 +27,10 @@ import {
   markAllStaffNotificationsRead,
   deleteStaffNotification,
   deleteAllStaffNotifications,
+  getStaffUnreadCount,
 } from "../../../api/staffnotification.api";
+
+const ITEMS_PER_PAGE = 20;
 
 export default function StaffNotifications() {
   const { isDark } = useTheme();
@@ -36,23 +41,81 @@ export default function StaffNotifications() {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [processingIds, setProcessingIds] = useState(new Set());
 
-  // Memoized calculations
-  const unreadCount = useMemo(
-    () => notifications.filter((n) => n.unread).length,
-    [notifications],
-  );
-  const readCount = useMemo(
-    () => notifications.length - unreadCount,
-    [notifications.length, unreadCount],
-  );
+  // Server-side pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalAll, setTotalAll] = useState(0);
+  const [totalUnread, setTotalUnread] = useState(0);
 
-  const filteredNotifications = useMemo(() => {
-    return notifications.filter((n) => {
-      if (filter === "unread") return n.unread;
-      if (filter === "read") return !n.unread;
-      return true;
-    });
-  }, [notifications, filter]);
+  const totalRead = Math.max(0, totalAll - totalUnread);
+
+  // Keep filter accessible inside callbacks without stale closure
+  const filterRef = useRef(filter);
+  useEffect(() => { filterRef.current = filter; }, [filter]);
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const count = await getStaffUnreadCount();
+      setTotalUnread(count);
+    } catch (err) {
+      console.error("Failed to fetch staff unread count", err);
+    }
+  }, []);
+
+  // Fetch one page of notifications
+  const fetchNotifications = useCallback(async (page = 1, activeFilter) => {
+    const currentFilter = activeFilter !== undefined ? activeFilter : filterRef.current;
+    try {
+      setLoading(true);
+      const isRead =
+        currentFilter === "unread" ? false
+        : currentFilter === "read" ? true
+        : undefined;
+      const { data, meta } = await getMyStaffNotifications(page, ITEMS_PER_PAGE, isRead);
+      setNotifications(
+        (data || []).map((n) => ({
+          ...n,
+          unread: !n.isRead,
+          time: new Date(n.createdAt).toLocaleString(),
+          icon: n.type === "ticket" ? Ticket : MessageSquare,
+          title: n.title || "Notification",
+          message: n.message || n.body || "",
+          description: n.description || n.type || "",
+        }))
+      );
+      const total = meta?.total || 0;
+      setTotalItems(total);
+      setTotalPages(meta?.totalPages || 1);
+      if (currentFilter === "all") {
+        setTotalAll(total);
+      }
+      setCurrentPage(page);
+    } catch (err) {
+      console.error("Failed to load staff notifications", err);
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    fetchNotifications(1, "all");
+    fetchUnreadCount();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleFilterChange = useCallback((newFilter) => {
+    setFilter(newFilter);
+    fetchNotifications(1, newFilter);
+  }, [fetchNotifications]);
+
+  const handlePageChange = useCallback((page) => {
+    if (page < 1 || page > totalPages) return;
+    fetchNotifications(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [totalPages, fetchNotifications]);
 
   // Optimized mark as read function
   const markAsRead = useCallback(
@@ -67,6 +130,7 @@ export default function StaffNotifications() {
             n._id === id ? { ...n, unread: false, isRead: true } : n,
           ),
         );
+        setTotalUnread(prev => Math.max(0, prev - 1));
         if (selectedNotification?._id === id) {
           setSelectedNotification((prev) => ({
             ...prev,
@@ -89,48 +153,27 @@ export default function StaffNotifications() {
 
   // Optimized mark all as read
   const markAllAsRead = useCallback(async () => {
-    const unreadNotifications = notifications.filter((n) => n.unread);
-    if (unreadNotifications.length === 0) return;
+    if (totalUnread === 0) return;
 
-    setProcessingIds(new Set(unreadNotifications.map((n) => n._id)));
+    setProcessingIds(new Set(notifications.filter((n) => n.unread).map((n) => n._id)));
     try {
       await markAllStaffNotificationsRead();
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, unread: false, isRead: true })),
-      );
+      setTotalUnread(0);
+      if (filterRef.current === "unread") {
+        fetchNotifications(1, "unread");
+      } else {
+        setNotifications((prev) =>
+          prev.map((n) => ({ ...n, unread: false, isRead: true })),
+        );
+      }
     } catch (err) {
       console.error("Failed to mark all as read", err);
+      fetchNotifications(currentPage);
+      fetchUnreadCount();
     } finally {
       setProcessingIds(new Set());
     }
-  }, [notifications]);
-
-  // Fetch notifications
-  const fetchNotifications = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await getMyStaffNotifications();
-      setNotifications(
-        data.map((n) => ({
-          ...n,
-          unread: !n.isRead,
-          time: new Date(n.createdAt).toLocaleString(),
-          icon: n.type === "ticket" ? Ticket : MessageSquare,
-          title: n.title || "Notification",
-          message: n.message || n.body || "",
-          description: n.description || n.type || "",
-        })),
-      );
-    } catch (err) {
-      console.error("Failed to load staff notifications", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
+  }, [notifications, totalUnread, currentPage, fetchNotifications, fetchUnreadCount]);
 
   // Optimized delete function
   const deleteOne = useCallback(
@@ -138,15 +181,19 @@ export default function StaffNotifications() {
       e?.stopPropagation();
       if (processingIds.has(id)) return;
 
+      const notif = notifications.find(n => n._id === id);
       setProcessingIds((prev) => new Set([...prev, id]));
       try {
         await deleteStaffNotification(id);
-        setNotifications((prev) => prev.filter((n) => n._id !== id));
-        if (selectedNotification?._id === id) {
-          setSelectedNotification(null);
-        }
+        setTotalItems(prev => Math.max(0, prev - 1));
+        setTotalAll(prev => Math.max(0, prev - 1));
+        if (notif && notif.unread) setTotalUnread(prev => Math.max(0, prev - 1));
+        if (selectedNotification?._id === id) setSelectedNotification(null);
+        const isLastOnPage = notifications.length === 1 && currentPage > 1;
+        fetchNotifications(isLastOnPage ? currentPage - 1 : currentPage);
       } catch (err) {
         console.error("Failed to delete notification", err);
+        fetchNotifications(currentPage);
       } finally {
         setProcessingIds((prev) => {
           const newSet = new Set(prev);
@@ -155,7 +202,7 @@ export default function StaffNotifications() {
         });
       }
     },
-    [processingIds, selectedNotification],
+    [processingIds, notifications, currentPage, selectedNotification, fetchNotifications],
   );
 
   // Optimized delete all
@@ -164,14 +211,20 @@ export default function StaffNotifications() {
     try {
       await deleteAllStaffNotifications();
       setNotifications([]);
+      setTotalItems(0);
+      setTotalAll(0);
+      setTotalUnread(0);
+      setTotalPages(1);
+      setCurrentPage(1);
       setShowDeleteConfirm(false);
       setSelectedNotification(null);
     } catch (err) {
       console.error("Failed to delete all notifications", err);
+      fetchNotifications(currentPage);
     } finally {
       setProcessingIds(new Set());
     }
-  }, [notifications]);
+  }, [notifications, currentPage, fetchNotifications]);
 
   // Optimized time ago function
   const getTimeAgo = useCallback((dateString) => {
@@ -327,7 +380,7 @@ export default function StaffNotifications() {
               </div>
 
               <div className="flex items-center gap-3">
-                {unreadCount > 0 && (
+                {totalUnread > 0 && (
                   <button
                     onClick={markAllAsRead}
                     className="group relative overflow-hidden px-5 py-2.5 rounded-xl
@@ -345,7 +398,7 @@ export default function StaffNotifications() {
                   </button>
                 )}
 
-                {notifications.length > 0 && (
+                {totalItems > 0 && (
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
                     className="group relative overflow-hidden px-5 py-2.5 rounded-xl
@@ -376,19 +429,19 @@ export default function StaffNotifications() {
             {[
               {
                 label: "Total",
-                value: notifications.length,
+                value: totalAll,
                 icon: Bell,
                 color: "slate",
               },
               {
                 label: "Unread",
-                value: unreadCount,
+                value: totalUnread,
                 icon: Mail,
                 color: "emerald",
               },
               {
                 label: "Read",
-                value: readCount,
+                value: totalRead,
                 icon: MailOpen,
                 color: "blue",
               },
@@ -466,12 +519,12 @@ export default function StaffNotifications() {
           >
             {[
               { id: "all", label: "All", icon: Bell },
-              { id: "unread", label: "Unread", icon: Mail, count: unreadCount },
-              { id: "read", label: "Read", icon: Eye, count: readCount },
+              { id: "unread", label: "Unread", icon: Mail, count: totalUnread },
+              { id: "read", label: "Read", icon: Eye, count: totalRead },
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setFilter(tab.id)}
+                onClick={() => handleFilterChange(tab.id)}
                 className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 whitespace-nowrap
                   ${
                     filter === tab.id
@@ -514,206 +567,292 @@ export default function StaffNotifications() {
                 : "bg-black/5 border border-gray-200/50"
             }`}
           >
-            <div className="scrollbar-hide max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
-              <AnimatePresence mode="wait">
-                {loading ? (
-                  <motion.div
-                    key="loading"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex flex-col items-center justify-center py-32"
-                  >
-                    <div className="relative w-32 h-32">
-                      <Lottie
-                        animationData={emailAnimation}
-                        loop
-                        autoplay
-                        className="w-32 h-32"
-                      />
+            <div>
+              {loading ? (
+                <div className={`divide-y ${isDark ? "divide-white/10" : "divide-gray-200"}`}>
+                  {Array.from({ length: 3 }).map((_, idx) => (
+                    <div
+                      key={idx}
+                      className="p-6 flex items-start gap-5 animate-pulse"
+                    >
+                      {/* Icon Placeholder */}
+                      <div className={`w-16 h-16 rounded-2xl ${isDark ? "bg-white/10" : "bg-black/10"} flex-shrink-0`} />
+
+                      {/* Content Placeholders */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-4 flex-wrap">
+                          <div className="flex-1 space-y-2">
+                            {/* Title line */}
+                            <div className={`h-5 rounded w-1/3 ${isDark ? "bg-white/10" : "bg-black/10"}`} />
+                            {/* Message line */}
+                            <div className={`h-4 rounded w-3/4 ${isDark ? "bg-white/10" : "bg-black/10"}`} />
+                          </div>
+                          {/* Time meta */}
+                          <div className={`h-4 rounded w-16 ${isDark ? "bg-white/10" : "bg-black/10"}`} />
+                        </div>
+                        {/* Description block */}
+                        <div className="mt-4 space-y-2">
+                          <div className={`h-3 rounded w-full ${isDark ? "bg-white/5" : "bg-black/5"}`} />
+                          <div className={`h-3 rounded w-5/6 ${isDark ? "bg-white/5" : "bg-black/5"}`} />
+                        </div>
+                      </div>
                     </div>
-                    <p
-                      className={`mt-4 ${isDark ? "text-white/60" : "text-gray-600"}`}
-                    >
-                      Loading notifications...
-                    </p>
-                  </motion.div>
-                ) : filteredNotifications.length === 0 ? (
-                  <motion.div
-                    key="empty"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex flex-col items-center justify-center py-32"
+                  ))}
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-32">
+                  <div className="relative w-48 h-48">
+                    <Lottie
+                      animationData={emailAnimation}
+                      loop
+                      autoplay
+                      className="w-48 h-48"
+                    />
+                  </div>
+                  <h3
+                    className={`text-2xl font-bold mt-4 ${isDark ? "text-white" : "text-gray-900"}`}
                   >
-                    <div className="relative w-48 h-48">
-                      <Lottie
-                        animationData={emailAnimation}
-                        loop
-                        autoplay
-                        className="w-48 h-48"
-                      />
-                    </div>
-                    <h3
-                      className={`text-2xl font-bold mt-4 ${isDark ? "text-white" : "text-gray-900"}`}
-                    >
-                      All caught up!
-                    </h3>
-                    <p
-                      className={`mt-2 text-center ${isDark ? "text-white/60" : "text-gray-600"}`}
-                    >
-                      No new notifications at the moment
-                    </p>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="list"
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className={`divide-y ${isDark ? "divide-white/10" : "divide-gray-200"}`}
+                    All caught up!
+                  </h3>
+                  <p
+                    className={`mt-2 text-center ${isDark ? "text-white/60" : "text-gray-600"}`}
                   >
-                    <AnimatePresence mode="popLayout">
-                      {filteredNotifications.map((n) => (
-                        <motion.div
-                          key={n._id}
-                          variants={itemVariants}
-                          layout
-                          onClick={() => {
-                            setSelectedNotification(n);
-                            if (n.unread) markAsRead(n._id);
-                          }}
-                          className={`group relative p-6 transition-all duration-300 cursor-pointer
-                            hover:backdrop-blur-2xl ${isDark ? "hover:bg-white/10" : "hover:bg-black/5"}
-                            ${n.unread ? (isDark ? "bg-gradient-to-r from-emerald-500/5 to-transparent" : "bg-gradient-to-r from-emerald-50/50 to-transparent") : ""}`}
-                        >
-                          {/* Unread Indicator */}
+                    No new notifications at the moment
+                  </p>
+                </div>
+              ) : (
+                <div className={`divide-y ${isDark ? "divide-white/10" : "divide-gray-200"}`}>
+                  {notifications.map((n, index) => (
+                    <motion.div
+                      key={n._id}
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: Math.min(index * 0.03, 0.3), type: "spring", stiffness: 200, damping: 22 }}
+                      onClick={() => {
+                        setSelectedNotification(n);
+                        if (n.unread) markAsRead(n._id);
+                      }}
+                      className={`group relative p-6 cursor-pointer hover:backdrop-blur-2xl ${
+                        isDark ? "hover:bg-white/10" : "hover:bg-black/5"
+                      } ${
+                        n.unread
+                          ? isDark
+                            ? "bg-gradient-to-r from-emerald-500/5 to-transparent"
+                            : "bg-gradient-to-r from-emerald-50/50 to-transparent"
+                          : ""
+                      }`}
+                    >
+                      {/* Unread Indicator */}
+                      {n.unread && (
+                        <>
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-400 to-teal-500 rounded-l-xl"></div>
+                          <div className="absolute -left-1 top-1/2 -translate-y-1/2">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                          </div>
+                        </>
+                      )}
+
+                      <div className="flex items-start gap-5">
+                        {/* Icon */}
+                        <div className="relative flex-shrink-0">
+                          <div
+                            className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${getIconGradient(n.type)} 
+                            flex items-center justify-center shadow-2xl transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}
+                          >
+                            <n.icon className="w-8 h-8 text-white" />
+                          </div>
                           {n.unread && (
                             <>
-                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-400 to-teal-500 rounded-l-xl"></div>
-                              <div className="absolute -left-1 top-1/2 -translate-y-1/2">
-                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                              </div>
+                              <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-400 rounded-full border-2 border-white/20 animate-ping"></div>
+                              <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white"></div>
                             </>
                           )}
+                        </div>
 
-                          <div className="flex items-start gap-5">
-                            {/* Icon */}
-                            <div className="relative flex-shrink-0">
-                              <div
-                                className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${getIconGradient(n.type)} 
-                                flex items-center justify-center shadow-2xl transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-4 flex-wrap">
+                            <div className="flex-1">
+                              <h3
+                                className={`text-lg font-semibold ${
+                                  n.unread
+                                    ? isDark
+                                      ? "text-white"
+                                      : "text-gray-900"
+                                    : isDark
+                                      ? "text-white/80"
+                                      : "text-gray-900"
+                                }`}
                               >
-                                <n.icon className="w-8 h-8 text-white" />
-                              </div>
-                              {n.unread && (
-                                <>
-                                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-400 rounded-full border-2 border-white/20 animate-ping"></div>
-                                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white"></div>
-                                </>
-                              )}
+                                {n.title}
+                              </h3>
+                              <p
+                                className={`mt-1 text-sm ${isDark ? "text-white/60" : "text-gray-900"}`}
+                              >
+                                {n.message}
+                              </p>
                             </div>
-
-                            {/* Content */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-4 flex-wrap">
-                                <div className="flex-1">
-                                  <h3
-                                    className={`text-lg font-semibold ${
-                                      n.unread
-                                        ? isDark
-                                          ? "text-white"
-                                          : "text-gray-900"
-                                        : isDark
-                                          ? "text-white/80"
-                                          : "text-gray-900"
-                                    }`}
-                                  >
-                                    {n.title}
-                                  </h3>
-                                  <p
-                                    className={`mt-1 text-sm ${isDark ? "text-white/60" : "text-gray-900"}`}
-                                  >
-                                    {n.message}
-                                  </p>
-                                </div>
-                                <div className="flex flex-col items-end gap-3">
-                                  <div
-                                    className={`flex items-center gap-2 text-xs ${isDark ? "text-white/40" : "text-gray-500"}`}
-                                  >
-                                    <Clock className="w-3 h-3" />
-                                    {getTimeAgo(n.createdAt)}
-                                  </div>
-                                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                                    {n.unread && (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          markAsRead(n._id);
-                                        }}
-                                        disabled={processingIds.has(n._id)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold
-                                          backdrop-blur-sm transition-all duration-200 border
-                                          ${
-                                            isDark
-                                              ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30"
-                                              : "bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200"
-                                          } disabled:opacity-50`}
-                                      >
-                                        <Check className="w-3 h-3 inline mr-1" />
-                                        Read
-                                      </button>
-                                    )}
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        deleteOne(n._id, e);
-                                      }}
-                                      disabled={processingIds.has(n._id)}
-                                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold
-                                        backdrop-blur-sm transition-all duration-200 border
-                                        ${
-                                          isDark
-                                            ? "bg-rose-500/20 text-rose-300 border-rose-500/30 hover:bg-rose-500/30"
-                                            : "bg-rose-100 text-rose-700 border-rose-200 hover:bg-rose-200"
-                                        } disabled:opacity-50`}
-                                    >
-                                      <Trash2 className="w-3 h-3 inline mr-1" />
-                                      Delete
-                                    </button>
-                                  </div>
-                                </div>
+                            <div className="flex flex-col items-end gap-3">
+                              <div
+                                className={`flex items-center gap-2 text-xs ${isDark ? "text-white/40" : "text-gray-500"}`}
+                              >
+                                <Clock className="w-3 h-3" />
+                                {getTimeAgo(n.createdAt)}
                               </div>
-
-                              {n.description && (
-                                <p
-                                  className={`mt-2 text-sm line-clamp-2 ${isDark ? "text-white/50" : "text-gray-700"}`}
+                              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                {n.unread && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      markAsRead(n._id);
+                                    }}
+                                    disabled={processingIds.has(n._id)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold
+                                      backdrop-blur-sm transition-all duration-200 border
+                                      ${
+                                        isDark
+                                          ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30"
+                                          : "bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200"
+                                      } disabled:opacity-50`}
+                                  >
+                                    <Check className="w-3 h-3 inline mr-1" />
+                                    Read
+                                  </button>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteOne(n._id, e);
+                                  }}
+                                  disabled={processingIds.has(n._id)}
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold
+                                    backdrop-blur-sm transition-all duration-200 border
+                                    ${
+                                      isDark
+                                        ? "bg-rose-500/20 text-rose-300 border-rose-500/30 hover:bg-rose-500/30"
+                                        : "bg-rose-100 text-rose-700 border-rose-200 hover:bg-rose-200"
+                                    } disabled:opacity-50`}
                                 >
-                                  {n.description}
-                                </p>
-                              )}
+                                  <Trash2 className="w-3 h-3 inline mr-1" />
+                                  Delete
+                                </button>
+                              </div>
                             </div>
                           </div>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+
+                          {n.description && (
+                            <p
+                              className={`mt-2 text-sm line-clamp-2 ${isDark ? "text-white/50" : "text-gray-700"}`}
+                            >
+                              {n.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Footer */}
-            {notifications.length > 0 && (
+            {/* Pagination Controls */}
+            {totalItems > 0 && (
               <div
-                className={`p-4 border-t backdrop-blur-sm ${isDark ? "border-white/10" : "border-gray-200"}`}
+                className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t ${
+                  isDark ? "border-white/10" : "border-gray-200"
+                }`}
               >
-                <p
-                  className={`text-xs text-center ${isDark ? "text-white/40" : "text-gray-500"}`}
+                <div
+                  className={`text-sm ${isDark ? "text-slate-400" : "text-gray-600"}`}
                 >
-                  Showing {filteredNotifications.length} of{" "}
-                  {notifications.length} notification
-                  {notifications.length !== 1 ? "s" : ""}
-                </p>
+                  Showing{" "}
+                  <span className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+                    {totalItems === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}
+                  </span>{" "}
+                  to{" "}
+                  <span className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+                    {(currentPage - 1) * ITEMS_PER_PAGE + notifications.length}
+                  </span>{" "}
+                  of{" "}
+                  <span className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+                    {totalItems}
+                  </span>{" "}
+                  entries
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      currentPage === 1
+                        ? isDark
+                          ? "bg-slate-800 text-slate-600 cursor-not-allowed"
+                          : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : isDark
+                          ? "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+                          : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
+                    }`}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter((page) => {
+                        if (page === 1 || page === totalPages) return true;
+                        if (Math.abs(page - currentPage) <= 1) return true;
+                        return false;
+                      })
+                      .map((page, index, array) => {
+                        const showEllipsisBefore =
+                          index > 0 && array[index - 1] !== page - 1;
+                        return (
+                          <React.Fragment key={page}>
+                            {showEllipsisBefore && (
+                              <span
+                                className={`px-2 text-sm ${
+                                  isDark ? "text-slate-500" : "text-gray-500"
+                                }`}
+                              >
+                                ...
+                              </span>
+                            )}
+                            <button
+                              onClick={() => handlePageChange(page)}
+                              className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${
+                                currentPage === page
+                                  ? isDark
+                                    ? "bg-blue-600 text-white border-blue-500"
+                                    : "bg-purple-600 text-white border-purple-500"
+                                  : isDark
+                                    ? "border-slate-700 text-slate-300 hover:bg-slate-800"
+                                    : "border-purple-200 text-purple-700 hover:bg-purple-50"
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          </React.Fragment>
+                        );
+                      })}
+                  </div>
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      currentPage === totalPages
+                        ? isDark
+                          ? "bg-slate-800 text-slate-600 cursor-not-allowed"
+                          : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : isDark
+                          ? "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+                          : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
+                    }`}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -823,7 +962,7 @@ export default function StaffNotifications() {
                       )}
 
                     {/* Action Buttons in Modal */}
-                    <div className="flex gap-3 pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}">
+                    <div className={`flex gap-3 pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
                       {selectedNotification.unread && (
                         <button
                           onClick={() => {
@@ -904,7 +1043,7 @@ export default function StaffNotifications() {
                 <p
                   className={`mb-6 ${isDark ? "text-white/60" : "text-gray-600"}`}
                 >
-                  All {notifications.length} notifications will be permanently
+                  All {totalItems} notifications will be permanently
                   deleted.
                 </p>
                 <div className="flex gap-3">

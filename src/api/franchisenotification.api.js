@@ -1,9 +1,20 @@
 import api from "./axios";
 
-// GET /api/franchise/notifications
-export const getFranchiseNotifications = async () => {
-  const res = await api.get("/api/franchise/notifications");
-  return res.data.data;
+/**
+ * GET paginated franchise notifications.
+ * @param {number} page
+ * @param {number} limit
+ * @param {boolean|undefined} isRead
+ * @returns {{ data: Array, meta: { page, limit, total, totalPages, hasMore } }}
+ */
+export const getFranchiseNotifications = async (page = 1, limit = 10, isRead) => {
+  const params = { page, limit };
+  if (isRead !== undefined) params.isRead = isRead;
+  const res = await api.get("/api/franchise/notifications", { params });
+  return {
+    data: res.data.data,
+    meta: res.data.meta,
+  };
 };
 
 // PUT /api/franchise/notifications/:id/read

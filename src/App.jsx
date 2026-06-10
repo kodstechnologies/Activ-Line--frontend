@@ -204,8 +204,11 @@ function AppNotificationBridge() {
 
     const pollNotifications = async () => {
       try {
-        const notifications = await fetchNotifications();
-        if (cancelled || !Array.isArray(notifications)) return;
+        const res = await fetchNotifications();
+        if (cancelled || !res) return;
+
+        const notifications = Array.isArray(res) ? res : res.data;
+        if (!Array.isArray(notifications)) return;
 
         const nextKnownIds = new Set(
           notifications
