@@ -65,6 +65,9 @@ export const verifyPlanPayment = (payload, verifyUrl) => {
   return api.post("/api/payment/plan/verify-payment", payload);
 };
 
+export const renewPlan = (payload) => {
+  return api.post("api/v1/renew", payload);
+};
 // ✅ Customer chat rooms (ticket status)
 export const getCustomerChatRooms = () => {
   return api.get("/api/chat/user/my-rooms");

@@ -35,8 +35,10 @@ import {
   getFranchiseProfiles,
   createPlanOrder,
   verifyPlanPayment,
+  renewPlan,
 } from "../../api/customer.api";
 import pdfIcon from "../../assets/images/pdf_icon1.jpg";
+import axios from "axios";
 const CustomerDetails = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
@@ -187,6 +189,7 @@ const CustomerDetails = () => {
   const fetchCustomer = async () => {
     try {
       const res = await getSingleCustomer(id);
+      // console.log(res);
       setCustomer(res.data.data);
     } catch (err) {
       console.error(err);
@@ -545,6 +548,12 @@ const CustomerDetails = () => {
               verifyUrl,
             );
 
+            await renewPlan({
+              userId: customer?.activlineUserId,
+              renewDefaultSettings: "true",
+              isRenewPresentDate: "true",
+            });
+
             setPaymentStatus({
               type: "success",
               message: "Payment verified successfully.",
@@ -767,7 +776,6 @@ const CustomerDetails = () => {
     ? "bg-gradient-to-br from-indigo-900/40 via-purple-900/40 to-pink-900/40"
     : "bg-gradient-to-br from-violet-50 via-white to-indigo-50";
 
-  console.log(latestSuccessfulPayment);
   return (
     <div className={`min-h-screen p-6 ${bgGradient}`}>
       <div className="max-w-7xl mx-auto space-y-6">

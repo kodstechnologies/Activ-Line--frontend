@@ -34,6 +34,7 @@ import {
   getFranchiseProfiles,
   createPlanOrder,
   verifyPlanPayment,
+  renewPlan,
 } from "../../../api/customer.api";
 import { getAssignedCustomerById } from "../../../api/staff/assigdcustomer.api";
 
@@ -545,6 +546,11 @@ const CustomerDetails = () => {
               },
               verifyUrl,
             );
+            await renewPlan({
+              userId: customer?.activlineUserId,
+              renewDefaultSettings: "true",
+              isRenewPresentDate: "true",
+            });
 
             setPaymentStatus({
               type: "success",
