@@ -35,6 +35,7 @@ import {
   createPlanOrder,
   verifyPlanPayment,
   renewPlan,
+  getFranchiseTariff,
 } from "../../../api/customer.api";
 import { getAssignedCustomerById } from "../../../api/staff/assigdcustomer.api";
 
@@ -71,6 +72,49 @@ const CustomerDetails = () => {
   const [supportTickets, setSupportTickets] = useState([]);
   const [customerPayments, setCustomerPayments] = useState([]);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
+
+  const accountId =
+    customer?.accountId ||
+    customer?.accountID ||
+    customer?.franchiseAccountId ||
+    customer?.account?.id ||
+    "";
+  const [tariff, setTariff] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    if (!accountId) return;
+    getFranchiseTariff(accountId)
+      .then((res) => {
+        if (!active) return;
+        const tariffData = res?.data?.data || res?.data || {};
+        if (tariffData && tariffData.isActive) {
+          setTariff(tariffData);
+        } else {
+          setTariff(null);
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setTariff(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [accountId]);
+
+  const calculatedTariff = useMemo(() => {
+    if (!tariff || !paymentForm.amount) return 0;
+    const base = Number(paymentForm.amount);
+    if (Number.isNaN(base) || base <= 0) return 0;
+
+    if (tariff.tariffType === "FIXED") {
+      return Number(tariff.tariffValue || 0);
+    } else if (tariff.tariffType === "PERCENTAGE") {
+      return base * (Number(tariff.tariffValue || 0) / 100);
+    }
+    return 0;
+  }, [tariff, paymentForm.amount]);
 
   // Prevent overwriting user's manual selection while modal is open.
   const userSelectedPlanRef = useRef(false);
@@ -222,12 +266,7 @@ const CustomerDetails = () => {
     loadTickets();
   }, [id]);
 
-  const accountId =
-    customer?.accountId ||
-    customer?.accountID ||
-    customer?.franchiseAccountId ||
-    customer?.account?.id ||
-    "";
+
 
   const ticketStats = useMemo(() => {
     const openTickets = supportTickets.filter(
@@ -469,12 +508,15 @@ const CustomerDetails = () => {
     setPaymentStatus(null);
     setPaymentVerified(false);
 
+    const platformFee = planType === "changePlan" ? calculatedTariff : 0;
+
     try {
       const createPayload = {
         accountId,
         groupId,
         profileId,
         amount: Number(amount),
+        ...(platformFee > 0 ? { platformFee } : {}),
       };
       if (resolvedUserName) {
         createPayload.userName = resolvedUserName;
@@ -509,7 +551,7 @@ const CustomerDetails = () => {
 
       await loadRazorpayScript();
 
-      const amountInPaise = orderAmount ?? Math.round(Number(amount) * 100);
+      const amountInPaise = orderAmount ?? Math.round((Number(amount) + platformFee) * 100);
 
       const options = {
         key: keyId,
@@ -542,6 +584,7 @@ const CustomerDetails = () => {
                 accountId,
                 groupId,
                 profileId,
+                ...(platformFee > 0 ? { platformFee } : {}),
                 ...(resolvedUserName ? { userName: resolvedUserName } : {}),
               },
               verifyUrl,
@@ -1105,25 +1148,51 @@ const CustomerDetails = () => {
                   </p>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={handlePayCurrentPlan}
-                  className={`w-full py-3 rounded-xl font-semibold transition-all relative z-10 border ${
-                    isDark
-                      ? "bg-white/10 text-white border-white/20 hover:bg-white/15"
-                      : "bg-white text-violet-700 border-violet-200 hover:bg-violet-50"
-                  }`}
-                >
-                  Current Plan
-                </button>
-                <button
-                  type="button"
-                  onClick={handleOpenPlanModal}
-                  className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl relative z-10"
-                >
-                  Change Plan
-                </button>
+              <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={handlePayCurrentPlan}
+                    disabled={isPaying}
+                    className={`w-full py-3 rounded-xl font-semibold transition-all relative z-10 border ${
+                      isDark
+                        ? "bg-white/10 text-white border-white/20 hover:bg-white/15"
+                        : "bg-white text-violet-700 border-violet-200 hover:bg-violet-50"
+                    } ${isPaying ? "opacity-70 cursor-not-allowed" : ""}`}
+                  >
+                    {isPaying && !isPlanModalOpen ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        Processing...
+                      </span>
+                    ) : (
+                      "Current Plan"
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenPlanModal}
+                    disabled={isPaying}
+                    className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl relative z-10"
+                  >
+                    Change Plan
+                  </button>
+                </div>
+                {paymentStatus && !isPlanModalOpen && (
+                  <div
+                    className={`mt-2 p-3 rounded-xl text-sm border relative z-10 ${
+                      paymentStatus.type === "success"
+                        ? isDark
+                          ? "bg-green-500/10 border-green-500/20 text-green-300"
+                          : "bg-green-50 border-green-200 text-green-700"
+                        : isDark
+                          ? "bg-red-500/10 border-red-500/20 text-red-300"
+                          : "bg-red-50 border-red-200 text-red-600"
+                    }`}
+                  >
+                    {paymentStatus.message}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1800,9 +1869,37 @@ const CustomerDetails = () => {
                           Amount
                         </div>
                         <div
-                          className={`text-2xl font-bold ${isDark ? "bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent" : "text-violet-700"}`}
+                          className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
                         >
                           ₹{paymentForm.amount || "0"}
+                        </div>
+                      </div>
+                      {calculatedTariff > 0 && (
+                        <div className="pt-2 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}">
+                          <div
+                            className={`${isDark ? "text-white/60" : "text-gray-600"}`}
+                          >
+                            Platform Fee
+                          </div>
+                          <div className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+                            + ₹{calculatedTariff.toFixed(2)} (
+                            {tariff.tariffType === "PERCENTAGE"
+                              ? `${tariff.tariffValue}%`
+                              : "Fixed"}
+                            )
+                          </div>
+                        </div>
+                      )}
+                      <div className="pt-2 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}">
+                        <div
+                          className={`${isDark ? "text-white/60" : "text-gray-600"}`}
+                        >
+                          Total Amount to Pay
+                        </div>
+                        <div
+                          className={`text-2xl font-bold ${isDark ? "bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent" : "text-violet-700"}`}
+                        >
+                          ₹{(Number(paymentForm.amount || 0) + calculatedTariff).toFixed(2)}
                         </div>
                       </div>
                     </div>
