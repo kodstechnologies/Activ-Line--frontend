@@ -395,7 +395,7 @@ const CustomerDetails = () => {
       hour12: true,
     });
   };
-  console.log("selected profile details", selectedProfile);
+
   const extractProfileInfo = (profile) => {
     if (!profile)
       return { profileId: "", groupId: "", name: "", planName: "", amount: "" };
@@ -524,7 +524,7 @@ const CustomerDetails = () => {
       if (resolvedUserName) {
         createPayload.userName = resolvedUserName;
       }
-
+      console.log("payload", createPayload);
       const createRes = await createPlanOrder(createPayload);
       const createResponsePayload =
         createRes?.data?.data ?? createRes?.data ?? {};
@@ -677,13 +677,14 @@ const CustomerDetails = () => {
   const handlePayCurrentPlan = async () => {
     // Use the current-plan data already shown in the UI (latestSuccessfulPayment).
     const plan = latestSuccessfulPayment;
-    if (!plan) {
-      setPaymentStatus({
-        type: "error",
-        message: "No current plan payment found for this customer.",
-      });
-      return;
-    }
+    // console.log("plan", plan);
+    // if (!plan) {
+    //   setPaymentStatus({
+    //     type: "error",
+    //     message: "No current plan payment found for this customer.",
+    //   });
+    //   return;
+    // }
 
     const groupIdRaw =
       plan?.groupId ??
@@ -1764,9 +1765,12 @@ const CustomerDetails = () => {
                           const info = extractProfileInfo(profile);
                           const isSelected =
                             !!selectedProfile &&
-                            ((selectedProfile._id && selectedProfile._id === profile._id) ||
-                              (selectedProfile.id && selectedProfile.id === profile.id) ||
-                              (info.profileId && info.profileId === paymentForm.profileId));
+                            ((selectedProfile._id &&
+                              selectedProfile._id === profile._id) ||
+                              (selectedProfile.id &&
+                                selectedProfile.id === profile.id) ||
+                              (info.profileId &&
+                                info.profileId === paymentForm.profileId));
                           return (
                             <div
                               key={
