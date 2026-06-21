@@ -677,14 +677,14 @@ const CustomerDetails = () => {
   const handlePayCurrentPlan = async () => {
     // Use the current-plan data already shown in the UI (latestSuccessfulPayment).
     const plan = latestSuccessfulPayment;
-    // console.log("plan", plan);
-    // if (!plan) {
-    //   setPaymentStatus({
-    //     type: "error",
-    //     message: "No current plan payment found for this customer.",
-    //   });
-    //   return;
-    // }
+
+    if (!plan) {
+      setPaymentStatus({
+        type: "error",
+        message: "No current plan payment found for this customer.",
+      });
+      return;
+    }
 
     const groupIdRaw =
       plan?.groupId ??
