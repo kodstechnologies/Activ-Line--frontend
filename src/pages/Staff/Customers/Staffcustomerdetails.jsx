@@ -440,7 +440,7 @@ const CustomerDetails = () => {
     setPaymentStatus(null);
   };
 
-  const startPlanPayment = async ({ groupId, profileId, amount }) => {
+  const startPlanPayment = async ({ groupId, profileId, amount, planType }) => {
     const resolvedUserName =
       customer?.userName ||
       customer?.username ||
@@ -546,11 +546,26 @@ const CustomerDetails = () => {
               },
               verifyUrl,
             );
-            await renewPlan({
-              userId: customer?.activlineUserId,
-              renewDefaultSettings: "true",
-              isRenewPresentDate: "true",
-            });
+            if (planType == "changePlan") {
+              await renewPlan({
+                userId: customer?.activlineUserId,
+                renewDefaultSettings: "true",
+                isRenewPresentDate: "true",
+                isChangePlan: "true",
+                planId:
+                  profileId ||
+                  selectedProfile?.profile?.id ||
+                  selectedProfile?.profile?._id ||
+                  "",
+                groupId: groupId,
+              });
+            } else {
+              await renewPlan({
+                userId: customer?.activlineUserId,
+                renewDefaultSettings: "true",
+                isRenewPresentDate: "true",
+              });
+            }
 
             setPaymentStatus({
               type: "success",
@@ -594,8 +609,14 @@ const CustomerDetails = () => {
   const handleCreateOrder = async () => {
     const groupId = paymentForm.groupId?.toString().trim();
     const profileId = paymentForm.profileId?.toString().trim();
+
     const amount = paymentForm.amount;
-    return startPlanPayment({ groupId, profileId, amount });
+    return startPlanPayment({
+      groupId,
+      profileId,
+      amount,
+      planType: "changePlan",
+    });
   };
 
   const handlePayCurrentPlan = async () => {

@@ -1552,7 +1552,9 @@ const MySubscribers = () => {
                         name="phoneNumber"
                         value={newSubscriber.phoneNumber}
                         onChange={(e) => {
-                          const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                          const digits = e.target.value
+                            .replace(/\D/g, "")
+                            .slice(0, 10);
                           setNewSubscriber((prev) => ({
                             ...prev,
                             phoneNumber: digits,
@@ -1999,73 +2001,79 @@ const MySubscribers = () => {
           document.body,
         )}
 
-      {duplicatePopup.open && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div
-            className={`w-full max-w-md rounded-2xl border shadow-2xl ${
-              isDark
-                ? "bg-slate-900 border-slate-800"
-                : "bg-white border-gray-200"
-            }`}
-          >
+      {duplicatePopup.open &&
+        createPortal(
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
             <div
-              className={`px-6 py-4 border-b flex items-center justify-between ${
-                isDark ? "border-slate-800" : "border-gray-200"
+              className={`w-full max-w-md rounded-2xl border shadow-2xl ${
+                isDark
+                  ? "bg-slate-900 border-slate-800"
+                  : "bg-white border-gray-200"
               }`}
             >
-              <div className="flex items-center gap-2">
-                <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center ${
-                    isDark ? "bg-red-500/10" : "bg-red-50"
-                  }`}
-                >
-                  <XCircle
-                    className={`w-5 h-5 ${isDark ? "text-red-400" : "text-red-600"}`}
-                  />
-                </div>
-                <h3
-                  className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
-                >
-                  Duplicate Details
-                </h3>
-              </div>
-              <button
-                onClick={() => setDuplicatePopup({ open: false, message: "" })}
-                className={`transition-colors ${isDark ? "text-slate-400 hover:text-white" : "text-gray-500 hover:text-gray-800"}`}
-              >
-                <XCircle className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <p className={`${isDark ? "text-slate-300" : "text-gray-700"}`}>
-                {duplicatePopup.message ||
-                  "Email or phone number already exists."}
-              </p>
               <div
-                className={`rounded-xl p-4 border text-sm ${
-                  isDark
-                    ? "border-slate-700 bg-slate-800/50 text-slate-300"
-                    : "border-gray-200 bg-gray-50 text-gray-600"
+                className={`px-6 py-4 border-b flex items-center justify-between ${
+                  isDark ? "border-slate-800" : "border-gray-200"
                 }`}
               >
-                Please use a different email and phone number.
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`w-9 h-9 rounded-full flex items-center justify-center ${
+                      isDark ? "bg-red-500/10" : "bg-red-50"
+                    }`}
+                  >
+                    <XCircle
+                      className={`w-5 h-5 ${isDark ? "text-red-400" : "text-red-600"}`}
+                    />
+                  </div>
+                  <h3
+                    className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                  >
+                    Duplicate Details
+                  </h3>
+                </div>
+                <button
+                  onClick={() =>
+                    setDuplicatePopup({ open: false, message: "" })
+                  }
+                  className={`transition-colors ${isDark ? "text-slate-400 hover:text-white" : "text-gray-500 hover:text-gray-800"}`}
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <p className={`${isDark ? "text-slate-300" : "text-gray-700"}`}>
+                  {duplicatePopup.message ||
+                    "Email or phone number already exists."}
+                </p>
+                <div
+                  className={`rounded-xl p-4 border text-sm ${
+                    isDark
+                      ? "border-slate-700 bg-slate-800/50 text-slate-300"
+                      : "border-gray-200 bg-gray-50 text-gray-600"
+                  }`}
+                >
+                  Please use a different email and phone number.
+                </div>
+              </div>
+              <div
+                className={`px-6 py-4 border-t flex justify-end ${
+                  isDark ? "border-slate-800" : "border-gray-200"
+                }`}
+              >
+                <button
+                  onClick={() =>
+                    setDuplicatePopup({ open: false, message: "" })
+                  }
+                  className="px-4 py-2 text-sm font-bold text-white bg-red-600 rounded-lg hover:bg-red-500 transition-all"
+                >
+                  Okay
+                </button>
               </div>
             </div>
-            <div
-              className={`px-6 py-4 border-t flex justify-end ${
-                isDark ? "border-slate-800" : "border-gray-200"
-              }`}
-            >
-              <button
-                onClick={() => setDuplicatePopup({ open: false, message: "" })}
-                className="px-4 py-2 text-sm font-bold text-white bg-red-600 rounded-lg hover:bg-red-500 transition-all"
-              >
-                Okay
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

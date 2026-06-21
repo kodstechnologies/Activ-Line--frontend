@@ -28,6 +28,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Info,
+  Settings,
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { toast } from "react-hot-toast";
@@ -37,6 +38,7 @@ import {
 } from "../../api/frenchise/frenchiseplans";
 import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
+import api from "../../api/axios";
 
 // Animation variants
 const fadeInUp = {
@@ -539,6 +541,335 @@ const DetailsModal = ({ isOpen, details, onClose, isDark }) => {
   );
 };
 
+// Tariff Modal Component
+const TariffModal = ({ isOpen, accountId, onClose, isDark }) => {
+  const [tariffType, setTariffType] = useState("FIXED");
+  const [tariffValue, setTariffValue] = useState("");
+  const [isActive, setIsActive] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !accountId) return;
+    setLoading(true);
+    api
+      .get(`/api/franchise/tariff/${accountId}`)
+      .then((res) => {
+        if (res.data?.success && res.data?.data) {
+          const tariff = res.data.data;
+          setTariffType(tariff.tariffType || "FIXED");
+          setTariffValue(
+            tariff.tariffValue !== undefined ? String(tariff.tariffValue) : "",
+          );
+          setIsActive(tariff.isActive !== undefined ? tariff.isActive : true);
+        }
+      })
+      .catch((err) => {
+        if (err.response?.status !== 404) {
+          console.error("Error fetching tariff:", err);
+          toast.error("Failed to fetch existing tariff settings.");
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [isOpen, accountId]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (tariffValue === "") {
+      toast.error("Tariff value is required");
+      return;
+    }
+
+    const valueNum = Number(tariffValue);
+    if (isNaN(valueNum) || valueNum < 0) {
+      toast.error("Tariff value must be a non-negative number");
+      return;
+    }
+
+    if (tariffType === "PERCENTAGE" && valueNum > 100) {
+      toast.error("Percentage tariff cannot exceed 100%");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const response = await api.post("/api/franchise/tariff", {
+        franchiseId: accountId,
+        tariffType,
+        tariffValue: valueNum,
+        isActive,
+      });
+
+      if (response.data?.success) {
+        toast.success("Tariff configuration updated successfully!");
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } else {
+        toast.error(
+          response.data?.message || "Failed to update tariff configuration",
+        );
+      }
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message ||
+          err.message ||
+          "An error occurred while saving the tariff.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return createPortal(
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+          onClick={onClose}
+        >
+          <motion.div
+            variants={scaleIn}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            onClick={(e) => e.stopPropagation()}
+            className={`w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden ${
+              isDark
+                ? "bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700"
+                : "bg-gradient-to-br from-white to-purple-50/50 border border-purple-100"
+            }`}
+          >
+            {/* Modal Header */}
+            <div
+              className={`relative p-6 border-b ${
+                isDark ? "border-slate-700" : "border-purple-100"
+              }`}
+            >
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                className="flex items-center gap-3"
+              >
+                <div
+                  className={`p-3 rounded-xl ${
+                    isDark
+                      ? "bg-gradient-to-br from-blue-500/20 to-purple-500/20"
+                      : "bg-gradient-to-br from-purple-100 to-blue-100"
+                  }`}
+                >
+                  <Settings
+                    size={24}
+                    className={isDark ? "text-blue-400" : "text-purple-600"}
+                  />
+                </div>
+                <div>
+                  <h3
+                    className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                  >
+                    Configure Plan Tariff
+                  </h3>
+                  <p
+                    className={`text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}
+                  >
+                    Set a fixed amount or percentage fee for all your plans
+                  </p>
+                </div>
+              </motion.div>
+
+              <motion.button
+                whileHover={{ scale: 1.1, rotate: 90 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onClose}
+                className={`absolute top-6 right-6 p-2 rounded-lg ${
+                  isDark
+                    ? "hover:bg-slate-700 text-slate-400 hover:text-white"
+                    : "hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                } transition-all duration-300`}
+              >
+                <XCircle size={22} />
+              </motion.button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="scrollbar-hide p-6 max-h-[60vh] overflow-y-auto">
+              {loading ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2
+                    size={32}
+                    className={`animate-spin ${isDark ? "text-blue-400" : "text-purple-600"}`}
+                  />
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div>
+                    <label
+                      className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? "text-slate-300" : "text-slate-600"}`}
+                    >
+                      Tariff Rule Type
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[
+                        {
+                          type: "FIXED",
+                          label: "Fixed Amount",
+                          desc: "Adds a set currency fee",
+                        },
+                        {
+                          type: "PERCENTAGE",
+                          label: "Percentage Tariff",
+                          desc: "Adds percentage of plan price",
+                        },
+                      ].map(({ type, label, desc }) => {
+                        const active = tariffType === type;
+                        return (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => setTariffType(type)}
+                            className={`text-left p-3 rounded-xl border-2 transition-all flex flex-col ${
+                              active
+                                ? isDark
+                                  ? "border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/5"
+                                  : "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/5"
+                                : isDark
+                                  ? "border-slate-800 bg-slate-900/40 hover:border-slate-700"
+                                  : "border-gray-200 bg-gray-50 hover:border-gray-300"
+                            }`}
+                          >
+                            <span
+                              className={`text-sm font-bold ${active ? (isDark ? "text-blue-400" : "text-purple-600") : isDark ? "text-slate-200" : "text-gray-800"}`}
+                            >
+                              {label}
+                            </span>
+                            <span
+                              className={`text-[10px] mt-0.5 ${isDark ? "text-slate-500" : "text-gray-400"}`}
+                            >
+                              {desc}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? "text-slate-300" : "text-slate-600"}`}
+                    >
+                      Tariff Value
+                    </label>
+                    <div className="relative rounded-xl shadow-sm">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span
+                          className={`text-sm font-bold ${isDark ? "text-slate-500" : "text-gray-400"}`}
+                        >
+                          {tariffType === "PERCENTAGE" ? "%" : "₹"}
+                        </span>
+                      </div>
+                      <input
+                        type="number"
+                        step="any"
+                        value={tariffValue}
+                        onChange={(e) => setTariffValue(e.target.value)}
+                        placeholder="0.00"
+                        className={`block w-full pl-8 pr-4 py-2.5 rounded-xl border text-sm font-semibold transition-all focus:outline-none focus:ring-2 ${
+                          isDark
+                            ? "bg-slate-950/80 border-slate-800 text-white placeholder-slate-600 focus:ring-blue-500/50"
+                            : "bg-white border-gray-200 text-gray-800 placeholder-gray-400 focus:ring-purple-500/50"
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    className={`flex items-center justify-between p-3.5 rounded-xl border ${
+                      isDark
+                        ? "bg-slate-950/40 border-slate-800/80"
+                        : "bg-gray-50/50 border-gray-200/80"
+                    }`}
+                  >
+                    <div>
+                      <span
+                        className={`text-sm font-bold block ${isDark ? "text-slate-200" : "text-gray-800"}`}
+                      >
+                        Tariff Rule Enabled
+                      </span>
+                      <span
+                        className={`text-[10px] ${isDark ? "text-slate-500" : "text-gray-400"}`}
+                      >
+                        Toggle to enable or temporarily suspend this rule
+                      </span>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isActive}
+                        onChange={(e) => setIsActive(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div
+                        className={`w-11 h-6 rounded-full peer transition-all duration-300 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${
+                          isDark
+                            ? "bg-slate-800 peer-focus:ring-blue-800 peer-checked:bg-blue-600 peer-checked:after:translate-x-full"
+                            : "bg-gray-200 peer-focus:ring-purple-300 peer-checked:bg-purple-600 peer-checked:after:translate-x-full"
+                        }`}
+                      />
+                    </label>
+                  </div>
+                </form>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              className={`flex justify-end gap-3 p-4 border-t ${isDark ? "border-slate-700" : "border-purple-100"}`}
+            >
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={onClose}
+                className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                  isDark
+                    ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                Cancel
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleSubmit}
+                disabled={saving || loading}
+                className={`px-6 py-2.5 rounded-lg text-sm font-bold text-white transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isDark
+                    ? "bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg shadow-purple-600/25"
+                    : "bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg shadow-purple-600/25"
+                }`}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Configuration"
+                )}
+              </motion.button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body,
+  );
+};
+
 // Main Component
 const FrenchisePlans = () => {
   const { isDark } = useTheme();
@@ -550,6 +881,7 @@ const FrenchisePlans = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [tariffModalOpen, setTariffModalOpen] = useState(false);
   const [detailsLoadingId, setDetailsLoadingId] = useState(null);
   const [selectedPlanDetails, setSelectedPlanDetails] = useState(null);
 
@@ -719,25 +1051,40 @@ const FrenchisePlans = () => {
           </p>
         </motion.div>
 
-        <motion.div
-          variants={fadeInUp}
-          className={`px-4 py-2 rounded-lg ${
-            isDark
-              ? "bg-slate-800/50 border border-slate-700"
-              : "bg-white border border-gray-200"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Shield
-              size={16}
-              className={isDark ? "text-blue-400" : "text-purple-600"}
-            />
-            <span
-              className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}
-            >
-              Account ID: {accountId ? `${accountId.slice(0, 8)}...` : "N/A"}
-            </span>
+        <motion.div variants={fadeInUp} className="flex items-center gap-3">
+          <div
+            className={`px-4 py-2 rounded-lg ${
+              isDark
+                ? "bg-slate-800/50 border border-slate-700"
+                : "bg-white border border-gray-200"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Shield
+                size={16}
+                className={isDark ? "text-blue-400" : "text-purple-600"}
+              />
+              <span
+                className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}
+              >
+                Account ID: {accountId ? `${accountId.slice(0, 8)}...` : "N/A"}
+              </span>
+            </div>
           </div>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setTariffModalOpen(true)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              isDark
+                ? "bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20"
+                : "bg-purple-50 text-purple-600 border border-purple-200 hover:bg-purple-100"
+            }`}
+          >
+            <Settings size={16} />
+            Configure Tariff
+          </motion.button>
         </motion.div>
       </motion.div>
 
@@ -894,6 +1241,14 @@ const FrenchisePlans = () => {
           setDetailsModalOpen(false);
           setSelectedPlanDetails(null);
         }}
+        isDark={isDark}
+      />
+
+      {/* Tariff Modal */}
+      <TariffModal
+        isOpen={tariffModalOpen}
+        accountId={accountId}
+        onClose={() => setTariffModalOpen(false)}
         isDark={isDark}
       />
     </motion.div>

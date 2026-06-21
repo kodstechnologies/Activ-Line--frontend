@@ -12,6 +12,7 @@ import { useTheme } from "../../../context/ThemeContext";
 import Lottie from "lottie-react";
 import fadeSlideAnimation from "../../../animations/Profile Avatar of Young Boy.json";
 import { getAssignedCustomers } from "../../../api/staff/assigdcustomer.api";
+import { createPortal } from "react-dom";
 
 // ── Reusable Form Field ──────────────────────────────────────────
 const Field = ({ label, children, className = "" }) => (
@@ -90,7 +91,7 @@ const CustomerFormModal = ({
     if (fl?.length > 0) setFiles((prev) => ({ ...prev, [name]: fl[0] }));
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div
         className={`rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto ${
@@ -436,7 +437,8 @@ const CustomerFormModal = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
