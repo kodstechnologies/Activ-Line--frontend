@@ -508,7 +508,8 @@ const CustomerDetails = () => {
     setPaymentStatus(null);
     setPaymentVerified(false);
 
-    const platformFee = planType === "changePlan" ? calculatedTariff : 0;
+    const isChangePlan = planType === "changePlan";
+    const platformFee = isChangePlan ? calculatedTariff : 0;
 
     try {
       const createPayload = {
@@ -516,8 +517,10 @@ const CustomerDetails = () => {
         groupId,
         profileId,
         amount: Number(amount),
-        ...(platformFee > 0 ? { platformFee } : {}),
       };
+      if (isChangePlan && platformFee > 0) {
+        createPayload.platformFee = platformFee;
+      }
       if (resolvedUserName) {
         createPayload.userName = resolvedUserName;
       }
@@ -551,8 +554,13 @@ const CustomerDetails = () => {
 
       await loadRazorpayScript();
 
-      const amountInPaise =
-        orderAmount ?? Math.round((Number(amount) + platformFee) * 100);
+      let amountInPaise = orderAmount;
+      if (amountInPaise === undefined || amountInPaise === null) {
+        amountInPaise = Math.round(Number(amount) * 100);
+        if (isChangePlan && platformFee > 0) {
+          amountInPaise = Math.round((Number(amount) + platformFee) * 100);
+        }
+      }
 
       const options = {
         key: keyId,
@@ -577,19 +585,22 @@ const CustomerDetails = () => {
               import.meta.env.VITE_PAYMENT_VERIFY_URL ||
               "http://localhost:8000/api/payment/plan/verify-payment";
 
-            await verifyPlanPayment(
-              {
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                accountId,
-                groupId,
-                profileId,
-                ...(platformFee > 0 ? { platformFee } : {}),
-                ...(resolvedUserName ? { userName: resolvedUserName } : {}),
-              },
-              verifyUrl,
-            );
+            const verifyPayload = {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              accountId,
+              groupId,
+              profileId,
+            };
+            if (isChangePlan && platformFee > 0) {
+              verifyPayload.platformFee = platformFee;
+            }
+            if (resolvedUserName) {
+              verifyPayload.userName = resolvedUserName;
+            }
+
+            await verifyPlanPayment(verifyPayload, verifyUrl);
 
             if (planType == "changePlan") {
               await renewPlan({
@@ -1752,10 +1763,10 @@ const CustomerDetails = () => {
                         {filteredProfiles.map((profile, idx) => {
                           const info = extractProfileInfo(profile);
                           const isSelected =
-                            selectedProfile &&
-                            (selectedProfile._id === profile._id ||
-                              selectedProfile.id === profile.id ||
-                              info.profileId === paymentForm.profileId);
+                            !!selectedProfile &&
+                            ((selectedProfile._id && selectedProfile._id === profile._id) ||
+                              (selectedProfile.id && selectedProfile.id === profile.id) ||
+                              (info.profileId && info.profileId === paymentForm.profileId));
                           return (
                             <div
                               key={
