@@ -38,7 +38,7 @@ import {
   getFranchiseTariff,
 } from "../../../api/customer.api";
 import { getAssignedCustomerById } from "../../../api/staff/assigdcustomer.api";
-
+import pdfIcon from "../../assets/images/pdf_icon1.jpg";
 const CustomerDetails = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
@@ -1052,44 +1052,47 @@ const CustomerDetails = () => {
                 </p>
               ) : (
                 <div className="grid grid-cols-2 gap-4">
-                  {documentEntries.map(([label, url]) => (
-                    <div key={label} className="group relative">
-                      <div
-                        className={`w-full aspect-square rounded-xl overflow-hidden border transition-all group-hover:border-violet-500/50 group-hover:shadow-lg ${isDark ? "border-white/20 bg-white/5" : "border-gray-200 bg-gray-50"}`}
-                      >
-                        <img
-                          src={url}
-                          alt={label}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="mt-2">
+                  {documentEntries.map(([label, url]) => {
+                    const type = url.split(".").pop();
+                    return (
+                      <div key={label} className="group relative">
                         <div
-                          className={`text-xs font-semibold ${isDark ? "text-white/80" : "text-gray-700"}`}
+                          className={`w-full aspect-square rounded-xl overflow-hidden border transition-all group-hover:border-violet-500/50 group-hover:shadow-lg ${isDark ? "border-white/20 bg-white/5" : "border-gray-200 bg-gray-50"}`}
                         >
-                          {label}
+                          <img
+                            src={type == "pdf" ? pdfIcon : url}
+                            alt={label}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
-                        <div className="flex items-center gap-3 mt-1">
-                          <a
-                            href={url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={`text-[11px] font-medium ${isDark ? "text-violet-300 hover:text-violet-200" : "text-violet-600 hover:text-violet-700"} transition-colors`}
+                        <div className="mt-2">
+                          <div
+                            className={`text-xs font-semibold ${isDark ? "text-white/80" : "text-gray-700"}`}
                           >
-                            View
-                          </a>
-                          <button
-                            type="button"
-                            onClick={() => handleDownloadDocument(url, label)}
-                            className={`text-[11px] font-medium flex items-center gap-1 ${isDark ? "text-emerald-300 hover:text-emerald-200" : "text-emerald-600 hover:text-emerald-700"} transition-colors`}
-                          >
-                            <Download className="w-3 h-3" />
-                            Download
-                          </button>
+                            {label}
+                          </div>
+                          <div className="flex items-center gap-3 mt-1">
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className={`text-[11px] font-medium ${isDark ? "text-violet-300 hover:text-violet-200" : "text-violet-600 hover:text-violet-700"} transition-colors`}
+                            >
+                              View
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadDocument(url, label)}
+                              className={`text-[11px] font-medium flex items-center gap-1 ${isDark ? "text-emerald-300 hover:text-emerald-200" : "text-emerald-600 hover:text-emerald-700"} transition-colors`}
+                            >
+                              <Download className="w-3 h-3" />
+                              Download
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
