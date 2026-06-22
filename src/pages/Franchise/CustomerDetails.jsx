@@ -294,7 +294,6 @@ const CustomerDetails = () => {
     loadTickets();
   }, [id, customer?.userName, customer?.activlineUserId]);
 
-
   const ticketStats = useMemo(() => {
     const openTickets = supportTickets.filter(
       (t) => t.status === "Open",
@@ -608,9 +607,9 @@ const CustomerDetails = () => {
         },
         handler: async (response) => {
           try {
-            const verifyUrl =
-              import.meta.env.VITE_PAYMENT_VERIFY_URL ||
-              "http://localhost:8000/api/payment/plan/verify-payment";
+            // const verifyUrl =
+            //   import.meta.env.VITE_PAYMENT_VERIFY_URL ||
+            //   "http://localhost:8000/api/payment/plan/verify-payment";
 
             const verifyPayload = {
               razorpay_order_id: response.razorpay_order_id,
@@ -627,7 +626,7 @@ const CustomerDetails = () => {
               verifyPayload.userName = resolvedUserName;
             }
 
-            await verifyPlanPayment(verifyPayload, verifyUrl);
+            await verifyPlanPayment(verifyPayload);
             if (planType == "changePlan") {
               await renewPlan({
                 userId: customer?.activlineUserId,
@@ -1789,9 +1788,12 @@ const CustomerDetails = () => {
                           const info = extractProfileInfo(profile);
                           const isSelected =
                             !!selectedProfile &&
-                            ((selectedProfile._id && selectedProfile._id === profile._id) ||
-                              (selectedProfile.id && selectedProfile.id === profile.id) ||
-                              (info.profileId && info.profileId === paymentForm.profileId));
+                            ((selectedProfile._id &&
+                              selectedProfile._id === profile._id) ||
+                              (selectedProfile.id &&
+                                selectedProfile.id === profile.id) ||
+                              (info.profileId &&
+                                info.profileId === paymentForm.profileId));
                           return (
                             <div
                               key={
@@ -1921,7 +1923,9 @@ const CustomerDetails = () => {
                           >
                             Platform Fee
                           </div>
-                          <div className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+                          <div
+                            className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
+                          >
                             + ₹{calculatedTariff.toFixed(2)} (
                             {tariff.tariffType === "PERCENTAGE"
                               ? `${tariff.tariffValue}%`
@@ -1939,7 +1943,10 @@ const CustomerDetails = () => {
                         <div
                           className={`text-2xl font-bold ${isDark ? "bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent" : "text-violet-700"}`}
                         >
-                          ₹{(Number(paymentForm.amount || 0) + calculatedTariff).toFixed(2)}
+                          ₹
+                          {(
+                            Number(paymentForm.amount || 0) + calculatedTariff
+                          ).toFixed(2)}
                         </div>
                       </div>
                     </div>

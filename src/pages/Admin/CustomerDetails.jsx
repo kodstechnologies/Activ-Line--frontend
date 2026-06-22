@@ -581,9 +581,9 @@ const CustomerDetails = () => {
         },
         handler: async (response) => {
           try {
-            const verifyUrl =
-              import.meta.env.VITE_PAYMENT_VERIFY_URL ||
-              "http://localhost:8000/api/payment/plan/verify-payment";
+            // const verifyUrl =
+            //   import.meta.env.VITE_PAYMENT_VERIFY_URL ||
+            //   "http://localhost:8000/api/payment/plan/verify-payment";
 
             const verifyPayload = {
               razorpay_order_id: response.razorpay_order_id,
@@ -600,7 +600,7 @@ const CustomerDetails = () => {
               verifyPayload.userName = resolvedUserName;
             }
 
-            await verifyPlanPayment(verifyPayload, verifyUrl);
+            await verifyPlanPayment(verifyPayload);
 
             if (planType == "changePlan") {
               await renewPlan({
@@ -723,6 +723,7 @@ const CustomerDetails = () => {
     const amount =
       amountRaw !== undefined && amountRaw !== null ? String(amountRaw) : "";
 
+    // add
     // keep UI state in-sync (optional but useful)
     userSelectedPlanRef.current = true;
     setSelectedGroupId(groupId);
