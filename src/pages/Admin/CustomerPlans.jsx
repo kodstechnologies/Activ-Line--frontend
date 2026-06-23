@@ -319,23 +319,20 @@ const CustomerPlans = () => {
         },
         handler: async (response) => {
           try {
-            const verifyUrl =
-              import.meta.env.VITE_PAYMENT_VERIFY_URL ||
-              "http://localhost:8000/api/payment/plan/verify-payment";
+            // const verifyUrl =
+            //   import.meta.env.VITE_PAYMENT_VERIFY_URL ||
+            //   "http://localhost:8000/api/payment/plan/verify-payment";
 
-            await verifyPlanPayment(
-              {
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                accountId,
-                groupId,
-                profileId,
-                platformFee: calculatedTariff,
-                ...(resolvedUserName ? { userName: resolvedUserName } : {}),
-              },
-              verifyUrl,
-            );
+            await verifyPlanPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              accountId,
+              groupId,
+              profileId,
+              platformFee: calculatedTariff,
+              ...(resolvedUserName ? { userName: resolvedUserName } : {}),
+            });
 
             setPaymentStatus({
               type: "success",
