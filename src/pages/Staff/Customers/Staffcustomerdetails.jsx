@@ -38,7 +38,7 @@ import {
   getFranchiseTariff,
 } from "../../../api/customer.api";
 import { getAssignedCustomerById } from "../../../api/staff/assigdcustomer.api";
-import pdfIcon from "../../assets/images/pdf_icon1.jpg";
+import pdfIcon from "../../../assets/images/pdf_icon1.jpg";
 const CustomerDetails = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
