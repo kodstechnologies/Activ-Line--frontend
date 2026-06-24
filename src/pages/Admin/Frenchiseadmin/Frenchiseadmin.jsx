@@ -173,6 +173,9 @@ const Frenchiseadmin = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if (name == "accountId") {
+      setFormData((prev) => ({ ...prev, name: value }));
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -818,27 +821,6 @@ const Frenchiseadmin = () => {
                         </option>
                       ))}
                     </select>
-                  </div>
-
-                  <div>
-                    <label
-                      className={`text-sm font-medium mb-2 block ${isDark ? "text-slate-300" : "text-gray-700"}`}
-                    >
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      required
-                      value={formData.name}
-                      onChange={handleChange}
-                      placeholder="Enter full name"
-                      className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${
-                        isDark
-                          ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500"
-                          : "bg-white border-gray-300 text-gray-900 focus:border-purple-500"
-                      }`}
-                    />
                   </div>
 
                   <div>

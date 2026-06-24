@@ -6,9 +6,8 @@ import LightFullLogo from "../assets/images/Logo/activLine-final.png";
 import LightIconLogo from "../assets/images/Logo/app_icon.png";
 
 // 🌙 DARK MODE
-import DarkFullLogo from "../assets/images/Logo/activLine-logo-dark.png.jpg";
+import DarkFullLogo from "../assets/images/Logo/activLine-logo-dark.png";
 import DarkIconLogo from "../assets/images/Logo/image.jpg";
-
 const ActivlineLogo = ({ collapsed }) => {
   const { isDark } = useTheme();
 
@@ -18,7 +17,7 @@ const ActivlineLogo = ({ collapsed }) => {
       <img
         src={isDark ? DarkIconLogo : LightIconLogo}
         alt="Activline Icon"
-        className="h-12 w-12 transition-all duration-300"
+        className="h-12 w-auto transition-all duration-300"
       />
     );
   }

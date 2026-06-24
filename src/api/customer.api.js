@@ -201,3 +201,9 @@ export const getFranchiseTariff = (franchiseId) => {
   if (!franchiseId) throw new Error("franchiseId is required");
   return api.get(`/api/customer/tariff/${encodeURIComponent(franchiseId)}`);
 };
+
+// ✅ Create support chat room/ticket
+export const createChatRoomApi = (payload) => {
+  return api.post("/api/chat/franchise/rooms", payload);
+};
+

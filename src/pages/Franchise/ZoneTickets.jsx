@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Send,
   Menu,
@@ -160,6 +161,8 @@ const normalizeMessage = (m) => {
 const ZoneTickets = () => {
   const { isDark } = useTheme();
   const { token } = useAuth();
+  const location = useLocation();
+
   const [users, setUsers] = useState([]);
   const [activeUserId, setActiveUserId] = useState(null);
   const [activeTicketId, setActiveTicketId] = useState(null);
@@ -312,6 +315,18 @@ const ZoneTickets = () => {
           new Date(a.latestMessageTime || 0),
       );
       setUsers(groupedUsers);
+
+      const targetRoomId = location.state?.selectedRoomId;
+      if (targetRoomId) {
+        const targetUser = groupedUsers.find((u) =>
+          u.tickets.some((t) => t.id === targetRoomId)
+        );
+        if (targetUser) {
+          setActiveUserId(targetUser.customerId);
+          setActiveTicketId(targetRoomId);
+          return;
+        }
+      }
 
       if (groupedUsers.length && !activeUserId) {
         setActiveUserId(groupedUsers[0].customerId);

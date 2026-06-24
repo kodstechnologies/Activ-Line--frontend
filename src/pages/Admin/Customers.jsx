@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   Search,
   Filter,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { checkUserExist } from "../../api/auth.js";
 import {
   updateCustomer,
   createCustomer,
@@ -191,20 +193,59 @@ const SubscribersPage = () => {
     return dateStr;
   };
 
+  const debouncedCheckUserExists = useMemo(() => {
+    const check = async (email, phone) => {
+      const hasValidPhone = phone && phone.trim().length === 10;
+      const hasValidEmail =
+        email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+      if (!hasValidPhone && !hasValidEmail) return;
+
+      try {
+        await checkUserExist({
+          emailId: hasValidEmail ? email.trim() : undefined,
+          phoneNumber: hasValidPhone ? phone.trim() : undefined,
+        });
+      } catch (err) {
+        if (
+          err.response?.status === 409 ||
+          err.status === 409 ||
+          err.message?.includes("409")
+        ) {
+          console.log(err?.response);
+          toast.error(err?.response?.data?.message || "User already exists");
+        }
+      }
+    };
+
+    let timer;
+    return (email, phone) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => check(email, phone), 500);
+    };
+  }, []);
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     let nextSubscriber = {};
     if (name === "phoneNumber") {
       if (isNaN(value) && value !== "") return; // Only allow numbers
+      const digits = value.replace(/[^0-9]/g, "");
       nextSubscriber = {
         ...newSubscriber,
-        [name]: value.replace(/[^0-9]/g, ""),
+        [name]: digits,
       };
+      if (digits.length === 10) {
+        debouncedCheckUserExists(null, digits);
+      }
     } else {
       nextSubscriber = {
         ...newSubscriber,
         [name]: type === "checkbox" ? checked : value,
       };
+      if (name === "emailId") {
+        debouncedCheckUserExists(value, null);
+      }
     }
     setNewSubscriber(nextSubscriber);
     if (name === "userGroupId") {
@@ -1407,7 +1448,7 @@ const SubscribersPage = () => {
       {/* Add Subscriber Modal */}
       {isModalOpen &&
         createPortal(
-          <div className=" fixed inset-0 bg-black/70 backdrop-blur-sm z-10 flex items-center justify-center p-4">
+          <div className=" fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div
               className={`scrollbar-hide rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200 border ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"}`}
             >
@@ -1475,6 +1516,9 @@ const SubscribersPage = () => {
                       name="phoneNumber"
                       value={newSubscriber.phoneNumber}
                       onChange={handleInputChange}
+                      onBlur={(e) =>
+                        debouncedCheckUserExists(null, e.target.value)
+                      }
                       maxLength={10}
                       className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"}`}
                     />
@@ -1490,6 +1534,9 @@ const SubscribersPage = () => {
                       name="emailId"
                       value={newSubscriber.emailId}
                       onChange={handleInputChange}
+                      onBlur={(e) =>
+                        debouncedCheckUserExists(e.target.value, null)
+                      }
                       className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-300 text-gray-900"}`}
                     />
                   </div>

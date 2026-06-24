@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   Pencil,
   Trash2,
@@ -24,6 +25,7 @@ import {
 import { createPortal } from "react-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { checkUserExist } from "../../api/auth.js";
 import Lottie from "lottie-react";
 import fadeSlideAnimation from "../../animations/Profile Avatar of Young Boy.json";
 import { getCustomers, editCustomer } from "../../api/frenchise/customer";
@@ -209,6 +211,37 @@ const MySubscribers = () => {
     navigate(`/my-customers-details/${customer.id}`);
   };
 
+  const debouncedCheckUserExists = useMemo(() => {
+    const check = async (email, phone) => {
+      const hasValidPhone = phone && phone.trim().length === 10;
+      const hasValidEmail =
+        email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+      if (!hasValidPhone && !hasValidEmail) return;
+
+      try {
+        await checkUserExist({
+          emailId: hasValidEmail ? email.trim() : undefined,
+          phoneNumber: hasValidPhone ? phone.trim() : undefined,
+        });
+      } catch (err) {
+        if (
+          err.response?.status === 409 ||
+          err.status === 409 ||
+          err.message?.includes("409")
+        ) {
+          toast.error(err?.response?.data?.message || "User already exists");
+        }
+      }
+    };
+
+    let timer;
+    return (email, phone) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => check(email, phone), 500);
+    };
+  }, []);
+
   const handleAddInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     const nextSubscriber = {
@@ -217,6 +250,10 @@ const MySubscribers = () => {
     };
     setNewSubscriber(nextSubscriber);
     setFormError("");
+
+    if (name === "emailId") {
+      debouncedCheckUserExists(value, null);
+    }
 
     if (name === "userGroupId") {
       setPaymentForm((prev) => ({
@@ -1560,7 +1597,13 @@ const MySubscribers = () => {
                             phoneNumber: digits,
                           }));
                           setFormError("");
+                          if (digits.length === 10) {
+                            debouncedCheckUserExists(null, digits);
+                          }
                         }}
+                        onBlur={(e) =>
+                          debouncedCheckUserExists(null, e.target.value)
+                        }
                         maxLength="10"
                         className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${
                           isDark
@@ -1580,6 +1623,9 @@ const MySubscribers = () => {
                         name="emailId"
                         value={newSubscriber.emailId}
                         onChange={handleAddInputChange}
+                        onBlur={(e) =>
+                          debouncedCheckUserExists(e.target.value, null)
+                        }
                         className={`w-full p-2.5 border rounded-lg text-base outline-none focus:border-blue-500 ${
                           isDark
                             ? "bg-slate-800 border-slate-700 text-white"

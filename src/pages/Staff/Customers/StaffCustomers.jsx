@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   Search,
   Filter,
@@ -12,6 +13,7 @@ import { useTheme } from "../../../context/ThemeContext";
 import Lottie from "lottie-react";
 import fadeSlideAnimation from "../../../animations/Profile Avatar of Young Boy.json";
 import { getAssignedCustomers } from "../../../api/staff/assigdcustomer.api";
+import { checkUserExist } from "../../../api/auth.js";
 import { createPortal } from "react-dom";
 
 // ── Reusable Form Field ──────────────────────────────────────────
@@ -77,6 +79,37 @@ const CustomerFormModal = ({
   submitLabel = "Save",
   showStatus = false,
 }) => {
+  const debouncedCheckUserExists = useMemo(() => {
+    const check = async (email, phone) => {
+      const hasValidPhone = phone && phone.trim().length === 10;
+      const hasValidEmail =
+        email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+      if (!hasValidPhone && !hasValidEmail) return;
+
+      try {
+        await checkUserExist({
+          emailId: hasValidEmail ? email.trim() : undefined,
+          phoneNumber: hasValidPhone ? phone.trim() : undefined,
+        });
+      } catch (err) {
+        if (
+          err.response?.status === 409 ||
+          err.status === 409 ||
+          err.message?.includes("409")
+        ) {
+          toast.error(err?.response?.data?.message || "User already exists");
+        }
+      }
+    };
+
+    let timer;
+    return (email, phone) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => check(email, phone), 500);
+    };
+  }, []);
+
   const handleInput = (e) => {
     const { name, value, type, checked } = e.target;
     if (name === "phoneNumber" && value.length > 10) return; // Limit phone number to 10 digits
@@ -84,6 +117,12 @@ const CustomerFormModal = ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+    if (name === "phoneNumber" && value.length === 10) {
+      debouncedCheckUserExists(null, value);
+    }
+    if (name === "emailId") {
+      debouncedCheckUserExists(value, null);
+    }
   };
 
   const handleFile = (e) => {
@@ -179,6 +218,7 @@ const CustomerFormModal = ({
                   name="emailId"
                   value={formData.emailId}
                   onChange={handleInput}
+                  onBlur={(e) => debouncedCheckUserExists(e.target.value, null)}
                   className={inputCls(isDark)}
                   placeholder="john@example.com"
                 />
@@ -190,6 +230,7 @@ const CustomerFormModal = ({
                   name="phoneNumber"
                   value={formData.phoneNumber}
                   onChange={handleInput}
+                  onBlur={(e) => debouncedCheckUserExists(null, e.target.value)}
                   className={inputCls(isDark)}
                   placeholder="+91 9876543210"
                 />
@@ -438,7 +479,7 @@ const CustomerFormModal = ({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 

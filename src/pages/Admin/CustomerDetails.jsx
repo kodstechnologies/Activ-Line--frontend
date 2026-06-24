@@ -23,6 +23,7 @@ import {
   Star,
   Layers,
   BarChart3,
+  MessageSquare,
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import DownloadCustomerPdfButton from "../../components/customers/DownloadCustomerPdfButton";
@@ -37,6 +38,7 @@ import {
   verifyPlanPayment,
   renewPlan,
   getFranchiseTariff,
+  createChatRoomApi,
 } from "../../api/customer.api";
 import pdfIcon from "../../assets/images/pdf_icon1.jpg";
 
@@ -45,6 +47,27 @@ const CustomerDetails = () => {
   const { isDark } = useTheme();
   const [customer, setCustomer] = useState(null);
   const { id } = useParams();
+  const [isChatLoading, setIsChatLoading] = useState(false);
+
+  const handleCreateChatRoom = async () => {
+    if (isChatLoading) return;
+    setIsChatLoading(true);
+    try {
+      const payload = {
+        customerId: id,
+        accountId: customer?.accountId || customer?.accountID || customer?.franchiseAccountId || ""
+      };
+      const res = await createChatRoomApi(payload);
+      const newRoomId = res.data?.data?._id;
+      if (newRoomId) {
+        navigate("/tickets", { state: { selectedRoomId: newRoomId } });
+      }
+    } catch (err) {
+      console.error("Failed to create chat room", err);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
 
   // Pagination and filter states for Support Tickets
   const [ticketCurrentPage, setTicketCurrentPage] = useState(1);
@@ -884,6 +907,18 @@ const CustomerDetails = () => {
                 userName={customer?.userName}
                 isDark={isDark}
               />
+              <button
+                onClick={handleCreateChatRoom}
+                disabled={isChatLoading}
+                className={`flex items-center px-5 py-2.5 rounded-xl text-sm font-medium border shadow-sm transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isDark
+                    ? "bg-violet-600 hover:bg-violet-500 text-white border-violet-500/30 shadow-lg shadow-violet-500/10"
+                    : "bg-violet-100 hover:bg-violet-200 text-violet-700 border-violet-200"
+                }`}
+              >
+                <MessageSquare className="w-4 h-4 mr-1.5" />
+                {isChatLoading ? "Opening..." : "Chat"}
+              </button>
               <span
                 className={`px-5 py-2 rounded-full text-sm font-medium backdrop-blur-md border ${
                   customer.status?.toUpperCase() === "ACTIVE"

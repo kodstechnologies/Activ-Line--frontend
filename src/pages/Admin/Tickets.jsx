@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import Chat from "../../components/chat/Chat";
@@ -28,6 +29,7 @@ const ALLOWED_STATUS_TRANSITIONS = {
 const Tickets = () => {
   const { isDark } = useTheme();
   const { token } = useAuth();
+  const location = useLocation();
 
   const [users, setUsers] = useState([]);
   const [activeUserId, setActiveUserId] = useState(null);
@@ -127,6 +129,18 @@ const Tickets = () => {
         );
 
         setUsers(groupedUsers);
+
+        const targetRoomId = location.state?.selectedRoomId;
+        if (targetRoomId) {
+          const targetUser = groupedUsers.find((u) =>
+            u.tickets.some((t) => t._id === targetRoomId)
+          );
+          if (targetUser) {
+            setActiveUserId(targetUser.customerId);
+            setActiveTicketId(targetRoomId);
+            return;
+          }
+        }
 
         if (!activeUserId && groupedUsers.length) {
           setActiveUserId(groupedUsers[0].customerId);
