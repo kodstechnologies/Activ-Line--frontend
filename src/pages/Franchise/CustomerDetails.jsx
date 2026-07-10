@@ -856,6 +856,34 @@ const CustomerDetails = () => {
     ["Profile Photo", documents.profilePicFile],
   ].filter(([, url]) => Boolean(url));
 
+  const addressDisplay = useMemo(() => {
+    if (!customer) return "N/A";
+
+    if (customer.installationAddress) {
+      const ia = customer.installationAddress;
+      const parts = [ia.line1, ia.line2, ia.city, ia.state, ia.country].filter(Boolean);
+      const pin = ia.pin ? ` - ${ia.pin}` : "";
+      const joined = parts.length ? `${parts.join(", ")}${pin}` : "";
+      if (joined) return joined;
+    }
+
+    const rp = customer.rawPayload || {};
+    const rpParts = [];
+    if (rp.address) rpParts.push(rp.address);
+    if (rp.address_line1) rpParts.push(rp.address_line1);
+    if (rp.address_line2) rpParts.push(rp.address_line2);
+    if (rp.address_city) rpParts.push(rp.address_city);
+    if (rp.address_state) rpParts.push(rp.address_state);
+    if (rp.company_name) rpParts.push(rp.company_name);
+    if (rp.country) rpParts.push(rp.country);
+    const rpPin = rp.address_pin ? ` - ${rp.address_pin}` : "";
+    if (rpParts.length) return `${rpParts.join(", ")}${rpPin}`;
+
+    if (customer.address) return customer.address;
+    if (customer.location) return customer.location;
+    return "N/A";
+  }, [customer]);
+
   const handleDownloadDocument = (url, label) => {
     if (!url) return;
     const downloadUrl = url.includes("/upload/")
@@ -1029,7 +1057,7 @@ const CustomerDetails = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Details */}
           <div className="space-y-6 lg:col-span-1">
-            {/* Contact Information */}
+            {/* in frenchise folder cus */}
             <div className={`${glassCardClass} p-6`}>
               <h3
                 className={`text-lg font-semibold mb-6 flex items-center gap-2 ${isDark ? "text-white/90" : "text-gray-900"}`}
@@ -1079,19 +1107,7 @@ const CustomerDetails = () => {
                   <span
                     className={`text-sm ${isDark ? "text-white/80" : "text-gray-700"}`}
                   >
-                    {customer.installationAddress
-                      ? [
-                          customer.installationAddress.line2,
-                          customer.installationAddress.city,
-                          customer.installationAddress.state,
-                          customer.installationAddress.country,
-                        ]
-                          .filter(Boolean)
-                          .join(", ") +
-                        (customer.installationAddress.pin
-                          ? ` - ${customer.installationAddress.pin}`
-                          : "")
-                      : "N/A"}
+                    {addressDisplay}
                   </span>
                 </div>
               </div>
