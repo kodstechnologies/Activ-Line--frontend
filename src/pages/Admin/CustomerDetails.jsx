@@ -419,6 +419,36 @@ const CustomerDetails = () => {
     });
   };
 
+  const addressDisplay = useMemo(() => {
+    if (!customer) return "N/A";
+
+    // Prefer explicit installationAddress when available
+    if (customer.installationAddress) {
+      const ia = customer.installationAddress;
+      const parts = [ia.line1, ia.line2, ia.city, ia.state, ia.country].filter(Boolean);
+      const pin = ia.pin ? ` - ${ia.pin}` : "";
+      const joined = parts.length ? parts.join(", ") + pin : "";
+      if (joined) return joined;
+    }
+
+    // Fallback to rawPayload fields (many backends populate these)
+    const rp = customer.rawPayload || {};
+    const rpParts = [];
+    if (rp.address) rpParts.push(rp.address);
+    if (rp.address_line1) rpParts.push(rp.address_line1);
+    if (rp.address_line2) rpParts.push(rp.address_line2);
+    if (rp.address_city) rpParts.push(rp.address_city);
+    if (rp.address_state) rpParts.push(rp.address_state);
+    if (rp.company_name) rpParts.push(rp.company_name);
+    const rpPin = rp.address_pin ? ` - ${rp.address_pin}` : "";
+    if (rpParts.length) return rpParts.join(", ") + rpPin;
+
+    // Try other possible fields
+    if (customer.address) return customer.address;
+    if (customer.location) return customer.location;
+    return "N/A";
+  }, [customer]);
+
   const extractProfileInfo = (profile) => {
     if (!profile)
       return { profileId: "", groupId: "", name: "", planName: "", amount: "" };
@@ -1055,19 +1085,7 @@ const CustomerDetails = () => {
                   <span
                     className={`text-sm ${isDark ? "text-white/80" : "text-gray-700"}`}
                   >
-                    {customer.installationAddress
-                      ? [
-                          customer.installationAddress.line2,
-                          customer.installationAddress.city,
-                          customer.installationAddress.state,
-                          customer.installationAddress.country,
-                        ]
-                          .filter(Boolean)
-                          .join(", ") +
-                        (customer.installationAddress.pin
-                          ? ` - ${customer.installationAddress.pin}`
-                          : "")
-                      : "N/A"}
+                    {addressDisplay}
                   </span>
                 </div>
               </div>

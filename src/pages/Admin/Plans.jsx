@@ -415,6 +415,18 @@ const FranchiseList = ({ onSelect }) => {
   const [franchises, setFranchises] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 15;
+
+  const totalPages = Math.max(1, Math.ceil(franchises.length / PAGE_SIZE));
+  const paginatedFranchises = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return franchises.slice(start, start + PAGE_SIZE);
+  }, [franchises, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [franchises]);
 
   useEffect(() => {
     fetchFranchiseList()
@@ -480,7 +492,7 @@ const FranchiseList = ({ onSelect }) => {
         </p>
       </div>
       <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-        {franchises.map((f, index) => (
+        {paginatedFranchises.map((f, index) => (
           <motion.button
             key={f._id}
             initial={{ opacity: 0, y: 20 }}
@@ -537,6 +549,32 @@ const FranchiseList = ({ onSelect }) => {
           </motion.button>
         ))}
       </div>
+
+      {franchises.length > PAGE_SIZE && (
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className={`text-sm ${isDark ? "text-slate-400" : "text-gray-700"}`}>
+            Showing {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, franchises.length)} of {franchises.length}
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className={`px-6 py-3.5 rounded-2xl text-base font-semibold transition ${currentPage === 1 ? "opacity-50 cursor-not-allowed" : isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className={`px-6 py-3.5 rounded-2xl text-base font-semibold transition ${currentPage === totalPages ? "opacity-50 cursor-not-allowed" : isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 };
@@ -851,6 +889,18 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showTariffForm, setShowTariffForm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 20;
+
+  const totalPages = Math.max(1, Math.ceil(groups.length / PAGE_SIZE));
+  const paginatedGroups = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return groups.slice(start, start + PAGE_SIZE);
+  }, [groups, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [groups]);
 
   useEffect(() => {
     fetchGroupDetails(franchise.accountId)
@@ -973,7 +1023,7 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
         </div>
       </div>
       <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-        {groups.map((g, index) => (
+        {paginatedGroups.map((g, index) => (
           <motion.button
             key={g.Group_id}
             initial={{ opacity: 0, y: 20 }}
@@ -1064,6 +1114,32 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
           </motion.button>
         ))}
       </div>
+
+      {groups.length > PAGE_SIZE && (
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className={`text-sm ${isDark ? "text-slate-400" : "text-gray-700"}`}>
+            Showing {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, groups.length)} of {groups.length}
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className={`px-6 py-3.5 rounded-2xl text-base font-semibold transition ${currentPage === 1 ? "opacity-50 cursor-not-allowed" : isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className={`px-6 py-3.5 rounded-2xl text-base font-semibold transition ${currentPage === totalPages ? "opacity-50 cursor-not-allowed" : isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 };

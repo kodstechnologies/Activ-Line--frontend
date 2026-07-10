@@ -26,6 +26,9 @@ const CustomerPlans = () => {
   const phoneNumber = location?.state?.phoneNumber || "";
 
   const [profiles, setProfiles] = useState([]);
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 20;
   const [profilesLoading, setProfilesLoading] = useState(false);
   const [profilesError, setProfilesError] = useState("");
   const [selectedProfile, setSelectedProfile] = useState(null);
@@ -448,6 +451,18 @@ const CustomerPlans = () => {
     });
   }, [profiles, selectedGroupId]);
 
+  // paginated view
+  const totalPages = Math.max(1, Math.ceil(filteredProfiles.length / PAGE_SIZE));
+  const paginatedProfiles = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredProfiles.slice(start, start + PAGE_SIZE);
+  }, [filteredProfiles, currentPage]);
+
+  // Reset to first page whenever the filtered list changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredProfiles]);
+
   if (!accountId) {
     return (
       <div className={`p-6 ${isDark ? "text-slate-200" : "text-gray-800"}`}>
@@ -520,8 +535,9 @@ const CustomerPlans = () => {
               )}
 
             {filteredProfiles.length > 0 && (
-              <div className="grid grid-cols-1 gap-3 max-h-[70vh] overflow-y-auto">
-                {filteredProfiles.map((profile, idx) => {
+              <>
+                <div className="grid grid-cols-1 gap-3 max-h-[70vh] overflow-y-auto">
+                  {paginatedProfiles.map((profile, idx) => {
                   const info = extractProfileInfo(profile);
                   const profileDetails =
                     profile?.details?.["profile Details"] ||
@@ -606,8 +622,34 @@ const CustomerPlans = () => {
                       </div>
                     </div>
                   );
-                })}
-              </div>
+                  })}
+                </div>
+
+                {/* Pagination Controls */}
+                <div className="mt-4 flex items-center justify-between">
+                  <div className={`text-sm ${isDark ? "text-slate-400" : "text-gray-700"}`}>
+                    Showing {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, filteredProfiles.length)} of {filteredProfiles.length}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition ${currentPage === 1 ? "opacity-50 cursor-not-allowed" : isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition ${currentPage === totalPages ? "opacity-50 cursor-not-allowed" : isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>
