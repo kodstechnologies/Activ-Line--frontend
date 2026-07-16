@@ -738,113 +738,72 @@ const RelocationPage = () => {
                       <p className="text-xs font-semibold text-amber-600 dark:text-amber-500 uppercase tracking-wider mb-3">
                         Previous / Existing Address
                       </p>
-                      {selectedRequest.userId?.installationAddress ? (
-                        <div className="space-y-2 text-xs">
-                          <p>
-                            <span
-                              className={`font-medium ${isDark ? "text-slate-500" : "text-gray-400"} mr-1`}
-                            >
-                              Line:
-                            </span>
-                            {selectedRequest.userId.installationAddress.line2 ||
-                              "N/A"}
-                          </p>
-                          <p>
-                            <span
-                              className={`font-medium ${isDark ? "text-slate-500" : "text-gray-400"} mr-1`}
-                            >
-                              City:
-                            </span>
-                            {selectedRequest.userId.installationAddress.city ||
-                              "N/A"}
-                          </p>
-                          <p>
-                            <span
-                              className={`font-medium ${isDark ? "text-slate-500" : "text-gray-400"} mr-1`}
-                            >
-                              State:
-                            </span>
-                            {selectedRequest.userId.installationAddress.state ||
-                              "N/A"}
-                          </p>
-                          <p>
-                            <span
-                              className={`font-medium ${isDark ? "text-slate-500" : "text-gray-400"} mr-1`}
-                            >
-                              PIN:
-                            </span>
-                            {selectedRequest.userId.installationAddress.pin ||
-                              "N/A"}
-                          </p>
-                          <p>
-                            <span
-                              className={`font-medium ${isDark ? "text-slate-500" : "text-gray-400"} mr-1`}
-                            >
-                              Country:
-                            </span>
-                            {selectedRequest.userId.installationAddress
-                              .country || "IN"}
-                          </p>
-                        </div>
-                      ) : selectedRequest.userId?.address ? (
-                        <div className="space-y-2 text-xs">
-                          <p>
-                            <span
-                              className={`font-medium ${isDark ? "text-slate-500" : "text-gray-400"} mr-1`}
-                            >
-                              Line:
-                            </span>
-                            {selectedRequest.userId.address.line1 || "N/A"}
-                          </p>
-                          <p>
-                            <span
-                              className={`font-medium ${isDark ? "text-slate-500" : "text-gray-400"} mr-1`}
-                            >
-                              City:
-                            </span>
-                            {selectedRequest.userId.address.city || "N/A"}
-                          </p>
-                          <p>
-                            <span
-                              className={`font-medium ${isDark ? "text-slate-500" : "text-gray-400"} mr-1`}
-                            >
-                              State:
-                            </span>
-                            {selectedRequest.userId.address.state || "N/A"}
-                          </p>
-                          <p>
-                            <span
-                              className={`font-medium ${isDark ? "text-slate-500" : "text-gray-400"} mr-1`}
-                            >
-                              PIN:
-                            </span>
-                            {selectedRequest.userId.address.pin || "N/A"}
-                          </p>
-                          <p>
-                            <span
-                              className={`font-medium ${isDark ? "text-slate-500" : "text-gray-400"} mr-1`}
-                            >
-                              Country:
-                            </span>
-                            {selectedRequest.userId.address.country || "IN"}
-                          </p>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-slate-500 italic">
-                          No existing address found
-                        </p>
-                      )}
+                      {(() => {
+                        let addr = null;
+                        if (selectedRequest.status === "COMPLETED" && selectedRequest.previous_address) {
+                          addr = selectedRequest.previous_address;
+                        } else if (selectedRequest.userId?.installationAddress) {
+                          addr = selectedRequest.userId.installationAddress;
+                        } else if (selectedRequest.userId?.address) {
+                          addr = selectedRequest.userId.address;
+                        }
+
+                        if (!addr) {
+                          return (
+                            <p className="text-xs text-slate-500 italic">
+                              No existing address found
+                            </p>
+                          );
+                        }
+
+                        return (
+                          <div className="space-y-2 text-xs">
+                            <p>
+                              <span className={`font-medium ${isDark ? "text-slate-500" : "text-gray-400"} mr-1`}>
+                                Line:
+                              </span>
+                              {addr.line2 || addr.line1 || "N/A"}
+                            </p>
+                            <p>
+                              <span className={`font-medium ${isDark ? "text-slate-500" : "text-gray-400"} mr-1`}>
+                                City:
+                              </span>
+                              {addr.city || "N/A"}
+                            </p>
+                            <p>
+                              <span className={`font-medium ${isDark ? "text-slate-500" : "text-gray-400"} mr-1`}>
+                                State:
+                              </span>
+                              {addr.state || "N/A"}
+                            </p>
+                            <p>
+                              <span className={`font-medium ${isDark ? "text-slate-500" : "text-gray-400"} mr-1`}>
+                                PIN:
+                              </span>
+                              {addr.pin || "N/A"}
+                            </p>
+                            <p>
+                              <span className={`font-medium ${isDark ? "text-slate-500" : "text-gray-400"} mr-1`}>
+                                Country:
+                              </span>
+                              {addr.country || "IN"}
+                            </p>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Existing Address Map Actions */}
                     {(() => {
-                      const lat =
-                        selectedRequest.userId?.installationAddress?.latitude ||
-                        selectedRequest.userId?.address?.latitude;
-                      const lng =
-                        selectedRequest.userId?.installationAddress
-                          ?.longitude ||
-                        selectedRequest.userId?.address?.longitude;
+                      let lat = null;
+                      let lng = null;
+                      if (selectedRequest.status === "COMPLETED" && selectedRequest.previous_address) {
+                        lat = selectedRequest.previous_address.latitude;
+                        lng = selectedRequest.previous_address.longitude;
+                      } else {
+                        lat = selectedRequest.userId?.installationAddress?.latitude || selectedRequest.userId?.address?.latitude;
+                        lng = selectedRequest.userId?.installationAddress?.longitude || selectedRequest.userId?.address?.longitude;
+                      }
                       if (!lat || !lng) return null;
                       return (
                         <div className="mt-4 pt-3 border-t border-slate-700/30 flex flex-col gap-2">
