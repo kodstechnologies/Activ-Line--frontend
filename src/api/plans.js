@@ -12,8 +12,10 @@ const API = axios.create({
 });
 
 // ── 1. Get all franchises ──────────────────────────────────────────────────────
-export const fetchFranchiseList = async () => {
-  const response = await API.get("/franchise");
+export const fetchFranchiseList = async (search = "") => {
+  const response = await API.get("/franchise", {
+    params: search ? { search } : {},
+  });
   return response.data; // { success, message, data: [...] }
 };
 

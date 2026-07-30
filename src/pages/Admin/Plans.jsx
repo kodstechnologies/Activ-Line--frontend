@@ -19,6 +19,8 @@ import {
   Calendar,
   Shield,
   Package,
+  Search,
+  XCircle,
 } from "lucide-react";
 import api from "../../api/axios";
 
@@ -418,6 +420,9 @@ const FranchiseList = ({ onSelect }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 15;
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
   const totalPages = Math.max(1, Math.ceil(franchises.length / PAGE_SIZE));
   const paginatedFranchises = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
@@ -429,13 +434,22 @@ const FranchiseList = ({ onSelect }) => {
   }, [franchises]);
 
   useEffect(() => {
-    fetchFranchiseList()
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchFranchiseList(debouncedSearch)
       .then((res) => {
         const list = Array.isArray(res?.data) ? res.data : [];
         if (!res?.success && list.length === 0) {
           setError("Failed to load franchises.");
         } else {
           setFranchises(list);
+          setError(null);
         }
       })
       .catch((err) =>
@@ -446,30 +460,7 @@ const FranchiseList = ({ onSelect }) => {
         ),
       )
       .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
-    return (
-      <div>
-        <Breadcrumb steps={["Franchises"]} />
-        <div className="mb-6">
-          <div
-            className={`h-8 w-64 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse mb-2`}
-          ></div>
-          <div
-            className={`h-4 w-96 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse`}
-          ></div>
-        </div>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <FranchiseCardShimmer key={i} isDark={isDark} />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (error) return <ErrorMsg message={error} isDark={isDark} />;
+  }, [debouncedSearch]);
 
   return (
     <motion.div
@@ -478,102 +469,145 @@ const FranchiseList = ({ onSelect }) => {
       transition={{ duration: 0.3 }}
     >
       <Breadcrumb steps={["Franchises"]} />
-      <div className="mb-6">
-        <h2
-          className={`text-2xl font-bold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-800"}`}
-        >
-          <Building2 className="w-6 h-6" />
-          Select a Franchise
-        </h2>
-        <p
-          className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}
-        >
-          Choose an account to view its group plans and configurations
-        </p>
-      </div>
-      <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-        {paginatedFranchises.map((f, index) => (
-          <motion.button
-            key={f._id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            whileHover={{ y: -5, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => onSelect(f)}
-            className={`group text-left rounded-2xl border p-4 sm:p-5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 ${
-              isDark
-                ? "bg-slate-900/60 border-slate-800 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10"
-                : "bg-white border-slate-200 hover:border-blue-400 hover:shadow-xl"
-            }`}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2
+            className={`text-2xl font-bold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-800"}`}
           >
-            <div className="flex items-start justify-between mb-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                {f.companyName?.[0]?.toUpperCase() || "F"}
-              </div>
-              <Badge color="slate" icon="📋">
-                {f.accountId}
-              </Badge>
-            </div>
-            <p
-              className={`font-bold text-base transition-colors ${
-                isDark
-                  ? "text-slate-100 group-hover:text-blue-300"
-                  : "text-slate-800 group-hover:text-blue-600"
-              }`}
+            <Building2 className="w-6 h-6" />
+            Select a Franchise
+          </h2>
+          <p
+            className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+          >
+            Choose an account to view its group plans and configurations
+          </p>
+        </div>
+
+        {/* Search Input */}
+        <div className="relative w-full sm:w-80">
+          <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <Search className={`w-4 h-4 ${isDark ? "text-slate-500" : "text-slate-400"}`} />
+          </span>
+          <input
+            type="text"
+            placeholder="Search franchises..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={`w-full pl-9 pr-8 py-2.5 border rounded-xl text-sm outline-none transition-all ${
+              isDark
+                ? "bg-slate-900 border-slate-800 text-white placeholder-slate-500 focus:border-blue-500"
+                : "bg-white border-slate-200 text-slate-800 placeholder-slate-400 focus:border-blue-400"
+            }`}
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute inset-y-0 right-0 flex items-center pr-3"
             >
-              {f.companyName}
-            </p>
-            <p
-              className={`text-xs mt-1 flex items-center gap-1 ${isDark ? "text-slate-500" : "text-slate-400"}`}
-            >
-              <Building2 className="w-3 h-3" />
-              Parent:{" "}
-              <span
-                className={`font-medium ${isDark ? "text-slate-300" : "text-slate-500"}`}
-              >
-                {f.parentAccountId}
-              </span>
-            </p>
-            <p
-              className={`text-xs mt-0.5 flex items-center gap-1 ${isDark ? "text-slate-500" : "text-slate-400"}`}
-            >
-              <Calendar className="w-3 h-3" />
-              Created: {new Date(f.dateCreated).toLocaleDateString()}
-            </p>
-            <div
-              className={`mt-4 flex items-center gap-1.5 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity ${isDark ? "text-blue-300" : "text-blue-500"}`}
-            >
-              View Groups →
-            </div>
-          </motion.button>
-        ))}
+              <XCircle className={`w-4 h-4 ${isDark ? "text-slate-500 hover:text-slate-400" : "text-slate-400 hover:text-slate-500"}`} />
+            </button>
+          )}
+        </div>
       </div>
 
-      {franchises.length > PAGE_SIZE && (
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className={`text-sm ${isDark ? "text-slate-400" : "text-gray-700"}`}>
-            Showing {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, franchises.length)} of {franchises.length}
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className={`px-6 py-3.5 rounded-2xl text-base font-semibold transition ${currentPage === 1 ? "opacity-50 cursor-not-allowed" : isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className={`px-6 py-3.5 rounded-2xl text-base font-semibold transition ${currentPage === totalPages ? "opacity-50 cursor-not-allowed" : isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
-            >
-              Next
-            </button>
-          </div>
+      {loading ? (
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <FranchiseCardShimmer key={i} isDark={isDark} />
+          ))}
         </div>
+      ) : error ? (
+        <ErrorMsg message={error} isDark={isDark} />
+      ) : franchises.length === 0 ? (
+        <ErrorMsg message="No franchises found. There is no franchise like that." isDark={isDark} />
+      ) : (
+        <>
+          <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+            {paginatedFranchises.map((f, index) => (
+              <motion.button
+                key={f._id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={{ y: -5, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => onSelect(f)}
+                className={`group text-left rounded-2xl border p-4 sm:p-5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  isDark
+                    ? "bg-slate-900/60 border-slate-800 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10"
+                    : "bg-white border-slate-200 hover:border-blue-400 hover:shadow-xl"
+                }`}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                    {f.companyName?.[0]?.toUpperCase() || "F"}
+                  </div>
+                  <Badge color="slate" icon="📋">
+                    {f.accountId}
+                  </Badge>
+                </div>
+                <p
+                  className={`font-bold text-base transition-colors ${
+                    isDark
+                      ? "text-slate-100 group-hover:text-blue-300"
+                      : "text-slate-800 group-hover:text-blue-600"
+                  }`}
+                >
+                  {f.companyName}
+                </p>
+                <p
+                  className={`text-xs mt-1 flex items-center gap-1 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+                >
+                  <Building2 className="w-3 h-3" />
+                  Parent:{" "}
+                  <span
+                    className={`font-medium ${isDark ? "text-slate-300" : "text-slate-500"}`}
+                  >
+                    {f.parentAccountId}
+                  </span>
+                </p>
+                <p
+                  className={`text-xs mt-0.5 flex items-center gap-1 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+                >
+                  <Calendar className="w-3 h-3" />
+                  Created: {new Date(f.dateCreated).toLocaleDateString()}
+                </p>
+                <div
+                  className={`mt-4 flex items-center gap-1.5 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity ${isDark ? "text-blue-300" : "text-blue-500"}`}
+                >
+                  View Groups →
+                </div>
+              </motion.button>
+            ))}
+          </div>
+
+          {franchises.length > PAGE_SIZE && (
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className={`text-sm ${isDark ? "text-slate-400" : "text-gray-700"}`}>
+                Showing {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, franchises.length)} of {franchises.length}
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className={`px-6 py-3.5 rounded-2xl text-base font-semibold transition ${currentPage === 1 ? "opacity-50 cursor-not-allowed" : isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className={`px-6 py-3.5 rounded-2xl text-base font-semibold transition ${currentPage === totalPages ? "opacity-50 cursor-not-allowed" : isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </motion.div>
   );
@@ -903,6 +937,8 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
   }, [groups]);
 
   useEffect(() => {
+    setError(null);
+    setLoading(true);
     fetchGroupDetails(franchise.accountId)
       .then((res) => {
         const list = Array.isArray(res?.data?.data)
@@ -911,19 +947,19 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
             ? res.data
             : [];
 
-        if (!res?.success && list.length === 0) {
-          setError("Failed to load group details.");
+        if (list.length === 0) {
+          setError("There is no plan for this franchise.");
+          setGroups([]);
         } else {
           setGroups(list);
+          setError(null);
         }
       })
-      .catch((err) =>
-        setError(
-          err?.response?.data?.message ||
-            err?.message ||
-            "Network error while loading groups.",
-        ),
-      )
+      .catch((err) => {
+        console.error("Error loading group details:", err);
+        setError("There is no plan for this franchise.");
+        setGroups([]);
+      })
       .finally(() => setLoading(false));
   }, [franchise]);
 
@@ -961,7 +997,7 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
     );
   }
 
-  if (error) return <ErrorMsg message={error} isDark={isDark} />;
+
 
   if (showTariffForm) {
     return (
@@ -1022,123 +1058,131 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
           <BackButton onClick={onBack} isDark={isDark} />
         </div>
       </div>
-      <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-        {paginatedGroups.map((g, index) => (
-          <motion.button
-            key={g.Group_id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            whileHover={{ y: -5, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => onSelect(g)}
-            className={`group text-left rounded-2xl border p-4 sm:p-5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
-              isDark
-                ? "bg-slate-900/60 border-slate-800 hover:border-indigo-500 hover:shadow-xl hover:shadow-indigo-500/10"
-                : "bg-white border-slate-200 hover:border-indigo-400 hover:shadow-xl"
-            }`}
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                {g.Group_name?.[0]?.toUpperCase()}
-              </div>
-              <Badge
-                color={activeBadgeColor(g.Active_Users, g.Total_Users)}
-                icon="👥"
+      {error ? (
+        <ErrorMsg message={error} isDark={isDark} />
+      ) : groups.length === 0 ? (
+        <ErrorMsg message="There is no plan for this franchise." isDark={isDark} />
+      ) : (
+        <>
+          <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+            {paginatedGroups.map((g, index) => (
+              <motion.button
+                key={g.Group_id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={{ y: -5, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => onSelect(g)}
+                className={`group text-left rounded-2xl border p-4 sm:p-5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+                  isDark
+                    ? "bg-slate-900/60 border-slate-800 hover:border-indigo-500 hover:shadow-xl hover:shadow-indigo-500/10"
+                    : "bg-white border-slate-200 hover:border-indigo-400 hover:shadow-xl"
+                }`}
               >
-                {g.Active_Users}/{g.Total_Users} active
-              </Badge>
-            </div>
-            <p
-              className={`font-bold text-base transition-colors ${
-                isDark
-                  ? "text-slate-100 group-hover:text-indigo-300"
-                  : "text-slate-800 group-hover:text-indigo-600"
-              }`}
-            >
-              {g.Group_name}
-            </p>
-            <p
-              className={`text-xs mt-1 flex items-center gap-1 ${isDark ? "text-slate-500" : "text-slate-400"}`}
-            >
-              <Package className="w-3 h-3" />
-              Profile:{" "}
-              <span
-                className={`font-medium ${isDark ? "text-slate-300" : "text-slate-500"}`}
-              >
-                {g.Profile_Name}
-              </span>
-            </p>
-            <div className="mt-3 grid grid-cols-3 gap-1.5 sm:gap-2">
-              {[
-                {
-                  label: "Total",
-                  val: g.Total_Users,
-                  icon: "👥",
-                  color: isDark ? "text-slate-200" : "text-slate-700",
-                },
-                {
-                  label: "Active",
-                  val: g.Active_Users,
-                  icon: "✅",
-                  color: isDark ? "text-emerald-300" : "text-emerald-600",
-                },
-                {
-                  label: "Online",
-                  val: g.Online_Users,
-                  icon: "🟢",
-                  color: isDark ? "text-blue-300" : "text-blue-600",
-                },
-              ].map(({ label, val, icon, color }) => (
-                <div
-                  key={label}
-                  className={`rounded-lg px-1 sm:px-2 py-1.5 sm:py-2 text-center transition-all group-hover:scale-105 ${
-                    isDark ? "bg-slate-800/60" : "bg-slate-50"
+                <div className="flex items-start justify-between mb-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                    {g.Group_name?.[0]?.toUpperCase()}
+                  </div>
+                  <Badge
+                    color={activeBadgeColor(g.Active_Users, g.Total_Users)}
+                    icon="👥"
+                  >
+                    {g.Active_Users}/{g.Total_Users} active
+                  </Badge>
+                </div>
+                <p
+                  className={`font-bold text-base transition-colors ${
+                    isDark
+                      ? "text-slate-100 group-hover:text-indigo-300"
+                      : "text-slate-800 group-hover:text-indigo-600"
                   }`}
                 >
-                  <p className={`text-lg font-bold ${color}`}>{val}</p>
-                  <p
-                    className={`text-[10px] font-medium flex items-center justify-center gap-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+                  {g.Group_name}
+                </p>
+                <p
+                  className={`text-xs mt-1 flex items-center gap-1 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+                >
+                  <Package className="w-3 h-3" />
+                  Profile:{" "}
+                  <span
+                    className={`font-medium ${isDark ? "text-slate-300" : "text-slate-500"}`}
                   >
-                    <span>{icon}</span>
-                    {label}
-                  </p>
+                    {g.Profile_Name}
+                  </span>
+                </p>
+                <div className="mt-3 grid grid-cols-3 gap-1.5 sm:gap-2">
+                  {[
+                    {
+                      label: "Total",
+                      val: g.Total_Users,
+                      icon: "👥",
+                      color: isDark ? "text-slate-200" : "text-slate-700",
+                    },
+                    {
+                      label: "Active",
+                      val: g.Active_Users,
+                      icon: "✅",
+                      color: isDark ? "text-emerald-300" : "text-emerald-600",
+                    },
+                    {
+                      label: "Online",
+                      val: g.Online_Users,
+                      icon: "🟢",
+                      color: isDark ? "text-blue-300" : "text-blue-600",
+                    },
+                  ].map(({ label, val, icon, color }) => (
+                    <div
+                      key={label}
+                      className={`rounded-lg px-1 sm:px-2 py-1.5 sm:py-2 text-center transition-all group-hover:scale-105 ${
+                        isDark ? "bg-slate-800/60" : "bg-slate-50"
+                      }`}
+                    >
+                      <p className={`text-lg font-bold ${color}`}>{val}</p>
+                      <p
+                        className={`text-[10px] font-medium flex items-center justify-center gap-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+                      >
+                        <span>{icon}</span>
+                        {label}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div
-              className={`mt-4 flex items-center gap-1.5 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity ${isDark ? "text-indigo-300" : "text-indigo-500"}`}
-            >
-              View Profile Details →
-            </div>
-          </motion.button>
-        ))}
-      </div>
+                <div
+                  className={`mt-4 flex items-center gap-1.5 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity ${isDark ? "text-indigo-300" : "text-indigo-500"}`}
+                >
+                  View Profile Details →
+                </div>
+              </motion.button>
+            ))}
+          </div>
 
-      {groups.length > PAGE_SIZE && (
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className={`text-sm ${isDark ? "text-slate-400" : "text-gray-700"}`}>
-            Showing {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, groups.length)} of {groups.length}
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className={`px-6 py-3.5 rounded-2xl text-base font-semibold transition ${currentPage === 1 ? "opacity-50 cursor-not-allowed" : isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className={`px-6 py-3.5 rounded-2xl text-base font-semibold transition ${currentPage === totalPages ? "opacity-50 cursor-not-allowed" : isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
-            >
-              Next
-            </button>
-          </div>
-        </div>
+          {groups.length > PAGE_SIZE && (
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className={`text-sm ${isDark ? "text-slate-400" : "text-gray-700"}`}>
+                Showing {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, groups.length)} of {groups.length}
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className={`px-6 py-3.5 rounded-2xl text-base font-semibold transition ${currentPage === 1 ? "opacity-50 cursor-not-allowed" : isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className={`px-6 py-3.5 rounded-2xl text-base font-semibold transition ${currentPage === totalPages ? "opacity-50 cursor-not-allowed" : isDark ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </motion.div>
   );
