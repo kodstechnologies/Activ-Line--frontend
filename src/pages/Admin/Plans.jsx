@@ -924,6 +924,8 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
   const [error, setError] = useState(null);
   const [showTariffForm, setShowTariffForm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const PAGE_SIZE = 20;
 
   const totalPages = Math.max(1, Math.ceil(groups.length / PAGE_SIZE));
@@ -937,9 +939,20 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
   }, [groups]);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch]);
+
+  useEffect(() => {
     setError(null);
     setLoading(true);
-    fetchGroupDetails(franchise.accountId)
+    fetchGroupDetails(franchise.accountId, debouncedSearch)
       .then((res) => {
         const list = Array.isArray(res?.data?.data)
           ? res.data.data
@@ -948,7 +961,11 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
             : [];
 
         if (list.length === 0) {
-          setError("There is no plan for this franchise.");
+          setError(
+            debouncedSearch
+              ? "There is no plan like that."
+              : "There is no plan for this franchise.",
+          );
           setGroups([]);
         } else {
           setGroups(list);
@@ -961,7 +978,7 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
         setGroups([]);
       })
       .finally(() => setLoading(false));
-  }, [franchise]);
+  }, [franchise, debouncedSearch]);
 
   const activeBadgeColor = (active, total) => {
     if (total === 0) return "slate";
@@ -971,31 +988,7 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
     return "rose";
   };
 
-  if (loading) {
-    return (
-      <div>
-        <Breadcrumb steps={["Franchises", franchise.companyName, "Groups"]} />
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-          <div>
-            <div
-              className={`h-8 w-48 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse mb-2`}
-            ></div>
-            <div
-              className={`h-4 w-64 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse`}
-            ></div>
-          </div>
-          <div
-            className={`w-20 h-9 ${isDark ? "bg-slate-800" : "bg-gray-200"} rounded animate-pulse`}
-          ></div>
-        </div>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <GroupCardShimmer key={i} isDark={isDark} />
-          ))}
-        </div>
-      </div>
-    );
-  }
+
 
 
 
@@ -1030,7 +1023,7 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
       transition={{ duration: 0.3 }}
     >
       <Breadcrumb steps={["Franchises", franchise.companyName, "Groups"]} />
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
         <div>
           <h2
             className={`text-2xl font-bold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-800"}`}
@@ -1045,23 +1038,59 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
             {groups.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setShowTariffForm(true)}
-            className="flex items-center gap-2 text-sm font-semibold transition-all px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25 border border-blue-500/10 focus:outline-none"
-          >
-            <Settings className="w-4 h-4" />
-            Configure Tariff
-          </motion.button>
-          <BackButton onClick={onBack} isDark={isDark} />
+
+        {/* Search Bar & Buttons */}
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+          {/* Search Input */}
+          <div className="relative w-full sm:w-64">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <Search className={`w-4 h-4 ${isDark ? "text-slate-500" : "text-slate-400"}`} />
+            </span>
+            <input
+              type="text"
+              placeholder="Search group plans..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`w-full pl-9 pr-8 py-2 border rounded-xl text-sm outline-none transition-all ${
+                isDark
+                  ? "bg-slate-900 border-slate-800 text-white placeholder-slate-500 focus:border-indigo-500"
+                  : "bg-white border-slate-200 text-slate-800 placeholder-slate-400 focus:border-indigo-400"
+              }`}
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute inset-y-0 right-0 flex items-center pr-3"
+              >
+                <XCircle className={`w-4 h-4 ${isDark ? "text-slate-500 hover:text-slate-400" : "text-slate-400 hover:text-slate-500"}`} />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setShowTariffForm(true)}
+              className="flex items-center gap-2 text-sm font-semibold transition-all px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25 border border-blue-500/10 focus:outline-none whitespace-nowrap"
+            >
+              <Settings className="w-4 h-4" />
+              Configure Tariff
+            </motion.button>
+            <BackButton onClick={onBack} isDark={isDark} />
+          </div>
         </div>
       </div>
-      {error ? (
+      {loading ? (
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <GroupCardShimmer key={i} isDark={isDark} />
+          ))}
+        </div>
+      ) : error ? (
         <ErrorMsg message={error} isDark={isDark} />
       ) : groups.length === 0 ? (
-        <ErrorMsg message="There is no plan for this franchise." isDark={isDark} />
+        <ErrorMsg message={debouncedSearch ? "There is no plan like that." : "There is no plan for this franchise."} isDark={isDark} />
       ) : (
         <>
           <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">

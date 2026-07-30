@@ -20,9 +20,9 @@ export const fetchFranchiseList = async (search = "") => {
 };
 
 // ── 2. Get group details filtered by accountId ────────────────────────────────
-export const fetchGroupDetails = async (accountId) => {
+export const fetchGroupDetails = async (accountId, search = "") => {
   const response = await API.get("/franchise/group-details", {
-    params: { accountId }, // ?accountId=franchisetest
+    params: { accountId, ...(search ? { search } : {}) }, // ?accountId=franchisetest&search=...
   });
   return response.data; // { success, data: { status, errorCode, data: [...] } }
 };

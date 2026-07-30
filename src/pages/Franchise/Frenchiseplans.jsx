@@ -29,6 +29,7 @@ import {
   CheckCircle2,
   Info,
   Settings,
+  Search,
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { toast } from "react-hot-toast";
@@ -884,9 +885,22 @@ const FrenchisePlans = () => {
   const [tariffModalOpen, setTariffModalOpen] = useState(false);
   const [detailsLoadingId, setDetailsLoadingId] = useState(null);
   const [selectedPlanDetails, setSelectedPlanDetails] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const itemsPerPage = 10;
   const tableContainerRef = useRef(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch]);
 
   // Derived values
   const accountId = useMemo(() => {
@@ -917,7 +931,7 @@ const FrenchisePlans = () => {
 
       setLoading(true);
       try {
-        const params = { page, limit: itemsPerPage };
+        const params = { page, limit: itemsPerPage, search: debouncedSearch };
         const res = await getPlans(accountId, params);
 
         if (!res.data.success)
@@ -941,7 +955,7 @@ const FrenchisePlans = () => {
         setLoading(false);
       }
     },
-    [accountId, currentPage],
+    [accountId, currentPage, debouncedSearch],
   );
 
   useEffect(() => {
@@ -1128,13 +1142,30 @@ const FrenchisePlans = () => {
             </h2>
           </div>
 
-          {!loading && plans.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex items-center gap-2"
-            ></motion.div>
-          )}
+          <div className="relative w-64">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <Search size={14} className={isDark ? "text-slate-500" : "text-slate-400"} />
+            </span>
+            <input
+              type="text"
+              placeholder="Search plans..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`w-full pl-9 pr-8 py-1.5 border rounded-lg text-xs outline-none transition-all ${
+                isDark
+                  ? "bg-slate-900 border-slate-700 text-white placeholder-slate-500 focus:border-blue-500"
+                  : "bg-white border-gray-200 text-slate-800 placeholder-slate-400 focus:border-purple-400"
+              }`}
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute inset-y-0 right-0 flex items-center pr-3"
+              >
+                <XCircle size={14} className={isDark ? "text-slate-500 hover:text-slate-400" : "text-slate-400 hover:text-slate-500"} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Table */}
@@ -1196,7 +1227,7 @@ const FrenchisePlans = () => {
                       <p
                         className={`text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}
                       >
-                        No plans found
+                        {searchTerm ? "There is no plan like that." : "There is no plan for this franchise."}
                       </p>
                     </div>
                   </td>
