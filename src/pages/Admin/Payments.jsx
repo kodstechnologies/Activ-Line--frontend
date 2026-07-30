@@ -549,8 +549,8 @@ const BillingPage = () => {
                             key={franchise._id || franchise.accountId}
                             value={franchise.accountId || ""}
                           >
-                            {franchise.accountName ||
-                              franchise.companyName ||
+                            {franchise.companyName ||
+                              franchise.accountName ||
                               franchise.accountId ||
                               "Unknown"}
                           </option>

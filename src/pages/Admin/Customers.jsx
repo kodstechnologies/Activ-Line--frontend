@@ -775,7 +775,7 @@ const SubscribersPage = () => {
   const franchiseLookup = useMemo(() => {
     const pairs = franchiseOptions
       .filter((f) => f && f.accountId)
-      .map((f) => [f.accountId, f.accountName || f.companyName || f.accountId]);
+      .map((f) => [f.accountId, f.companyName || f.accountName || f.accountId]);
     return new Map(pairs);
   }, [franchiseOptions]);
 
@@ -1023,8 +1023,8 @@ const SubscribersPage = () => {
                       key={franchise._id || franchise.accountId}
                       value={franchise.accountId || ""}
                     >
-                      {franchise.accountName ||
-                        franchise.companyName ||
+                      {franchise.companyName ||
+                        franchise.accountName ||
                         franchise.accountId ||
                         "Unknown"}
                       {franchise.accountId ? ` (${franchise.accountId})` : ""}
@@ -1764,8 +1764,8 @@ const SubscribersPage = () => {
                           key={franchise._id || franchise.accountId}
                           value={franchise.accountId || ""}
                         >
-                          {franchise.accountName ||
-                            franchise.companyName ||
+                          {franchise.companyName ||
+                            franchise.accountName ||
                             franchise.accountId ||
                             "Unknown"}
                           {franchise.accountId
@@ -1996,8 +1996,8 @@ const SubscribersPage = () => {
                           key={franchise._id || franchise.accountId}
                           value={franchise.accountId || ""}
                         >
-                          {franchise.accountName ||
-                            franchise.companyName ||
+                          {franchise.companyName ||
+                            franchise.accountName ||
                             franchise.accountId ||
                             "Unknown"}
                           {franchise.accountId
