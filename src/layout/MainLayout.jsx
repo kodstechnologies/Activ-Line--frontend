@@ -35,12 +35,13 @@ import {
 import { getStaffUnreadCount } from "../api/staffnotification.api";
 import { getUnreadCountApi } from "../api/notification.api";
 import { getFranchiseUnreadCount } from "../api/franchisenotification.api";
+import { getMyProfile } from "../api/frenchise/franchiseprofile";
 
 const MainLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { user, logout } = useAuth();
+  const { user, logout, patchUser } = useAuth();
   const { isDark, toggleTheme } = useTheme();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -99,6 +100,29 @@ const MainLayout = () => {
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const role = user?.role?.toLowerCase();
+    if (!user || !["franchise", "franchise_admin"].includes(role)) return;
+    if (user.profileImage) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getMyProfile();
+        const profileImage = res?.data?.data?.profileImage;
+        if (!cancelled && profileImage) {
+          patchUser({ profileImage });
+        }
+      } catch (error) {
+        console.error("Failed to fetch franchise profile image", error);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, patchUser]);
 
   useEffect(() => {
     const fetchCount = async () => {
@@ -236,7 +260,13 @@ const MainLayout = () => {
           ${!isMobile ? "cursor-pointer" : "cursor-default"}
           transition-all duration-300`}
         >
-          <ActivlineLogo collapsed={sidebarCollapsed} />
+          <ActivlineLogo
+            collapsed={sidebarCollapsed}
+            profileImage={user?.profileImage}
+            useFranchiseProfile={["franchise", "franchise_admin"].includes(
+              user?.role?.toLowerCase(),
+            )}
+          />
 
           {!isMobile && (
             <button

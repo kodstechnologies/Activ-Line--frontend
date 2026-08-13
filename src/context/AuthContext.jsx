@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { logoutApi } from "../api/auth.api";
 import api from "../api/axios";
 const AuthContext = createContext(null);
@@ -106,6 +106,15 @@ const logout = async () => {
     return res.data.data;
   };
 
+  const patchUser = useCallback((partial) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...partial };
+      localStorage.setItem("user", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -117,6 +126,7 @@ const logout = async () => {
         isAuthenticated: !!user,
         fetchProfile,
         updateProfile,
+        patchUser,
         isAdmin: () =>
           ["admin", "admin_staff", "super_admin"].includes(
             user?.role?.toLowerCase()

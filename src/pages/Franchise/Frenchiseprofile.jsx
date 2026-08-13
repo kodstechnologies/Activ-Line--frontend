@@ -46,7 +46,7 @@ import { toast } from "react-hot-toast";
 
 const Profile = () => {
   const { isDark } = useTheme();
-  const { user } = useAuth();
+  const { user, patchUser } = useAuth();
 
   const [form, setForm] = useState({
     name: "",
@@ -398,6 +398,9 @@ const Profile = () => {
         );
 
         setForm(res.data.data);
+        if (res.data.data?.profileImage) {
+          patchUser({ profileImage: res.data.data.profileImage });
+        }
         setPassword("");
         setConfirmPassword("");
         setProfileImageFile(null);
