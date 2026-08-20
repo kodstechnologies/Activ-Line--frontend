@@ -9,6 +9,7 @@ import {
   Send,
   User,
   ChevronDown,
+  ChevronUp,
   ChevronLeft,
   Info,
   AlertCircle,
@@ -37,6 +38,8 @@ import {
   Upload,
   ListFilter,
   Search,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useTheme } from "../../context/ThemeContext";
@@ -77,7 +80,8 @@ const Chat = ({
   const inputRef = useRef(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const fileInputRef = useRef(null);
-  const [isFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const [pinnedMessages, setPinnedMessages] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const ticketListRef = useRef(null);
@@ -431,204 +435,273 @@ const Chat = ({
 
       {/* HEADER */}
       <div
-        className={`border-b flex flex-col 2xl:flex-row 2xl:justify-between 2xl:items-center gap-3 sm:gap-4 relative z-20 shrink-0 select-none transition-all duration-300 p-3 sm:p-4 2xl:p-5 ${
+        className={`border-b flex items-center justify-between relative z-20 shrink-0 select-none transition-all duration-300 ${
+          isHeaderCollapsed ? "p-2 sm:p-2.5 px-4 sm:px-5" : "p-3 sm:p-4 2xl:p-5"
+        } ${
           darkMode
             ? "border-gray-800/50 bg-gradient-to-r from-gray-900/90 via-gray-950/90 to-black/90 backdrop-blur-xl"
             : "border-gray-200/50 bg-gradient-to-r from-white/90 via-blue-50/90 to-white/90 backdrop-blur-xl"
         } shadow-2xl shadow-black/10`}
       >
-        <div className="flex-1 min-w-0">
-          <div
-            className="flex items-start sm:items-center gap-2.5 sm:gap-3 transition-all duration-300 mb-0"
-          >
-            {onBack && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onBack();
-                }}
-                className={`lg:hidden p-2 rounded-xl transition-all border shrink-0 ${
-                  darkMode
-                    ? "border-gray-800 text-gray-300 hover:bg-gray-800"
-                    : "border-gray-200 text-gray-700 hover:bg-gray-105 shadow-sm"
-                }`}
-              >
-                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-            )}
-            <div className="relative group flex-shrink-0">
-              <div
-                className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl transition-all duration-500 transform group-hover:scale-110 group-hover:rotate-12 ${
-                  darkMode
-                    ? "bg-gradient-to-br from-blue-600/20 to-cyan-600/20 backdrop-blur-sm"
-                    : "bg-gradient-to-br from-blue-100 to-cyan-100"
-                } shadow-lg`}
-              >
-                <User
-                  className={`w-4 h-4 sm:w-5 sm:h-5 transition-all duration-500 ${
+        {isHeaderCollapsed ? (
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onBack();
+                  }}
+                  className={`lg:hidden p-1.5 rounded-lg transition-all border shrink-0 ${
                     darkMode
-                      ? "text-blue-400 group-hover:text-cyan-300"
-                      : "text-blue-600 group-hover:text-cyan-500"
-                  }`}
-                />
-              </div>
-              <div className="absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full"></div>
-            </div>
-
-            <div className="flex-1 min-w-0 overflow-hidden">
-              <div className="flex items-center gap-2 mb-1 min-w-0">
-                <Hash
-                  className={`w-3 h-3 sm:w-4 sm:h-4 ${darkMode ? "text-blue-400" : "text-blue-600"}`}
-                />
-                <h3
-                  className={`font-bold text-sm sm:text-base lg:text-lg truncate bg-gradient-to-r bg-clip-text text-transparent min-w-0 ${
-                    darkMode
-                      ? "from-blue-300 via-cyan-300 to-blue-300"
-                      : "from-blue-600 via-cyan-600 to-blue-600"
+                      ? "border-gray-800 text-gray-300 hover:bg-gray-800"
+                      : "border-gray-200 text-gray-700 hover:bg-gray-100 shadow-sm"
                   }`}
                 >
-                  #{ticket?.ticketId || "N/A"} •{" "}
-                  {ticket?.customerName || "Customer"}
-                </h3>
-                <Crown className="inline-block w-3 h-3 sm:w-4 sm:h-4 text-yellow-500 shrink-0" />
-              </div>
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <Hash className={`w-3.5 h-3.5 shrink-0 ${darkMode ? "text-blue-400" : "text-blue-600"}`} />
+              <span className={`font-bold text-xs sm:text-sm ${darkMode ? "text-blue-300" : "text-blue-600"}`}>
+                #{ticket?.ticketId || "N/A"}
+              </span>
+              <span className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"} truncate max-w-[120px] sm:max-w-xs`}>
+                ({ticket?.customerName || "Customer"})
+              </span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                ticket?.status === "OPEN" ? "bg-amber-500/10 text-amber-500" :
+                ticket?.status === "ASSIGNED" ? "bg-blue-500/10 text-blue-500" :
+                ticket?.status === "IN_PROGRESS" ? "bg-indigo-500/10 text-indigo-500" :
+                "bg-emerald-500/10 text-emerald-500"
+              }`}>
+                {ticket?.status}
+              </span>
             </div>
+            
+            <button
+              type="button"
+              onClick={() => setIsHeaderCollapsed(false)}
+              className={`flex items-center justify-center p-1.5 rounded-lg border transition-all duration-300 shrink-0 ${
+                darkMode
+                  ? "bg-slate-800 border-slate-700 text-white hover:bg-slate-700"
+                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
+              }`}
+              title="Expand Header"
+            >
+              <ChevronDown className="w-3.5 h-3.5 animate-pulse" />
+            </button>
           </div>
-
-          {createdAt && (
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1.5 sm:mt-2">
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <Calendar
-                  className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${darkMode ? "text-gray-500" : "text-gray-400"}`}
-                />
-                <p
-                  className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
-                >
-                  Created: {formatDate(createdAt)}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-2 w-full 2xl:w-auto mt-2 2xl:mt-0"
-        >
-          {showAssignment && (
-            <div className="relative group min-w-0 flex-1 sm:flex-initial sm:w-48 2xl:w-56">
-              <button
-                type="button"
-                onClick={() => setIsStaffModalOpen(true)}
-                disabled={isAssigneeLoading}
-                className={`flex items-center justify-between pl-9 sm:pl-11 pr-7 sm:pr-9 py-2 sm:py-2.5 text-xs sm:text-sm rounded-lg sm:rounded-xl border transition-all duration-500 w-full text-left ${
-                  darkMode
-                    ? "bg-gradient-to-r from-gray-800/90 to-gray-900/90 border-gray-700 text-white hover:from-gray-700/90 hover:to-gray-800/90"
-                    : "bg-gradient-to-r from-white/90 to-blue-50/90 border-gray-300 text-gray-900 hover:from-white hover:to-blue-100"
-                } focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 shadow-lg backdrop-blur-sm cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed`}
+        ) : (
+          <>
+            <div className="flex-1 min-w-0">
+              <div
+                className="flex items-start sm:items-center gap-2.5 sm:gap-3 transition-all duration-300 mb-0"
               >
-                <span className="truncate">
-                  {ticket?.assignedTo
-                    ? `🎯 ${staffList.find((s) => s._id === ticket.assignedTo)?.name || "Assigned"}`
-                    : "🎯 Assign to..."}
-                </span>
-                <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
-              </button>
-              {isAssigneeLoading ? (
-                <div className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <User
-                  className={`absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 transition-all duration-500 ${
-                    darkMode
-                      ? "text-blue-400 group-hover:text-cyan-300"
-                      : "text-blue-500"
-                  }`}
-                />
+                {onBack && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBack();
+                    }}
+                    className={`lg:hidden p-2 rounded-xl transition-all border shrink-0 ${
+                      darkMode
+                        ? "border-gray-800 text-gray-300 hover:bg-gray-800"
+                        : "border-gray-200 text-gray-700 hover:bg-gray-105 shadow-sm"
+                    }`}
+                  >
+                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </button>
+                )}
+                <div className="relative group flex-shrink-0">
+                  <div
+                    className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl transition-all duration-500 transform group-hover:scale-110 group-hover:rotate-12 ${
+                      darkMode
+                        ? "bg-gradient-to-br from-blue-600/20 to-cyan-600/20 backdrop-blur-sm"
+                        : "bg-gradient-to-br from-blue-100 to-cyan-100"
+                    } shadow-lg`}
+                  >
+                    <User
+                      className={`w-4 h-4 sm:w-5 sm:h-5 transition-all duration-500 ${
+                        darkMode
+                          ? "text-blue-400 group-hover:text-cyan-300"
+                          : "text-blue-600 group-hover:text-cyan-500"
+                      }`}
+                    />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full"></div>
+                </div>
+
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <div className="flex items-center gap-2 mb-1 min-w-0">
+                    <Hash
+                      className={`w-3 h-3 sm:w-4 sm:h-4 ${darkMode ? "text-blue-400" : "text-blue-600"}`}
+                    />
+                    <h3
+                      className={`font-bold text-sm sm:text-base lg:text-lg truncate bg-gradient-to-r bg-clip-text text-transparent min-w-0 ${
+                        darkMode
+                          ? "from-blue-300 via-cyan-300 to-blue-300"
+                          : "from-blue-600 via-cyan-600 to-blue-600"
+                      }`}
+                    >
+                      #{ticket?.ticketId || "N/A"} •{" "}
+                      {ticket?.customerName || "Customer"}
+                    </h3>
+                    <Crown className="inline-block w-3 h-3 sm:w-4 sm:h-4 text-yellow-500 shrink-0" />
+                  </div>
+                </div>
+              </div>
+
+              {createdAt && (
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1.5 sm:mt-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <Calendar
+                      className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${darkMode ? "text-gray-500" : "text-gray-400"}`}
+                    />
+                    <p
+                      className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+                    >
+                      Created: {formatDate(createdAt)}
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
-          )}
 
-          {showStatus && (
-            <div className="relative group min-w-0 flex-1 sm:flex-initial sm:w-48 2xl:w-56">
-              <select
-                value={ticket?.status || ""}
-                disabled={ticket?.status === "CLOSED" || isStatusLoading}
-                onChange={async (e) => {
-                  const value = e.target.value;
-                  setIsStatusLoading(true);
-                  try {
-                    await onStatusChange?.(value);
-                  } catch (err) {
-                    console.error("Status update error:", err);
-                  } finally {
-                    setIsStatusLoading(false);
-                  }
-                }}
-                className={`appearance-none pl-9 sm:pl-11 pr-7 sm:pr-9 py-2 sm:py-2.5 text-xs sm:text-sm rounded-lg sm:rounded-xl border transition-all duration-500 w-full ${
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-2 w-full 2xl:w-auto mt-2 2xl:mt-0"
+            >
+              {showAssignment && (
+                <div className="relative group min-w-0 flex-1 sm:flex-initial sm:w-48 2xl:w-56">
+                  <button
+                    type="button"
+                    onClick={() => setIsStaffModalOpen(true)}
+                    disabled={isAssigneeLoading}
+                    className={`flex items-center justify-between pl-9 sm:pl-11 pr-7 sm:pr-9 py-2 sm:py-2.5 text-xs sm:text-sm rounded-lg sm:rounded-xl border transition-all duration-500 w-full text-left ${
+                      darkMode
+                        ? "bg-gradient-to-r from-gray-800/90 to-gray-900/90 border-gray-700 text-white hover:from-gray-700/90 hover:to-gray-800/90"
+                        : "bg-gradient-to-r from-white/90 to-blue-50/90 border-gray-300 text-gray-900 hover:from-white hover:to-blue-100"
+                    } focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 shadow-lg backdrop-blur-sm cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed`}
+                  >
+                    <span className="truncate">
+                      {ticket?.assignedTo
+                        ? `🎯 ${staffList.find((s) => s._id === ticket.assignedTo)?.name || "Assigned"}`
+                        : "🎯 Assign to..."}
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
+                  </button>
+                  {isAssigneeLoading ? (
+                    <div className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <User
+                      className={`absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 transition-all duration-500 ${
+                        darkMode
+                          ? "text-blue-400 group-hover:text-cyan-300"
+                          : "text-blue-500"
+                      }`}
+                    />
+                  )}
+                </div>
+              )}
+
+              {showStatus && (
+                <div className="relative group min-w-0 flex-1 sm:flex-initial sm:w-48 2xl:w-56">
+                  <select
+                    value={ticket?.status || ""}
+                    disabled={ticket?.status === "CLOSED" || isStatusLoading}
+                    onChange={async (e) => {
+                      const value = e.target.value;
+                      setIsStatusLoading(true);
+                      try {
+                        await onStatusChange?.(value);
+                      } catch (err) {
+                        console.error("Status update error:", err);
+                      } finally {
+                        setIsStatusLoading(false);
+                      }
+                    }}
+                    className={`appearance-none pl-9 sm:pl-11 pr-7 sm:pr-9 py-2 sm:py-2.5 text-xs sm:text-sm rounded-lg sm:rounded-xl border transition-all duration-500 w-full ${
+                      darkMode
+                        ? "bg-gradient-to-r from-gray-800/90 to-gray-900/90 border-gray-700 text-white hover:from-gray-700/90 hover:to-gray-800/90"
+                        : "bg-gradient-to-r from-white/90 to-blue-50/90 border-gray-300 text-gray-900 hover:from-white hover:to-blue-100"
+                    } focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed shadow-lg backdrop-blur-sm cursor-pointer`}
+                  >
+                    {(ALLOWED_STATUS_TRANSITIONS[ticket?.status] || []).map(
+                      (status) => (
+                        <option
+                          key={status}
+                          value={status}
+                          className={`${darkMode ? "bg-gray-900" : "bg-white"}`}
+                        >
+                          {status === "OPEN"
+                            ? "🚀 "
+                            : status === "IN_PROGRESS"
+                              ? "⚡ "
+                              : status === "RESOLVED"
+                                ? "✅ "
+                                : "🔒 "}
+                          {status.replace("_", " ")}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                  <div
+                    className={`absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 transition-all duration-500 ${
+                      getStatusStyles(ticket?.status).includes("blue")
+                        ? "text-blue-400"
+                        : getStatusStyles(ticket?.status).includes("amber")
+                          ? "text-amber-400"
+                          : getStatusStyles(ticket?.status).includes("emerald")
+                            ? "text-emerald-400"
+                            : "text-gray-400"
+                    }`}
+                  >
+                    {isStatusLoading ? (
+                      <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      getStatusIcon(ticket?.status)
+                    )}
+                  </div>
+                  <ChevronDown
+                    className={`absolute right-2.5 sm:right-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-500 ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    } group-hover:rotate-180`}
+                  />
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setIsInfoDrawerOpen(true)}
+                className={`flex items-center justify-center px-3 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border transition-all duration-500 shrink-0 ${
                   darkMode
                     ? "bg-gradient-to-r from-gray-800/90 to-gray-900/90 border-gray-700 text-white hover:from-gray-700/90 hover:to-gray-800/90"
                     : "bg-gradient-to-r from-white/90 to-blue-50/90 border-gray-300 text-gray-900 hover:from-white hover:to-blue-100"
-                } focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed shadow-lg backdrop-blur-sm cursor-pointer`}
+                } focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 shadow-lg backdrop-blur-sm cursor-pointer`}
+                title="Customer Details"
               >
-                {(ALLOWED_STATUS_TRANSITIONS[ticket?.status] || []).map(
-                  (status) => (
-                    <option
-                      key={status}
-                      value={status}
-                      className={`${darkMode ? "bg-gray-900" : "bg-white"}`}
-                    >
-                      {status === "OPEN"
-                        ? "🚀 "
-                        : status === "IN_PROGRESS"
-                          ? "⚡ "
-                          : status === "RESOLVED"
-                            ? "✅ "
-                            : "🔒 "}
-                      {status.replace("_", " ")}
-                    </option>
-                  ),
-                )}
-              </select>
-              <div
-                className={`absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 transition-all duration-500 ${
-                  getStatusStyles(ticket?.status).includes("blue")
-                    ? "text-blue-400"
-                    : getStatusStyles(ticket?.status).includes("amber")
-                      ? "text-amber-400"
-                      : getStatusStyles(ticket?.status).includes("emerald")
-                        ? "text-emerald-400"
-                        : "text-gray-400"
-                }`}
-              >
-                {isStatusLoading ? (
-                  <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  getStatusIcon(ticket?.status)
-                )}
-              </div>
-              <ChevronDown
-                className={`absolute right-2.5 sm:right-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-500 ${
-                  darkMode ? "text-gray-400" : "text-gray-500"
-                } group-hover:rotate-180`}
-              />
-            </div>
-          )}
+                <Info className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                <span className="sr-only">Customer Details</span>
+              </button>
 
-          <button
-            type="button"
-            onClick={() => setIsInfoDrawerOpen(true)}
-            className={`flex items-center justify-center px-3 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border transition-all duration-500 shrink-0 ${
-              darkMode
-                ? "bg-gradient-to-r from-gray-800/90 to-gray-900/90 border-gray-700 text-white hover:from-gray-700/90 hover:to-gray-800/90"
-                : "bg-gradient-to-r from-white/90 to-blue-50/90 border-gray-300 text-gray-900 hover:from-white hover:to-blue-100"
-            } focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 shadow-lg backdrop-blur-sm cursor-pointer`}
-            title="Customer Details"
-          >
-            <Info className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-            <span className="sr-only">Customer Details</span>
-          </button>
-        </div>
+              <button
+                type="button"
+                onClick={() => setIsHeaderCollapsed(true)}
+                className={`flex items-center justify-center px-3 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border transition-all duration-500 shrink-0 ${
+                  darkMode
+                    ? "bg-gradient-to-r from-gray-800/90 to-gray-900/90 border-gray-700 text-white hover:from-gray-700/90 hover:to-gray-800/90"
+                    : "bg-gradient-to-r from-white/90 to-blue-50/90 border-gray-300 text-gray-900 hover:from-white hover:to-blue-100"
+                } focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 shadow-lg backdrop-blur-sm cursor-pointer`}
+                title="Collapse Header"
+              >
+                <ChevronUp className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                <span className="sr-only">Collapse Header</span>
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {pinnedMessages.length > 0 && (

@@ -42,6 +42,7 @@ const Tickets = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(
     () => window.innerWidth >= 1024,
   );
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [assignedRoomCount, setAssignedRoomCount] = useState(0);
@@ -583,7 +584,7 @@ const Tickets = () => {
 
   return (
     <div
-      className={`relative h-[calc(100dvh-7.5rem)] min-h-[520px] sm:h-[calc(100dvh-12rem)] md:h-[calc(100dvh-14rem)] overflow-hidden rounded-lg ${
+      className={`relative h-[calc(100vh-120px)] min-h-[600px] overflow-hidden rounded-lg ${
         isDark ? "bg-gray-900" : "bg-white"
       }`}
     >
@@ -594,394 +595,434 @@ const Tickets = () => {
           absolute lg:relative z-40 h-full min-w-0
           transition-all duration-300 ease-in-out
           ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-          w-[min(100vw,24rem)] sm:w-96 lg:w-80 xl:w-96
+          ${isSidebarCollapsed ? "lg:w-16" : "w-[min(100vw,24rem)] sm:w-96 lg:w-80 xl:w-96"}
           ${isDark ? "bg-gray-900" : "bg-white"}
           border-r flex flex-col shadow-2xl lg:shadow-none
           ${isDark ? "border-gray-800" : "border-gray-200"}
         `}
         >
-          <div
-            className={`p-2.5 sm:p-3 ${isDark ? "border-gray-800" : "border-gray-200"} border-b`}
-          >
-            <div className="flex items-center justify-between gap-3 mb-3">
-              <div className="flex items-center gap-2">
-                <div
-                  className={`p-1.5 rounded-lg ${isDark ? "bg-blue-500/20" : "bg-blue-100"}`}
-                >
-                  <Inbox
-                    className={`w-4 h-4 ${isDark ? "text-blue-400" : "text-blue-600"}`}
-                  />
-                </div>
-                <h2
-                  className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
-                >
-                  Support Inbox
-                </h2>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={loadTickets}
-                  disabled={refreshing}
-                  className={`p-1.5 rounded-md transition-all duration-200 ${
-                    isDark
-                      ? "text-gray-400 hover:text-gray-300 hover:bg-gray-800"
-                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                  } ${refreshing ? "animate-spin" : ""}`}
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setIsSidebarOpen(false)}
-                  className={`lg:hidden p-1.5 rounded-md transition-all duration-200 ${
-                    isDark
-                      ? "text-gray-400 hover:text-gray-300 hover:bg-gray-800"
-                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                  }`}
-                  title="Close sidebar"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-              <div
-                className={`text-center p-2 rounded-md ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
-              >
-                <p
-                  className={`text-xs sm:text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                >
-                  Total
-                </p>
-                {loading ? (
-                  <div
-                    className={`h-5 w-8 mx-auto rounded animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
-                  />
-                ) : (
-                  <p className="font-bold text-base sm:text-lg">
-                    {stats.total}
-                  </p>
-                )}
-              </div>
-              <div
-                className={`text-center p-2 rounded-md ${isDark ? "bg-amber-500/10" : "bg-amber-50"}`}
-              >
-                <p
-                  className={`text-xs sm:text-sm ${isDark ? "text-amber-400" : "text-amber-600"}`}
-                >
-                  Open
-                </p>
-                {loading ? (
-                  <div
-                    className={`h-5 w-8 mx-auto rounded animate-pulse ${isDark ? "bg-amber-800/40" : "bg-amber-200"}`}
-                  />
-                ) : (
-                  <p className="font-bold text-base sm:text-lg">{stats.open}</p>
-                )}
-              </div>
-              <div
-                className={`text-center p-2 rounded-md ${isDark ? "bg-blue-500/10" : "bg-blue-50"}`}
-              >
-                <p
-                  className={`text-xs sm:text-sm ${isDark ? "text-blue-400" : "text-blue-600"}`}
-                >
-                  Assigned
-                </p>
-                {loading ? (
-                  <div
-                    className={`h-5 w-8 mx-auto rounded animate-pulse ${isDark ? "bg-blue-800/40" : "bg-blue-200"}`}
-                  />
-                ) : (
-                  <p className="font-bold text-base sm:text-lg">
-                    {stats.assigned}
-                  </p>
-                )}
-              </div>
-              <div
-                className={`text-center p-2 rounded-md ${isDark ? "bg-emerald-500/10" : "bg-emerald-50"}`}
-              >
-                <p
-                  className={`text-xs sm:text-sm ${isDark ? "text-emerald-400" : "text-emerald-600"}`}
-                >
-                  Resolved
-                </p>
-                {loading ? (
-                  <div
-                    className={`h-5 w-8 mx-auto rounded animate-pulse ${isDark ? "bg-emerald-800/40" : "bg-emerald-200"}`}
-                  />
-                ) : (
-                  <p className="font-bold text-base sm:text-lg">
-                    {stats.resolved}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="relative mb-2">
-              <Search
-                className={`absolute left-2.5 top-2.5 w-4 h-4 ${isDark ? "text-gray-500" : "text-gray-400"}`}
-              />
-              <input
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setUserPage(1);
-                }}
-                placeholder="Search users..."
-                className={`pl-9 pr-3 py-2 w-full rounded-md border text-sm sm:text-base transition-all duration-200 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none ${
+          {isSidebarCollapsed ? (
+            <div className="flex-1 flex flex-col items-center py-4 gap-4">
+              <button
+                onClick={() => setIsSidebarCollapsed(false)}
+                className={`p-2.5 rounded-xl transition-all duration-300 transform hover:scale-110 ${
                   isDark
-                    ? "bg-gray-800 border-gray-700 text-white placeholder-gray-500"
-                    : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400"
+                    ? "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                    : "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                } shadow-lg`}
+                title="Expand Support Inbox"
+              >
+                <Inbox className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setIsSidebarCollapsed(false)}
+                className={`p-1.5 rounded-md transition-all duration-200 ${
+                  isDark
+                    ? "text-gray-400 hover:text-gray-300 hover:bg-gray-800"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                 }`}
-              />
+                title="Expand Support Inbox"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto premium-scrollbar">
-            {loading ? (
-              <div className="p-2 space-y-2">
-                {Array.from({ length: userPageSize }).map((_, idx) => (
-                  <div
-                    key={idx}
-                    className={`p-3 rounded-lg animate-pulse ${isDark ? "bg-gray-800/70" : "bg-gray-100"}`}
-                  >
-                    <div className="flex items-start gap-2">
-                      <div
-                        className={`w-8 h-8 rounded-lg ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
+          ) : (
+            <>
+              <div
+                className={`p-2.5 sm:p-3 ${isDark ? "border-gray-800" : "border-gray-200"} border-b`}
+              >
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`p-1.5 rounded-lg ${isDark ? "bg-blue-500/20" : "bg-blue-100"}`}
+                    >
+                      <Inbox
+                        className={`w-4 h-4 ${isDark ? "text-blue-400" : "text-blue-600"}`}
                       />
-                      <div className="flex-1 space-y-2">
-                        <div
-                          className={`h-3 rounded w-1/3 ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
-                        />
-                        <div
-                          className={`h-2.5 rounded w-1/2 ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
-                        />
-                        <div
-                          className={`h-2.5 rounded w-2/3 ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
-                        />
-                      </div>
                     </div>
+                    <h2
+                      className={`text-lg font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                    >
+                      Support Inbox
+                    </h2>
                   </div>
-                ))}
-              </div>
-            ) : filteredUsers.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full p-4">
-                <div
-                  className={`p-3 rounded-lg mb-3 ${isDark ? "bg-gray-800" : "bg-gray-100"}`}
-                >
-                  <Inbox
-                    className={`w-8 h-8 ${isDark ? "text-gray-600" : "text-gray-400"}`}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={loadTickets}
+                      disabled={refreshing}
+                      className={`p-1.5 rounded-md transition-all duration-200 ${
+                        isDark
+                          ? "text-gray-400 hover:text-gray-300 hover:bg-gray-800"
+                          : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                      } ${refreshing ? "animate-spin" : ""}`}
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setIsSidebarCollapsed(true)}
+                      className={`hidden lg:block p-1.5 rounded-md transition-all duration-200 ${
+                        isDark
+                          ? "text-gray-400 hover:text-gray-300 hover:bg-gray-800"
+                          : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                      }`}
+                      title="Collapse Support Inbox"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setIsSidebarOpen(false)}
+                      className={`lg:hidden p-1.5 rounded-md transition-all duration-200 ${
+                        isDark
+                          ? "text-gray-400 hover:text-gray-300 hover:bg-gray-800"
+                          : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                      }`}
+                      title="Close sidebar"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                  <div
+                    className={`text-center p-2 rounded-md ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
+                  >
+                    <p
+                      className={`text-xs sm:text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                    >
+                      Total
+                    </p>
+                    {loading ? (
+                      <div
+                        className={`h-5 w-8 mx-auto rounded animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
+                      />
+                    ) : (
+                      <p className="font-bold text-base sm:text-lg">
+                        {stats.total}
+                      </p>
+                    )}
+                  </div>
+                  <div
+                    className={`text-center p-2 rounded-md ${isDark ? "bg-amber-500/10" : "bg-amber-50"}`}
+                  >
+                    <p
+                      className={`text-xs sm:text-sm ${isDark ? "text-amber-400" : "text-amber-600"}`}
+                    >
+                      Open
+                    </p>
+                    {loading ? (
+                      <div
+                        className={`h-5 w-8 mx-auto rounded animate-pulse ${isDark ? "bg-amber-800/40" : "bg-amber-200"}`}
+                      />
+                    ) : (
+                      <p className="font-bold text-base sm:text-lg">{stats.open}</p>
+                    )}
+                  </div>
+                  <div
+                    className={`text-center p-2 rounded-md ${isDark ? "bg-blue-500/10" : "bg-blue-50"}`}
+                  >
+                    <p
+                      className={`text-xs sm:text-sm ${isDark ? "text-blue-400" : "text-blue-600"}`}
+                    >
+                      Assigned
+                    </p>
+                    {loading ? (
+                      <div
+                        className={`h-5 w-8 mx-auto rounded animate-pulse ${isDark ? "bg-blue-800/40" : "bg-blue-200"}`}
+                      />
+                    ) : (
+                      <p className="font-bold text-base sm:text-lg">
+                        {stats.assigned}
+                      </p>
+                    )}
+                  </div>
+                  <div
+                    className={`text-center p-2 rounded-md ${isDark ? "bg-emerald-500/10" : "bg-emerald-50"}`}
+                  >
+                    <p
+                      className={`text-xs sm:text-sm ${isDark ? "text-emerald-400" : "text-emerald-600"}`}
+                    >
+                      Resolved
+                    </p>
+                    {loading ? (
+                      <div
+                        className={`h-5 w-8 mx-auto rounded animate-pulse ${isDark ? "bg-emerald-800/40" : "bg-emerald-200"}`}
+                      />
+                    ) : (
+                      <p className="font-bold text-base sm:text-lg">
+                        {stats.resolved}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="relative mb-2">
+                  <Search
+                    className={`absolute left-2.5 top-2.5 w-4 h-4 ${isDark ? "text-gray-500" : "text-gray-400"}`}
+                  />
+                  <input
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setUserPage(1);
+                    }}
+                    placeholder="Search users..."
+                    className={`pl-9 pr-3 py-2 w-full rounded-md border text-sm sm:text-base transition-all duration-200 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none ${
+                      isDark
+                        ? "bg-gray-800 border-gray-700 text-white placeholder-gray-500"
+                        : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400"
+                    }`}
                   />
                 </div>
-                <p
-                  className={`text-center text-lg mb-2 ${isDark ? "text-gray-400" : "text-gray-500"}`}
-                >
-                  {search ? "No matching users found" : "No users available"}
-                </p>
-                {search && (
-                  <button
-                    onClick={() => setSearch("")}
-                    className={`text-base ${isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-500"}`}
-                  >
-                    Clear search
-                  </button>
-                )}
               </div>
-            ) : (
-              <div className="p-2">
-                {paginatedUsers.map((u, index) => {
-                  // Show zig-zag when ALL tickets are ASSIGNED or RESOLVED (no active tickets)
-                  const allDone = u.tickets.every((t) =>
-                    ["ASSIGNED", "RESOLVED"].includes(t.status),
-                  );
-                  const isActive = activeUserId === u.customerId;
-                  const closedStyle = allDone
-                    ? isActive
-                      ? {
-                          // Active + all-closed: stripes over blue active bg
-                          backgroundImage: isDark
-                            ? `repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(16, 185, 129, 0.15) 8px, rgba(16, 185, 129, 0.15) 16px)`
-                            : `repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(16, 185, 129, 0.18) 8px, rgba(16, 185, 129, 0.18) 16px)`,
-                        }
-                      : {
-                          // Idle + all-closed: green tint base + stripes
-                          backgroundColor: isDark
-                            ? "rgba(16, 185, 129, 0.06)"
-                            : "rgba(209, 250, 229, 0.75)",
-                          backgroundImage: isDark
-                            ? `repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(16, 185, 129, 0.12) 8px, rgba(16, 185, 129, 0.12) 16px)`
-                            : `repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(16, 185, 129, 0.20) 8px, rgba(16, 185, 129, 0.20) 16px)`,
-                        }
-                    : {};
-                  return (
-                    <div
-                      key={u.customerId}
-                      onClick={() => {
-                        handleSelectUser(u.customerId);
-                        if (window.innerWidth < 1024) setIsSidebarOpen(false);
-                      }}
-                      className={`
-                      relative p-3 rounded-lg cursor-pointer mb-2
-                      transition-all duration-150 animate-fade-in-up
-                      ${
-                        isActive
-                          ? isDark
-                            ? "bg-gray-800 border-blue-500/50 border"
-                            : "bg-blue-50 border-blue-300 border"
-                          : isDark
-                            ? "hover:bg-gray-800/50 border border-transparent hover:border-gray-700"
-                            : "hover:bg-gray-50 border border-transparent hover:border-gray-200"
-                      }
-                    `}
-                      style={{
-                        animationDelay: `${index * 50}ms`,
-                        ...closedStyle,
-                      }}
-                    >
-                      {activeUserId === u.customerId && (
-                        <div
-                          className={`absolute left-0 top-0 bottom-0 w-1 rounded-r ${isDark ? "bg-blue-500" : "bg-blue-500"}`}
-                        ></div>
-                      )}
 
-                      <div className="flex items-start gap-2 min-w-0">
-                        <div
-                          className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
-                            activeUserId === u.customerId
-                              ? isDark
-                                ? "bg-blue-500"
-                                : "bg-blue-500"
-                              : isDark
-                                ? "bg-gray-700"
-                                : "bg-gray-200"
-                          }`}
-                        >
-                          <User
-                            className={`w-3.5 h-3.5 ${
-                              activeUserId === u.customerId
-                                ? "text-white"
-                                : isDark
-                                  ? "text-gray-400"
-                                  : "text-gray-600"
-                            }`}
+              <div className="flex-1 overflow-y-auto premium-scrollbar">
+                {loading ? (
+                  <div className="p-2 space-y-2">
+                    {Array.from({ length: userPageSize }).map((_, idx) => (
+                      <div
+                        key={idx}
+                        className={`p-3 rounded-lg animate-pulse ${isDark ? "bg-gray-800/70" : "bg-gray-100"}`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <div
+                            className={`w-8 h-8 rounded-lg ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
                           />
+                          <div className="flex-1 space-y-2">
+                            <div
+                              className={`h-3 rounded w-1/3 ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
+                            />
+                            <div
+                              className={`h-2.5 rounded w-1/2 ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
+                            />
+                            <div
+                              className={`h-2.5 rounded w-2/3 ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
+                            />
+                          </div>
                         </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : filteredUsers.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full p-4">
+                    <div
+                      className={`p-3 rounded-lg mb-3 ${isDark ? "bg-gray-800" : "bg-gray-100"}`}
+                    >
+                      <Inbox
+                        className={`w-8 h-8 ${isDark ? "text-gray-600" : "text-gray-400"}`}
+                      />
+                    </div>
+                    <p
+                      className={`text-center text-lg mb-2 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                    >
+                      {search ? "No matching users found" : "No users available"}
+                    </p>
+                    {search && (
+                      <button
+                        onClick={() => setSearch("")}
+                        className={`text-base ${isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-500"}`}
+                      >
+                        Clear search
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-2">
+                    {paginatedUsers.map((u, index) => {
+                      // Show zig-zag when ALL tickets are ASSIGNED or RESOLVED (no active tickets)
+                      const allDone = u.tickets.every((t) =>
+                        ["ASSIGNED", "RESOLVED"].includes(t.status),
+                      );
+                      const isActive = activeUserId === u.customerId;
+                      const closedStyle = allDone
+                        ? isActive
+                          ? {
+                              // Active + all-closed: stripes over blue active bg
+                              backgroundImage: isDark
+                                ? `repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(16, 185, 129, 0.15) 8px, rgba(16, 185, 129, 0.15) 16px)`
+                                : `repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(16, 185, 129, 0.18) 8px, rgba(16, 185, 129, 0.18) 16px)`,
+                            }
+                          : {
+                              // Idle + all-closed: green tint base + stripes
+                              backgroundColor: isDark
+                                ? "rgba(16, 185, 129, 0.06)"
+                                : "rgba(209, 250, 229, 0.75)",
+                              backgroundImage: isDark
+                                ? `repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(16, 185, 129, 0.12) 8px, rgba(16, 185, 129, 0.12) 16px)`
+                                : `repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(16, 185, 129, 0.20) 8px, rgba(16, 185, 129, 0.20) 16px)`,
+                            }
+                        : {};
+                      return (
+                        <div
+                          key={u.customerId}
+                          onClick={() => {
+                            handleSelectUser(u.customerId);
+                            if (window.innerWidth < 1024) setIsSidebarOpen(false);
+                          }}
+                          className={`
+                          relative p-3 rounded-lg cursor-pointer mb-2
+                          transition-all duration-150 animate-fade-in-up
+                          ${
+                            isActive
+                              ? isDark
+                                ? "bg-gray-800 border-blue-500/50 border"
+                                : "bg-blue-50 border-blue-300 border"
+                              : isDark
+                                ? "hover:bg-gray-800/50 border border-transparent hover:border-gray-700"
+                                : "hover:bg-gray-50 border border-transparent hover:border-gray-200"
+                          }
+                        `}
+                          style={{
+                            animationDelay: `${index * 50}ms`,
+                            ...closedStyle,
+                          }}
+                        >
+                          {activeUserId === u.customerId && (
+                            <div
+                              className={`absolute left-0 top-0 bottom-0 w-1 rounded-r ${isDark ? "bg-blue-500" : "bg-blue-500"}`}
+                            ></div>
+                          )}
 
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2 mb-0.5">
-                            <h3
-                              className={`font-medium text-base truncate ${
+                          <div className="flex items-start gap-2 min-w-0">
+                            <div
+                              className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
                                 activeUserId === u.customerId
                                   ? isDark
-                                    ? "text-white"
-                                    : "text-gray-900"
+                                    ? "bg-blue-500"
+                                    : "bg-blue-500"
                                   : isDark
-                                    ? "text-gray-200"
-                                    : "text-gray-900"
+                                    ? "bg-gray-700"
+                                    : "bg-gray-200"
                               }`}
                             >
-                              {u.customerName}
-                            </h3>
-                            {u.latestMessageTime && (
+                              <User
+                                className={`w-3.5 h-3.5 ${
+                                  activeUserId === u.customerId
+                                    ? "text-white"
+                                    : isDark
+                                      ? "text-gray-400"
+                                      : "text-gray-600"
+                                }`}
+                              />
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2 mb-0.5">
+                                <h3
+                                  className={`font-medium text-base truncate ${
+                                    activeUserId === u.customerId
+                                      ? isDark
+                                        ? "text-white"
+                                        : "text-gray-900"
+                                      : isDark
+                                        ? "text-gray-200"
+                                        : "text-gray-900"
+                                  }`}
+                                >
+                                  {u.customerName}
+                                </h3>
+                                {u.latestMessageTime && (
+                                  <span
+                                    className={`flex-shrink-0 text-xs sm:text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}
+                                  >
+                                    {new Date(
+                                      u.latestMessageTime,
+                                    ).toLocaleDateString([], {
+                                      month: "short",
+                                      day: "numeric",
+                                    })}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                                <span
+                                  className={`text-xs sm:text-sm font-mono ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                                >
+                                  Latest: #{u.latestTicketId}
+                                </span>
+                                <span
+                                  className={`text-xs px-1.5 py-0.5 rounded-full ${isDark ? "bg-gray-800 text-gray-300" : "bg-gray-200 text-gray-700"} flex items-center gap-1`}
+                                >
+                                  {u.tickets.length} Tickets
+                                </span>
+                              </div>
+                            </div>
+
+                            {u.unreadCount > 0 && (
                               <span
-                                className={`flex-shrink-0 text-xs sm:text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}
+                                className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-sm font-bold animate-pulse ${
+                                  isDark
+                                    ? "bg-blue-500 text-white"
+                                    : "bg-blue-500 text-white"
+                                }`}
                               >
-                                {new Date(
-                                  u.latestMessageTime,
-                                ).toLocaleDateString([], {
-                                  month: "short",
-                                  day: "numeric",
-                                })}
+                                {u.unreadCount}
                               </span>
                             )}
                           </div>
-
-                          <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                            <span
-                              className={`text-xs sm:text-sm font-mono ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                            >
-                              Latest: #{u.latestTicketId}
-                            </span>
-                            <span
-                              className={`text-xs px-1.5 py-0.5 rounded-full ${isDark ? "bg-gray-800 text-gray-300" : "bg-gray-200 text-gray-700"} flex items-center gap-1`}
-                            >
-                              {u.tickets.length} Tickets
-                            </span>
-                          </div>
                         </div>
+                      );
+                    })}
+                  </div>
+                )}
 
-                        {u.unreadCount > 0 && (
-                          <span
-                            className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-sm font-bold animate-pulse ${
-                              isDark
-                                ? "bg-blue-500 text-white"
-                                : "bg-blue-500 text-white"
-                            }`}
-                          >
-                            {u.unreadCount}
-                          </span>
-                        )}
+                {!loading && filteredUsers.length > userPageSize && (
+                  <div
+                    className={`p-2 border-t ${isDark ? "border-gray-800" : "border-gray-200"}`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                        >
+                          Per page
+                        </span>
+                        <select
+                          value={userPageSize}
+                          onChange={(e) => {
+                            setUserPageSize(Number(e.target.value));
+                            setUserPage(1);
+                          }}
+                          className={`text-xs rounded px-2 py-1 border ${
+                            isDark
+                              ? "bg-gray-800 border-gray-700 text-gray-200"
+                              : "bg-white border-gray-300 text-gray-700"
+                          }`}
+                        >
+                          <option value={12}>12</option>
+                          <option value={20}>20</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setUserPage((p) => Math.max(1, p - 1))}
+                          disabled={userPage === 1}
+                          className={`p-1.5 rounded ${userPage === 1 ? "opacity-50 cursor-not-allowed" : ""} ${isDark ? "hover:bg-gray-800" : "hover:bg-gray-100"}`}
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                        </button>
+                        <span
+                          className={`text-xs px-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                        >
+                          {userPage}/{userTotalPages}
+                        </span>
+                        <button
+                          onClick={() =>
+                            setUserPage((p) => Math.min(userTotalPages, p + 1))
+                          }
+                          disabled={userPage === userTotalPages}
+                          className={`p-1.5 rounded ${userPage === userTotalPages ? "opacity-50 cursor-not-allowed" : ""} ${isDark ? "hover:bg-gray-800" : "hover:bg-gray-100"}`}
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {!loading && filteredUsers.length > userPageSize && (
-              <div
-                className={`p-2 border-t ${isDark ? "border-gray-800" : "border-gray-200"}`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                    >
-                      Per page
-                    </span>
-                    <select
-                      value={userPageSize}
-                      onChange={(e) => {
-                        setUserPageSize(Number(e.target.value));
-                        setUserPage(1);
-                      }}
-                      className={`text-xs rounded px-2 py-1 border ${
-                        isDark
-                          ? "bg-gray-800 border-gray-700 text-gray-200"
-                          : "bg-white border-gray-300 text-gray-700"
-                      }`}
-                    >
-                      <option value={12}>12</option>
-                      <option value={20}>20</option>
-                    </select>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => setUserPage((p) => Math.max(1, p - 1))}
-                      disabled={userPage === 1}
-                      className={`p-1.5 rounded ${userPage === 1 ? "opacity-50 cursor-not-allowed" : ""} ${isDark ? "hover:bg-gray-800" : "hover:bg-gray-100"}`}
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5" />
-                    </button>
-                    <span
-                      className={`text-xs px-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
-                    >
-                      {userPage}/{userTotalPages}
-                    </span>
-                    <button
-                      onClick={() =>
-                        setUserPage((p) => Math.min(userTotalPages, p + 1))
-                      }
-                      disabled={userPage === userTotalPages}
-                      className={`p-1.5 rounded ${userPage === userTotalPages ? "opacity-50 cursor-not-allowed" : ""} ${isDark ? "hover:bg-gray-800" : "hover:bg-gray-100"}`}
-                    >
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
         {/* ---------- CHAT AREA ---------- */}
         <div
