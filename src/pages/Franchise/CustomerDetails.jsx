@@ -652,6 +652,7 @@ const CustomerDetails = () => {
             if (planType == "changePlan") {
               await renewPlan({
                 userId: customer?.activlineUserId,
+                accountId: accountId || customer?.accountId || "",
                 renewDefaultSettings: "true",
                 isRenewPresentDate: "true",
                 isChangePlan: "true",
@@ -660,13 +661,19 @@ const CustomerDetails = () => {
                   selectedProfile?.profile?.id ||
                   selectedProfile?.profile?._id ||
                   "",
-                groupId: groupId,
+                groupId: groupId || customer?.userGroupId || "",
+                isForceMakePayment: "true",
+                paymentType: "onlinePayment",
               });
             } else {
               await renewPlan({
                 userId: customer?.activlineUserId,
+                accountId: accountId || customer?.accountId || "",
                 renewDefaultSettings: "true",
                 isRenewPresentDate: "true",
+                groupId: groupId || customer?.userGroupId || "",
+                isForceMakePayment: "true",
+                paymentType: "onlinePayment",
               });
             }
             setPaymentStatus({
