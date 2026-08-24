@@ -18,13 +18,18 @@ import {
   TrendingUp,
   Download,
   RefreshCw,
+  CheckSquare,
+  Square,
+  ChevronDown,
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import {
   getFranchisePaymentHistoryByAccount,
   getFranchisePaymentHistoryDetails,
+  downloadPaymentHistoryExcel,
 } from "../../api/frenchise/paymanehistypapi";
+
 
 const statusConfig = {
   SUCCESS: {
@@ -171,6 +176,10 @@ const BillingPage = () => {
   const [viewLoadingId, setViewLoadingId] = useState("");
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadDropdownOpen, setDownloadDropdownOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+
 
   const resolvedAccountId = useMemo(
     () => user?.accountId || user?.AccountId || "",
@@ -347,9 +356,66 @@ const BillingPage = () => {
     setCurrentPage(1);
   };
 
+  const currentPageIds = useMemo(() => {
+    return paginationData.paginatedTransactions
+      .map((tx) => tx.paymentId || tx._id)
+      .filter(Boolean);
+  }, [paginationData.paginatedTransactions]);
+
+  const isAllPageSelected = useMemo(() => {
+    if (!currentPageIds.length) return false;
+    return currentPageIds.every((id) => selectedIds.includes(id));
+  }, [currentPageIds, selectedIds]);
+
+  const toggleSelectAll = () => {
+    if (isAllPageSelected) {
+      setSelectedIds((prev) =>
+        prev.filter((id) => !currentPageIds.includes(id))
+      );
+    } else {
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...currentPageIds])));
+    }
+  };
+
+  const toggleSelect = (id) => {
+    if (!id) return;
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
   const handleRefresh = () => {
     loadTransactions(true);
   };
+
+  const handleDownload = async () => {
+    try {
+      setDownloading(true);
+
+      if (selectedIds.length > 0) {
+        // Automatically download only the selected payments
+        await downloadPaymentHistoryExcel({
+          paymentIds: selectedIds,
+          accountId: resolvedAccountId || undefined,
+        });
+      } else {
+        // Automatically download the current page showing with active filters
+        await downloadPaymentHistoryExcel({
+          status: selectedStatus !== "All" ? selectedStatus : undefined,
+          accountId: resolvedAccountId || undefined,
+          search: searchTerm.trim() || undefined,
+          page: currentPage,
+          limit: itemsPerPage,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to download Excel:", err?.message);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+
 
   const handleViewDetails = async (paymentId) => {
     if (!paymentId) return;
@@ -417,7 +483,39 @@ const BillingPage = () => {
                 />
                 Refresh
               </button>
+
+              {/* Direct Download Excel Button */}
+              <button
+                onClick={handleDownload}
+                disabled={downloading || loading}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  downloading || loading ? "opacity-50 cursor-not-allowed" : "hover:scale-105 active:scale-95"
+                } ${
+                  selectedIds.length > 0
+                    ? isDark
+                      ? "bg-emerald-600/20 border border-emerald-500 text-emerald-300 hover:bg-emerald-600/30"
+                      : "bg-emerald-50 border border-emerald-500 text-emerald-700 hover:bg-emerald-100"
+                    : isDark
+                      ? "bg-emerald-600/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-600/20"
+                      : "bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                }`}
+              >
+                {downloading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                <span>
+                  {downloading
+                    ? "Downloading..."
+                    : selectedIds.length > 0
+                    ? `Download Selected (${selectedIds.length})`
+                    : `Download Excel (${paginationData.paginatedTransactions.length})`}
+                </span>
+              </button>
             </div>
+
+
           </div>
 
           {/* Search and Filter Bar */}
@@ -511,6 +609,52 @@ const BillingPage = () => {
         {/* Stats Cards */}
 
         <div className="flex-1 flex flex-col min-h-0 p-6">
+          {/* Selection Action Banner */}
+          <AnimatePresence>
+            {selectedIds.length > 0 && (
+              <div
+                className={`mb-4 p-3.5 px-6 rounded-xl border flex flex-wrap items-center justify-between gap-3 shadow-md ${
+                  isDark
+                    ? "bg-slate-800 border-emerald-500/30 text-white"
+                    : "bg-emerald-50/80 border-emerald-200 text-emerald-950"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold">
+                    {selectedIds.length}
+                  </span>
+                  <span className="text-sm font-semibold">
+                    {selectedIds.length} payment{selectedIds.length > 1 ? "s" : ""} selected
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleDownload("selected")}
+                    disabled={downloading}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-sm"
+                  >
+                    {downloading ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
+                    Download Selected ({selectedIds.length})
+                  </button>
+                  <button
+                    onClick={() => setSelectedIds([])}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      isDark
+                        ? "bg-slate-700 hover:bg-slate-600 text-slate-200"
+                        : "bg-white hover:bg-gray-100 text-gray-700 border border-gray-200"
+                    }`}
+                  >
+                    Clear Selection
+                  </button>
+                </div>
+              </div>
+            )}
+          </AnimatePresence>
+
           {/* Error Message */}
           {error && (
             <div
@@ -539,6 +683,15 @@ const BillingPage = () => {
                     <tr
                       className={`border-b ${isDark ? "border-slate-700" : "border-gray-200"}`}
                     >
+                      <th className="py-4 px-4 text-center w-12">
+                        <input
+                          type="checkbox"
+                          checked={isAllPageSelected}
+                          onChange={toggleSelectAll}
+                          className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600"
+                          title={isAllPageSelected ? "Deselect page" : "Select all on page"}
+                        />
+                      </th>
                       <th
                         className={`py-4 px-6 text-xs font-semibold uppercase tracking-wider ${
                           isDark ? "text-slate-400" : "text-gray-600"
@@ -603,7 +756,7 @@ const BillingPage = () => {
                     {loading ? (
                       <tr>
                         <td
-                          colSpan="8"
+                          colSpan="9"
                           className={`py-12 text-center ${isDark ? "text-slate-400" : "text-gray-500"}`}
                         >
                           <div className="flex flex-col items-center gap-2">
@@ -613,15 +766,29 @@ const BillingPage = () => {
                         </td>
                       </tr>
                     ) : uiRows.length > 0 ? (
-                      uiRows.map((tx) => (
+                      uiRows.map((tx) => {
+                        const isRowSelected = selectedIds.includes(tx.paymentId || tx.id);
+                        return (
                         <tr
                           key={tx.id}
                           className={`transition-all duration-200 ${
-                            isDark
-                              ? "hover:bg-slate-800/50 bg-slate-900/30"
-                              : "hover:bg-gray-50 bg-white"
+                            isRowSelected
+                              ? isDark
+                                ? "bg-emerald-950/20"
+                                : "bg-emerald-50/50"
+                              : isDark
+                                ? "hover:bg-slate-800/50 bg-slate-900/30"
+                                : "hover:bg-gray-50 bg-white"
                           }`}
                         >
+                          <td className="py-4 px-4 text-center">
+                            <input
+                              type="checkbox"
+                              checked={isRowSelected}
+                              onChange={() => toggleSelect(tx.paymentId || tx.id)}
+                              className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600"
+                            />
+                          </td>
                           <td
                             className={`py-4 px-6 font-mono text-xs ${isDark ? "text-slate-400" : "text-gray-600"}`}
                           >
@@ -648,6 +815,7 @@ const BillingPage = () => {
                                 className={`text-sm ${isDark ? "text-white" : "text-gray-900"}`}
                               >
                                 {tx.plan}
+
                               </span>
                             </div>
                           </td>
@@ -698,14 +866,16 @@ const BillingPage = () => {
                             </button>
                           </td>
                         </tr>
-                      ))
+                        );
+                      })
                     ) : (
                       <tr>
                         <td
-                          colSpan="8"
+                          colSpan="9"
                           className={`py-12 text-center ${isDark ? "text-slate-400" : "text-gray-500"}`}
                         >
                           <div className="flex flex-col items-center gap-2">
+
                             <Search className="w-12 h-12 opacity-50" />
                             <p className="text-sm">
                               No transactions found matching your filters.

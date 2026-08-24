@@ -3,4 +3,6 @@ export {
   getFranchisePaymentHistoryByGroup,
   getFranchisePaymentHistoryDetails,
   getLatestFranchisePaymentHistory,
+  downloadPaymentHistoryExcel,
 } from "./franchisePaymentHistoryApi";
+
