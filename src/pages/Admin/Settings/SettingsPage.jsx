@@ -99,28 +99,28 @@ const SettingsPage = () => {
         ? "bg-gradient-to-r from-slate-800/30 to-slate-900/30 border-b border-slate-700/50" 
         : "bg-white/50 border-b border-gray-200"
     } backdrop-blur-sm`,
-    headerContent: `px-4 md:px-8 lg:px-12 py-8 md:py-10`,
-    titleWrapper: `flex flex-col md:flex-row items-center md:items-start justify-between text-center md:text-left gap-6`,
+    headerContent: `px-4 md:px-6 lg:px-8 py-4 md:py-5`,
+    titleWrapper: `flex flex-col md:flex-row items-center md:items-center justify-between text-center md:text-left gap-3`,
     titleSection: `flex-1`,
-    titleIcon: `inline-flex items-center justify-center md:justify-start gap-3 mb-4`,
-    title: `text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r ${
+    titleIcon: `inline-flex items-center justify-center md:justify-start gap-2 mb-2`,
+    title: `text-xl md:text-2xl font-bold bg-gradient-to-r ${
       isDark 
         ? "from-blue-400 via-purple-400 to-pink-400" 
         : "from-purple-600 via-indigo-600 to-blue-600"
     } bg-clip-text text-transparent`,
-    subtitle: `text-base md:text-lg mt-3 ${
+    subtitle: `text-sm mt-1 ${
       isDark ? "text-gray-400" : "text-gray-600"
     } max-w-2xl`,
-    breadcrumb: `flex items-center justify-center md:justify-start gap-2 mt-4 text-sm`,
-    badge: `px-3 py-1 rounded-full text-xs font-medium ${
+    breadcrumb: `flex items-center justify-center md:justify-start gap-1.5 mt-2 text-xs`,
+    badge: `px-2 py-0.5 rounded-full text-xs font-medium ${
       isDark 
         ? "bg-gray-800 text-gray-300 border border-gray-700" 
         : "bg-gray-100 text-gray-700 border border-gray-200"
     }`,
-    animationWrapper: `relative w-32 h-32 md:w-40 md:h-40 lg:w-48 lg:h-48`,
-    tabsWrapper: `px-4 md:px-8 lg:px-12 pt-6 pb-4`,
-    contentWrapper: `px-4 md:px-8 lg:px-12 pb-12`,
-    contentCard: `rounded-2xl overflow-hidden ${
+    animationWrapper: `relative w-16 h-16 md:w-20 md:h-20`,
+    tabsWrapper: `px-4 md:px-6 lg:px-8 pt-3 pb-2`,
+    contentWrapper: `px-4 md:px-6 lg:px-8 pb-8`,
+    contentCard: `rounded-xl overflow-hidden ${
       isDark 
         ? "bg-slate-900/40 border border-slate-700/50 backdrop-blur-sm" 
         : "bg-white/80 border border-gray-200 shadow-xl"
@@ -147,8 +147,8 @@ const SettingsPage = () => {
           <div className={styles.titleWrapper}>
             <div className={styles.titleSection}>
               <div className={styles.titleIcon}>
-                <div className={`p-2 rounded-xl ${isDark ? "bg-purple-500/20" : "bg-purple-100"}`}>
-                  <Settings className={`w-6 h-6 ${isDark ? "text-purple-400" : "text-purple-600"}`} />
+                <div className={`p-1.5 rounded-lg ${isDark ? "bg-purple-500/20" : "bg-purple-100"}`}>
+                  <Settings className={`w-4 h-4 ${isDark ? "text-purple-400" : "text-purple-600"}`} />
                 </div>
                 <h1 className={styles.title}>
                   Settings
@@ -224,7 +224,7 @@ const SettingsPage = () => {
       {/* Content Area - Full Width */}
       <div className={styles.contentWrapper}>
         <div className={styles.contentCard}>
-          <div className="p-6 md:p-8 lg:p-10">
+          <div className="p-4 md:p-6">
             {tabContent}
           </div>
         </div>
