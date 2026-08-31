@@ -610,50 +610,48 @@ const BillingPage = () => {
 
         <div className="flex-1 flex flex-col min-h-0 p-6">
           {/* Selection Action Banner */}
-          <AnimatePresence>
-            {selectedIds.length > 0 && (
-              <div
-                className={`mb-4 p-3.5 px-6 rounded-xl border flex flex-wrap items-center justify-between gap-3 shadow-md ${
-                  isDark
-                    ? "bg-slate-800 border-emerald-500/30 text-white"
-                    : "bg-emerald-50/80 border-emerald-200 text-emerald-950"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold">
-                    {selectedIds.length}
-                  </span>
-                  <span className="text-sm font-semibold">
-                    {selectedIds.length} payment{selectedIds.length > 1 ? "s" : ""} selected
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleDownload("selected")}
-                    disabled={downloading}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-sm"
-                  >
-                    {downloading ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Download className="w-3.5 h-3.5" />
-                    )}
-                    Download Selected ({selectedIds.length})
-                  </button>
-                  <button
-                    onClick={() => setSelectedIds([])}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                      isDark
-                        ? "bg-slate-700 hover:bg-slate-600 text-slate-200"
-                        : "bg-white hover:bg-gray-100 text-gray-700 border border-gray-200"
-                    }`}
-                  >
-                    Clear Selection
-                  </button>
-                </div>
+          {selectedIds.length > 0 && (
+            <div
+              className={`mb-4 p-3.5 px-6 rounded-xl border flex flex-wrap items-center justify-between gap-3 shadow-md ${
+                isDark
+                  ? "bg-slate-800 border-emerald-500/30 text-white"
+                  : "bg-emerald-50/80 border-emerald-200 text-emerald-950"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold">
+                  {selectedIds.length}
+                </span>
+                <span className="text-sm font-semibold">
+                  {selectedIds.length} payment{selectedIds.length > 1 ? "s" : ""} selected
+                </span>
               </div>
-            )}
-          </AnimatePresence>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleDownload("selected")}
+                  disabled={downloading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-sm"
+                >
+                  {downloading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Download className="w-3.5 h-3.5" />
+                  )}
+                  Download Selected ({selectedIds.length})
+                </button>
+                <button
+                  onClick={() => setSelectedIds([])}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    isDark
+                      ? "bg-slate-700 hover:bg-slate-600 text-slate-200"
+                      : "bg-white hover:bg-gray-100 text-gray-700 border border-gray-200"
+                  }`}
+                >
+                  Clear Selection
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (
