@@ -570,7 +570,7 @@ const DashboardCard = ({
 
 const SectionCard = ({ title, icon, children, isDark }) => (
   <div
-    className={`h-full rounded-2xl overflow-hidden transition-all duration-500 animate-slideUp ${
+    className={`rounded-2xl overflow-hidden transition-all duration-500 animate-slideUp ${
       isDark ? "bg-gray-800/70 shadow-lg" : "bg-white shadow-lg"
     }`}
   >
@@ -590,7 +590,7 @@ const SectionCard = ({ title, icon, children, isDark }) => (
         </h2>
       </div>
     </div>
-    <div className="p-4 sm:p-6 h-[480px] sm:h-[540px] md:h-[620px]">{children}</div>
+    <div className="p-4 sm:p-6">{children}</div>
   </div>
 );
 
@@ -603,8 +603,8 @@ const DataTable = ({
   onRowAction,
   isDark,
 }) => (
-  <div className="h-full flex flex-col">
-    <div className="flex-1 overflow-x-auto pb-4">
+  <div className="flex flex-col">
+    <div className="overflow-x-auto pb-4">
       <table className="w-full min-w-[760px] table-auto">
         <thead>
           <tr
