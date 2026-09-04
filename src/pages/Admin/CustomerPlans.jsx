@@ -401,7 +401,7 @@ const CustomerPlans = () => {
     if (!accountId) return;
     setProfilesLoading(true);
     setProfilesError("");
-    getFranchiseProfiles(accountId, true, userType)
+    getFranchiseProfiles(accountId, true)
       .then((res) => {
         if (!isActive) return;
         const rows = res?.data?.data ?? res?.data ?? [];

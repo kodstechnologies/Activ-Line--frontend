@@ -593,7 +593,13 @@ const SubscribersPage = () => {
           mobile: c.phoneNumber,
           email: c.emailId,
           location: c.address?.city || "N/A",
-          plan: c.userType || "Plan N/A",
+          plan:
+            c.planName ||
+            c.profileName ||
+            c.rawPayload?.group_name ||
+            c.rawPayload?.bandwidthTemplateName ||
+            c.userType ||
+            "Plan N/A",
           accountId: c.accountId || "",
           userName: c.userName || "",
           tech: "Fiber",
@@ -679,7 +685,7 @@ const SubscribersPage = () => {
     }
     setGroupLoading(true);
     setGroupError("");
-    getFranchiseProfiles(accountId, true, type)
+    getFranchiseProfiles(accountId, true)
       .then((res) => {
         const rows = res?.data?.data ?? res?.data ?? [];
         const profiles = Array.isArray(rows) ? rows : [];
