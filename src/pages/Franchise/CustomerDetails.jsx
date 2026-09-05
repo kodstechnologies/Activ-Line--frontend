@@ -569,8 +569,17 @@ const CustomerDetails = () => {
       if (isChangePlan && platformFee > 0) {
         createPayload.platformFee = platformFee;
       }
+      // Always send at least one identifier so the backend can build paidByPatch
       if (resolvedUserName) {
         createPayload.userName = resolvedUserName;
+      }
+      const resolvedPhone =
+        customer?.phoneNumber ||
+        customer?.phone ||
+        customer?.customer?.phoneNumber ||
+        "";
+      if (resolvedPhone && !resolvedUserName) {
+        createPayload.phoneNumber = resolvedPhone;
       }
 
       const createRes = await createPlanOrder(createPayload);
