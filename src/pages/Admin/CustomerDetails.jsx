@@ -597,11 +597,15 @@ const CustomerDetails = () => {
         throw new Error("Order ID not returned from create-order API.");
       }
 
+      // Prefer the key returned by the backend so test/live mode always matches the order
       const keyId =
-        import.meta.env.VITE_RAZORPAY_KEY_ID || import.meta.env.RAZORPAY_KEY_ID;
+        createResponsePayload.key ||
+        createResponsePayload.keyId ||
+        import.meta.env.VITE_RAZORPAY_KEY_ID ||
+        import.meta.env.RAZORPAY_KEY_ID;
       if (!keyId) {
         throw new Error(
-          "Razorpay key not found. Please set VITE_RAZORPAY_KEY_ID in .env.",
+          "Razorpay key not found. Backend must return key or set VITE_RAZORPAY_KEY_ID in .env.",
         );
       }
 
@@ -1167,126 +1171,257 @@ const CustomerDetails = () => {
             </div>
 
             {/* Current Plan */}
-            <div
-              ref={currentPlanSectionRef}
-              className={`${glassCardClass} p-6 relative overflow-hidden scroll-mt-6`}
-            >
-              {!isDark && (
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-100 to-purple-100 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
-              )}
-              <h3
-                className={`text-lg font-semibold mb-6 flex items-center gap-2 relative z-10 ${isDark ? "text-white/90" : "text-gray-900"}`}
-              >
-                <Zap
-                  className={`w-5 h-5 ${isDark ? "text-violet-300" : "text-violet-500"}`}
-                />
-                Current Plan
-              </h3>
-              <div className="mb-6 relative z-10">
-                <div className="flex items-center gap-2 mb-2">
-                  <Award
-                    className={`w-5 h-5 ${isDark ? "text-amber-300" : "text-amber-500"}`}
-                  />
-                  <p
-                    className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
-                  >
-                    {latestSuccessfulPayment?.planName ||
-                      customer.planName ||
-                      customer.profileName ||
-                      customer.rawPayload?.group_name ||
-                      customer.rawPayload?.bandwidthTemplateName ||
-                      customer.userType ||
-                      "No plan found"}
-                  </p>
-                </div>
-                <p
-                  className={`text-sm ${isDark ? "text-white/60" : "text-gray-500"} flex items-center gap-2`}
-                >
-                  <User className="w-3 h-3" />
-                  Username: {customer.userName || "N/A"}
-                </p>
+            {(() => {
+              const isExpired =
+                ["expired", "EXPIRED"].includes(customer.status) ||
+                ["expired"].includes(
+                  String(customer.userState || "").toLowerCase()
+                );
+              const rawAmount =
+                latestSuccessfulPayment?.amount ??
+                customer.planAmount ??
+                null;
+              const parsedAmount = Number(rawAmount);
+              const isAmountMissing =
+                rawAmount === null ||
+                rawAmount === undefined ||
+                rawAmount === "" ||
+                rawAmount === "0" ||
+                (!Number.isFinite(parsedAmount) || parsedAmount <= 0);
+
+              return (
                 <div
-                  className={`mt-3 space-y-1 text-sm ${isDark ? "text-white/60" : "text-gray-500"}`}
+                  ref={currentPlanSectionRef}
+                  className={`${glassCardClass} p-6 relative overflow-hidden scroll-mt-6`}
                 >
-                  <p>
-                    Amount:{" "}
-                    {latestSuccessfulPayment
-                      ? formatPaymentAmount(
-                          latestSuccessfulPayment.amount,
-                          latestSuccessfulPayment.currency,
-                        )
-                      : customer.planAmount
-                        ? formatPaymentAmount(customer.planAmount)
-                        : "--"}
-                  </p>
-                  <p>
-                    Last Paid:{" "}
-                    {latestSuccessfulPayment
-                      ? formatPaymentDate(
-                          latestSuccessfulPayment.paidAt ||
-                            latestSuccessfulPayment.createdAt,
-                        )
-                      : customer.lastPaidDate || customer.activationDate
-                        ? formatPaymentDate(customer.lastPaidDate || customer.activationDate)
-                        : "--"}
-                  </p>
-                  <p>
-                    Plan End:{" "}
-                    {latestSuccessfulPayment
-                      ? formatPaymentDate(latestSuccessfulPayment.planEndDate)
-                      : customer.expirationDate || customer.rawPayload?.expirationTime
-                        ? formatPaymentDate(customer.expirationDate || customer.rawPayload?.expirationTime)
-                        : "--"}
-                  </p>
+                  {!isDark && (
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-100 to-purple-100 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+                  )}
+
+                  {/* Header */}
+                  <h3
+                    className={`text-lg font-semibold mb-4 flex items-center gap-2 relative z-10 ${isDark ? "text-white/90" : "text-gray-900"}`}
+                  >
+                    <Zap
+                      className={`w-5 h-5 ${isDark ? "text-violet-300" : "text-violet-500"}`}
+                    />
+                    Current Plan
+                  </h3>
+
+                  {/* ── EXPIRED STATE ── */}
+                  {isExpired ? (
+                    <div className="relative z-10 space-y-4">
+                      {/* Red expired banner */}
+                      <div
+                        className={`flex items-center gap-3 p-4 rounded-xl border ${
+                          isDark
+                            ? "bg-red-500/10 border-red-500/30 text-red-300"
+                            : "bg-red-50 border-red-200 text-red-700"
+                        }`}
+                      >
+                        <AlertCircle className="w-5 h-5 shrink-0" />
+                        <div>
+                          <p className="font-semibold text-sm">Plan Expired</p>
+                          <p className={`text-xs mt-0.5 ${isDark ? "text-red-400/80" : "text-red-500"}`}>
+                            This customer's plan has expired. Please renew to
+                            restore access.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Show last known plan name faded */}
+                      {(customer.planName ||
+                        customer.profileName ||
+                        customer.rawPayload?.group_name ||
+                        customer.rawPayload?.bandwidthTemplateName) && (
+                        <div className="flex items-center gap-2">
+                          <Award
+                            className={`w-4 h-4 ${isDark ? "text-white/30" : "text-gray-300"}`}
+                          />
+                          <p
+                            className={`text-sm line-through ${isDark ? "text-white/30" : "text-gray-400"}`}
+                          >
+                            {customer.planName ||
+                              customer.profileName ||
+                              customer.rawPayload?.group_name ||
+                              customer.rawPayload?.bandwidthTemplateName}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Expiry date */}
+                      {(customer.expirationDate ||
+                        customer.rawPayload?.expirationTime) && (
+                        <p
+                          className={`text-xs flex items-center gap-1.5 ${isDark ? "text-white/40" : "text-gray-400"}`}
+                        >
+                          <Calendar className="w-3 h-3" />
+                          Expired on:{" "}
+                          {formatPaymentDate(
+                            customer.expirationDate ||
+                              customer.rawPayload?.expirationTime
+                          )}
+                        </p>
+                      )}
+
+                      {/* Payment status banner when amount is also missing/zero */}
+                      {isAmountMissing && (
+                        <div
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border ${
+                            isDark
+                              ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
+                              : "bg-amber-50 border-amber-200 text-amber-700"
+                          }`}
+                        >
+                          <CreditCard className="w-3.5 h-3.5 shrink-0" />
+                          Payment Status: Unpaid / No payment record found
+                        </div>
+                      )}
+
+                      {/* Only show Change Plan button when expired */}
+                      <button
+                        type="button"
+                        onClick={handleOpenPlanModal}
+                        disabled={isPaying}
+                        className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl relative z-10"
+                      >
+                        Renew / Change Plan
+                      </button>
+                    </div>
+                  ) : (
+                    /* ── ACTIVE STATE ── */
+                    <>
+                      <div className="mb-6 relative z-10">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Award
+                            className={`w-5 h-5 ${isDark ? "text-amber-300" : "text-amber-500"}`}
+                          />
+                          <p
+                            className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+                          >
+                            {latestSuccessfulPayment?.planName ||
+                              customer.planName ||
+                              customer.profileName ||
+                              customer.rawPayload?.group_name ||
+                              customer.rawPayload?.bandwidthTemplateName ||
+                              customer.userType ||
+                              "No plan found"}
+                          </p>
+                        </div>
+                        <p
+                          className={`text-sm ${isDark ? "text-white/60" : "text-gray-500"} flex items-center gap-2`}
+                        >
+                          <User className="w-3 h-3" />
+                          Username: {customer.userName || "N/A"}
+                        </p>
+                        <div
+                          className={`mt-3 space-y-1 text-sm ${isDark ? "text-white/60" : "text-gray-500"}`}
+                        >
+                          {/* Amount row — shows Unpaid badge if missing/zero */}
+                          <p className="flex items-center gap-2">
+                            Amount:{" "}
+                            {isAmountMissing ? (
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border ${
+                                  isDark
+                                    ? "bg-amber-500/15 border-amber-500/30 text-amber-300"
+                                    : "bg-amber-50 border-amber-200 text-amber-700"
+                                }`}
+                              >
+                                <CreditCard className="w-3 h-3" />
+                                Unpaid
+                              </span>
+                            ) : latestSuccessfulPayment ? (
+                              formatPaymentAmount(
+                                latestSuccessfulPayment.amount,
+                                latestSuccessfulPayment.currency
+                              )
+                            ) : (
+                              formatPaymentAmount(customer.planAmount)
+                            )}
+                          </p>
+                          <p>
+                            Last Paid:{" "}
+                            {latestSuccessfulPayment
+                              ? formatPaymentDate(
+                                  latestSuccessfulPayment.paidAt ||
+                                    latestSuccessfulPayment.createdAt
+                                )
+                              : customer.lastPaidDate || customer.activationDate
+                                ? formatPaymentDate(
+                                    customer.lastPaidDate ||
+                                      customer.activationDate
+                                  )
+                                : "--"}
+                          </p>
+                          <p>
+                            Plan End:{" "}
+                            {latestSuccessfulPayment
+                              ? formatPaymentDate(
+                                  latestSuccessfulPayment.planEndDate
+                                )
+                              : customer.expirationDate ||
+                                  customer.rawPayload?.expirationTime
+                                ? formatPaymentDate(
+                                    customer.expirationDate ||
+                                      customer.rawPayload?.expirationTime
+                                  )
+                                : "--"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={handlePayCurrentPlan}
+                            disabled={isPaying}
+                            className={`w-full py-3 rounded-xl font-semibold transition-all relative z-10 border ${
+                              isDark
+                                ? "bg-white/10 text-white border-white/20 hover:bg-white/15"
+                                : "bg-white text-violet-700 border-violet-200 hover:bg-violet-50"
+                            } ${isPaying ? "opacity-70 cursor-not-allowed" : ""}`}
+                          >
+                            {isPaying && !isPlanModalOpen ? (
+                              <span className="flex items-center justify-center gap-2">
+                                <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                Processing...
+                              </span>
+                            ) : (
+                              "Current Plan"
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleOpenPlanModal}
+                            disabled={isPaying}
+                            className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl relative z-10"
+                          >
+                            Change Plan
+                          </button>
+                        </div>
+                        {paymentStatus && !isPlanModalOpen && (
+                          <div
+                            className={`mt-2 p-3 rounded-xl text-sm border relative z-10 ${
+                              paymentStatus.type === "success"
+                                ? isDark
+                                  ? "bg-green-500/10 border-green-500/20 text-green-300"
+                                  : "bg-green-50 border-green-200 text-green-700"
+                                : isDark
+                                  ? "bg-red-500/10 border-red-500/20 text-red-300"
+                                  : "bg-red-50 border-red-200 text-red-600"
+                            }`}
+                          >
+                            {paymentStatus.message}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
-              </div>
-              <div className="flex flex-col gap-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={handlePayCurrentPlan}
-                    disabled={isPaying}
-                    className={`w-full py-3 rounded-xl font-semibold transition-all relative z-10 border ${
-                      isDark
-                        ? "bg-white/10 text-white border-white/20 hover:bg-white/15"
-                        : "bg-white text-violet-700 border-violet-200 hover:bg-violet-50"
-                    } ${isPaying ? "opacity-70 cursor-not-allowed" : ""}`}
-                  >
-                    {isPaying && !isPlanModalOpen ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        Processing...
-                      </span>
-                    ) : (
-                      "Current Plan"
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleOpenPlanModal}
-                    disabled={isPaying}
-                    className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl relative z-10"
-                  >
-                    Change Plan
-                  </button>
-                </div>
-                {paymentStatus && !isPlanModalOpen && (
-                  <div
-                    className={`mt-2 p-3 rounded-xl text-sm border relative z-10 ${
-                      paymentStatus.type === "success"
-                        ? isDark
-                          ? "bg-green-500/10 border-green-500/20 text-green-300"
-                          : "bg-green-50 border-green-200 text-green-700"
-                        : isDark
-                          ? "bg-red-500/10 border-red-500/20 text-red-300"
-                          : "bg-red-50 border-red-200 text-red-600"
-                    }`}
-                  >
-                    {paymentStatus.message}
-                  </div>
-                )}
-              </div>
-            </div>
+              );
+            })()}
+
           </div>
 
           {/* Right Column - Support Tickets */}
