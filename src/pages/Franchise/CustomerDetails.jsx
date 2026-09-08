@@ -742,6 +742,7 @@ const CustomerDetails = () => {
     });
   };
 
+  const handlePayCurrentPlan = async () => {
     const plan = latestSuccessfulPayment;
 
     const groupIdRaw =
@@ -1431,6 +1432,14 @@ const CustomerDetails = () => {
                             Change Plan
                           </button>
                         </div>
+                        {/* Temporary deployment verification button */}
+                        <button
+                          type="button"
+                          onClick={() => alert("Deployment verified successfully! New frontend build is active.")}
+                          className="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow transition-all relative z-10 flex items-center justify-center gap-1.5"
+                        >
+                          <span>✓</span> Deployment Test Button (Live Check)
+                        </button>
                         {paymentStatus && !isPlanModalOpen && (
                           <div
                             className={`mt-2 p-3 rounded-xl text-sm border relative z-10 ${
