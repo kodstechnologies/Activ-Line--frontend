@@ -34,14 +34,12 @@ import {
 
 
 const statusFilterToApi = {
-  All: "",
+  All: "SUCCESS",
   Paid: "SUCCESS",
-  "Pending Dues": "PENDING",
 };
 
 const statusToUi = {
   SUCCESS: "Paid",
-  PENDING: "Pending",
   FAILED: "Failed",
 };
 
@@ -179,26 +177,23 @@ const BillingPage = () => {
       const res = await getAllCustomersPaymentHistory({
         page: currentPage,
         limit: itemsPerPage,
-        status: statusParam,
+        status: statusParam || "SUCCESS",
         accountId: accountIdFilter.trim() || undefined,
         search: debouncedSearch.trim() || undefined,
       });
 
-      const rows = Array.isArray(res?.data) ? res.data : [];
+      const rawRows = Array.isArray(res?.data) ? res.data : [];
+      const rows = rawRows.filter(
+        (tx) => tx.status !== "PENDING" && tx.status !== "CREATED",
+      );
       setTransactions(rows);
-      setTotalItems(Number(res?.total || 0));
-      setTotalPages(Number(res?.totalPages || 0));
+      setTotalItems(Number(res?.total || rows.length || 0));
+      setTotalPages(Number(res?.totalPages || (rows.length ? 1 : 0)));
 
       const fallbackTotalAmount = rows.reduce(
         (sum, tx) => sum + (Number(tx.amount) || 0),
         0,
       );
-      const fallbackPending = rows.filter(
-        (tx) => tx.status === "PENDING",
-      ).length;
-      const fallbackNotPaid = rows.filter(
-        (tx) => tx.status !== "SUCCESS",
-      ).length;
       const fallbackCustomers = new Set(
         rows.map((tx) => tx.customer?._id || tx.profileId),
       ).size;
@@ -207,9 +202,7 @@ const BillingPage = () => {
         totalPaymentAmount: Number(
           res?.totals?.totalPaymentAmount ?? fallbackTotalAmount,
         ),
-        pendingPaymentCount: Number(
-          res?.totals?.pendingPaymentCount ?? fallbackPending,
-        ),
+        pendingPaymentCount: 0,
         totalCustomerCount: Number(
           res?.totals?.totalCustomerCount ?? fallbackCustomers,
         ),
@@ -219,7 +212,7 @@ const BillingPage = () => {
           res?.summary?.SUCCESS ??
             rows.filter((tx) => tx.status === "SUCCESS").length,
         ),
-        pending: Number(res?.summary?.PENDING ?? fallbackPending),
+        pending: 0,
       });
     } catch (err) {
       setTransactions([]);
@@ -629,7 +622,6 @@ const BillingPage = () => {
                       >
                         <option value="All">All Transactions</option>
                         <option value="Paid">Paid</option>
-                        <option value="Pending Dues">Pending Dues</option>
                       </select>
 
                       <label
@@ -761,19 +753,19 @@ const BillingPage = () => {
                     <p
                       className={`text-xs uppercase tracking-wider ${isDark ? "text-slate-400" : "text-gray-500"}`}
                     >
-                      Pending Payments
+                      Completed Transactions
                     </p>
                     <p
                       className={`text-xl sm:text-2xl font-bold mt-1 ${isDark ? "text-white" : "text-gray-900"}`}
                     >
-                      {stats.pendingCount}
+                      {paginationData.totalItems || stats.successCount}
                     </p>
                   </div>
                   <div
-                    className={`p-2 rounded-xl ${isDark ? "bg-yellow-500/10" : "bg-yellow-100"}`}
+                    className={`p-2 rounded-xl ${isDark ? "bg-blue-500/10" : "bg-blue-100"}`}
                   >
-                    <Clock
-                      className={`w-6 h-6 ${isDark ? "text-yellow-400" : "text-yellow-600"}`}
+                    <TrendingUp
+                      className={`w-6 h-6 ${isDark ? "text-blue-400" : "text-blue-600"}`}
                     />
                   </div>
                 </div>

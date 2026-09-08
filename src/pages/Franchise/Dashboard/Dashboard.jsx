@@ -531,11 +531,13 @@ const Dashboard = () => {
 
         if (paymentsResult.status === "fulfilled") {
           const paymentsRes = paymentsResult.value;
-          const paymentRows = Array.isArray(paymentsRes?.data)
-            ? paymentsRes.data
-            : Array.isArray(paymentsRes)
-              ? paymentsRes
-              : [];
+          const paymentRows = (
+            Array.isArray(paymentsRes?.data)
+              ? paymentsRes.data
+              : Array.isArray(paymentsRes)
+                ? paymentsRes
+                : []
+          ).filter((p) => p.status !== "PENDING" && p.status !== "CREATED");
           setRecentPayments(paymentRows);
         } else {
           setRecentPayments([]);

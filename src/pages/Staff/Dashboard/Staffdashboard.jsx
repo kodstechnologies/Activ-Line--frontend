@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useCallback, memo, useMemo } from "react";
+import React, { useEffect, useState, useCallback, memo, useMemo } from "react";
 import {
   MessageSquare,
   Clock,
@@ -540,7 +540,7 @@ const DashboardPage = () => {
           getTodayResolvedTickets(),
           getTotalCustomers(),
           getRecentTickets(5),
-          getAssignedPaymentHistory({ page: 1, limit: 5 }),
+          getAssignedPaymentHistory({ page: 1, limit: 5, status: "SUCCESS" }),
         ]);
 
       setStats({
@@ -551,8 +551,13 @@ const DashboardPage = () => {
       });
 
       setRecentTickets(ticketsRes ?? []);
+      const paymentList = Array.isArray(paymentsRes)
+        ? paymentsRes
+        : (paymentsRes?.data ?? []);
       setRecentPayments(
-        Array.isArray(paymentsRes) ? paymentsRes : (paymentsRes?.data ?? []),
+        paymentList.filter(
+          (p) => p.status !== "PENDING" && p.status !== "CREATED",
+        ),
       );
     } catch (err) {
       console.error("Dashboard load failed:", err);

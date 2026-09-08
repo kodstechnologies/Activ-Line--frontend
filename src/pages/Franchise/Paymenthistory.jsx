@@ -208,12 +208,16 @@ const BillingPage = () => {
           page: currentPage,
           limit: itemsPerPage,
           profileId: resolvedProfileId || undefined,
+          status: "SUCCESS",
         });
 
-        const rows = Array.isArray(res?.data) ? res.data : [];
+        const rawRows = Array.isArray(res?.data) ? res.data : [];
+        const rows = rawRows.filter(
+          (tx) => tx.status !== "PENDING" && tx.status !== "CREATED",
+        );
         setTransactions(rows);
-        setTotalItems(Number(res?.total || 0));
-        setTotalPages(Number(res?.totalPages || 0));
+        setTotalItems(Number(res?.total || rows.length || 0));
+        setTotalPages(Number(res?.totalPages || (rows.length ? 1 : 0)));
 
         // Calculate total amount
         const total = rows.reduce(
@@ -269,26 +273,28 @@ const BillingPage = () => {
 
   const filteredTransactions = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    return paginationData.paginatedTransactions.filter((tx) => {
-      if (selectedStatus !== "All" && tx.status !== selectedStatus)
-        return false;
-      if (!term) return true;
-      const haystack = [
-        tx.paymentId,
-        tx._id,
-        tx.orderId,
-        tx.razorpayPaymentId,
-        tx.userName,
-        tx.profileId,
-        tx.accountId,
-        tx.status,
-        tx.amount,
-      ]
-        .filter((value) => value !== undefined && value !== null)
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(term);
-    });
+    return paginationData.paginatedTransactions
+      .filter((tx) => tx.status !== "PENDING" && tx.status !== "CREATED")
+      .filter((tx) => {
+        if (selectedStatus !== "All" && tx.status !== selectedStatus)
+          return false;
+        if (!term) return true;
+        const haystack = [
+          tx.paymentId,
+          tx._id,
+          tx.orderId,
+          tx.razorpayPaymentId,
+          tx.userName,
+          tx.profileId,
+          tx.accountId,
+          tx.status,
+          tx.amount,
+        ]
+          .filter((value) => value !== undefined && value !== null)
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(term);
+      });
   }, [paginationData.paginatedTransactions, searchTerm, selectedStatus]);
 
   const uiRows = useMemo(() => {
@@ -316,9 +322,6 @@ const BillingPage = () => {
     const successCount = filteredTransactions.filter(
       (tx) => tx.status === "SUCCESS",
     ).length;
-    const pendingCount = filteredTransactions.filter(
-      (tx) => tx.status === "PENDING",
-    ).length;
     const failedCount = filteredTransactions.filter(
       (tx) => tx.status === "FAILED",
     ).length;
@@ -330,7 +333,7 @@ const BillingPage = () => {
     return {
       total,
       successCount,
-      pendingCount,
+      pendingCount: 0,
       failedCount,
     };
   }, [filteredTransactions]);
@@ -597,7 +600,6 @@ const BillingPage = () => {
                   >
                     <option value="All">All Statuses</option>
                     <option value="SUCCESS">Paid</option>
-                    <option value="PENDING">Pending</option>
                     <option value="FAILED">Failed</option>
                   </select>
                 </div>

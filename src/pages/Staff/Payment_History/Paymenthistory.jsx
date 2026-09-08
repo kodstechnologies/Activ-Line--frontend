@@ -25,14 +25,12 @@ import {
 
 
 const statusFilterToApi = {
-  All: "",
+  All: "SUCCESS",
   Paid: "SUCCESS",
-  "Pending Dues": "PENDING",
 };
 
 const statusToUi = {
   SUCCESS: "Paid",
-  PENDING: "Pending",
   FAILED: "Failed",
 };
 
@@ -137,7 +135,7 @@ const BillingPage = () => {
       const res = await getAssignedPaymentHistory({
         page: currentPage,
         limit: itemsPerPage,
-        status: statusParam,
+        status: statusParam || "SUCCESS",
         planName: !isProfileSearch ? trimmedSearch || undefined : undefined,
         fromDate: fromDate || undefined,
         toDate: toDate || undefined,
@@ -147,12 +145,15 @@ const BillingPage = () => {
       });
 
       const payload = Array.isArray(res) ? { data: res } : res || {};
-      const rows =
+      const rawRows =
         payload?.data ||
         payload?.payments ||
         payload?.items ||
         payload?.history ||
         [];
+      const rows = rawRows.filter(
+        (tx) => tx.status !== "PENDING" && tx.status !== "CREATED",
+      );
       setTransactions(rows);
       const meta = payload?.meta || {};
       const total = Number(
@@ -462,7 +463,6 @@ const BillingPage = () => {
                           >
                             <option value="All">All Transactions</option>
                             <option value="Paid">Paid</option>
-                            <option value="Pending Dues">Pending Dues</option>
                           </select>
                           <ChevronDown
                             className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDark ? "text-slate-400" : "text-gray-500"}`}
