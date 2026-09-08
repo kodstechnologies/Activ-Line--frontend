@@ -691,16 +691,7 @@ const CustomerDetails = () => {
     });
   };
 
-  const handlePayCurrentPlan = async () => {
-    // Use the current-plan data already shown in the UI (latestSuccessfulPayment).
     const plan = latestSuccessfulPayment;
-    if (!plan) {
-      setPaymentStatus({
-        type: "error",
-        message: "No current plan payment found for this customer.",
-      });
-      return;
-    }
 
     const groupIdRaw =
       plan?.groupId ??
@@ -708,7 +699,9 @@ const CustomerDetails = () => {
       plan?.group?._id ??
       plan?.group?.id ??
       plan?.group?.Group_id ??
-      plan?.group?.groupId;
+      plan?.group?.groupId ??
+      customer?.userGroupId ??
+      customer?.rawPayload?.groupId;
 
     const profileIdRaw =
       plan?.profileId ??
@@ -716,7 +709,10 @@ const CustomerDetails = () => {
       plan?.profile?._id ??
       plan?.profile?.id ??
       plan?.profile?.profileId ??
-      plan?.planProfileId;
+      plan?.planProfileId ??
+      customer?.profileId ??
+      customer?.rawPayload?.profile_id ??
+      customer?.activlineUserId;
 
     const amountRaw =
       plan?.amount ??
@@ -726,7 +722,8 @@ const CustomerDetails = () => {
       plan?.orderAmount ??
       plan?.price ??
       plan?.plan?.amount ??
-      plan?.plan?.price;
+      plan?.plan?.price ??
+      customer?.planAmount;
 
     const groupId =
       groupIdRaw !== undefined && groupIdRaw !== null
@@ -738,6 +735,15 @@ const CustomerDetails = () => {
         : "";
     const amount =
       amountRaw !== undefined && amountRaw !== null ? String(amountRaw) : "";
+
+    if (!groupId || !profileId || !amount) {
+      setPaymentStatus({
+        type: "error",
+        message:
+          "Current plan details are missing (groupId/profileId/amount). Please select a plan via 'Change Plan'.",
+      });
+      return;
+    }
 
     // keep UI state in-sync (optional but useful)
     userSelectedPlanRef.current = true;
@@ -1141,6 +1147,10 @@ const CustomerDetails = () => {
                     className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
                   >
                     {latestSuccessfulPayment?.planName ||
+                      customer.planName ||
+                      customer.profileName ||
+                      customer.rawPayload?.group_name ||
+                      customer.rawPayload?.bandwidthTemplateName ||
                       customer.userType ||
                       "No plan found"}
                   </p>
@@ -1161,7 +1171,9 @@ const CustomerDetails = () => {
                           latestSuccessfulPayment.amount,
                           latestSuccessfulPayment.currency,
                         )
-                      : "--"}
+                      : customer.planAmount
+                        ? formatPaymentAmount(customer.planAmount)
+                        : "--"}
                   </p>
                   <p>
                     Last Paid:{" "}
@@ -1170,13 +1182,24 @@ const CustomerDetails = () => {
                           latestSuccessfulPayment.paidAt ||
                             latestSuccessfulPayment.createdAt,
                         )
-                      : "--"}
+                      : customer.lastPaidDate || customer.activationDate
+                        ? formatPaymentDate(
+                            customer.lastPaidDate ||
+                              customer.activationDate
+                          )
+                        : "--"}
                   </p>
                   <p>
                     Plan End:{" "}
                     {latestSuccessfulPayment
                       ? formatPaymentDate(latestSuccessfulPayment.planEndDate)
-                      : "--"}
+                      : customer.expirationDate ||
+                          customer.rawPayload?.expirationTime
+                        ? formatPaymentDate(
+                            customer.expirationDate ||
+                              customer.rawPayload?.expirationTime
+                          )
+                        : "--"}
                   </p>
                 </div>
               </div>
