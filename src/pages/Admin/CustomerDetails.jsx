@@ -597,12 +597,17 @@ const CustomerDetails = () => {
         throw new Error("Order ID not returned from create-order API.");
       }
 
-      // Use live Razorpay key from backend or frontend env
+      // Use live Razorpay key from backend or frontend env variables
       const keyId =
         createResponsePayload.key ||
         createResponsePayload.keyId ||
+        createResponsePayload.key_id ||
         import.meta.env.VITE_RAZORPAY_KEY_ID ||
+        import.meta.env.VITE_RAZORPAY_KEY ||
+        import.meta.env.VITE_RAZORPAY_LIVE_KEY ||
+        import.meta.env.VITE_RAZOR_PAY_KEY_ID ||
         import.meta.env.RAZORPAY_KEY_ID ||
+        import.meta.env.RAZORPAY_KEY ||
         "rzp_live_TP8cWDoOKHBgIs";
 
       await loadRazorpayScript();
@@ -1173,9 +1178,26 @@ const CustomerDetails = () => {
                 ["expired"].includes(
                   String(customer.userState || "").toLowerCase()
                 );
+
+              const planNameDisplay =
+                latestSuccessfulPayment?.planName ||
+                customer?.planName ||
+                customer?.profileName ||
+                customer?.rawPayload?.group_name?.trim() ||
+                customer?.rawPayload?.bandwidthTemplateName ||
+                customer?.rawPayload?.plan_name ||
+                customer?.rawPayload?.planName ||
+                (customer?.userGroupId ? `Group #${customer.userGroupId}` : null) ||
+                "No plan found";
+
               const rawAmount =
                 latestSuccessfulPayment?.amount ??
-                customer.planAmount ??
+                customer?.planAmount ??
+                customer?.amount ??
+                customer?.rawPayload?.planAmount ??
+                customer?.rawPayload?.amount ??
+                customer?.rawPayload?.price ??
+                customer?.rawPayload?.plan_amount ??
                 null;
               const parsedAmount = Number(rawAmount);
               const isAmountMissing =
@@ -1184,6 +1206,24 @@ const CustomerDetails = () => {
                 rawAmount === "" ||
                 rawAmount === "0" ||
                 (!Number.isFinite(parsedAmount) || parsedAmount <= 0);
+
+              const rawLastPaidDate =
+                latestSuccessfulPayment?.paidAt ||
+                latestSuccessfulPayment?.createdAt ||
+                customer?.lastPaidDate ||
+                customer?.activationDate ||
+                customer?.rawPayload?.activationTime ||
+                customer?.rawPayload?.billingStartDate ||
+                customer?.rawPayload?.createdTime ||
+                customer?.createdAt ||
+                null;
+
+              const rawPlanEndDate =
+                latestSuccessfulPayment?.planEndDate ||
+                customer?.expirationDate ||
+                customer?.rawPayload?.expirationTime ||
+                customer?.rawPayload?.billingEndDate ||
+                null;
 
               return (
                 <div
@@ -1226,10 +1266,7 @@ const CustomerDetails = () => {
                       </div>
 
                       {/* Show last known plan name faded */}
-                      {(customer.planName ||
-                        customer.profileName ||
-                        customer.rawPayload?.group_name ||
-                        customer.rawPayload?.bandwidthTemplateName) && (
+                      {planNameDisplay !== "No plan found" && (
                         <div className="flex items-center gap-2">
                           <Award
                             className={`w-4 h-4 ${isDark ? "text-white/30" : "text-gray-300"}`}
@@ -1237,26 +1274,18 @@ const CustomerDetails = () => {
                           <p
                             className={`text-sm line-through ${isDark ? "text-white/30" : "text-gray-400"}`}
                           >
-                            {customer.planName ||
-                              customer.profileName ||
-                              customer.rawPayload?.group_name ||
-                              customer.rawPayload?.bandwidthTemplateName}
+                            {planNameDisplay}
                           </p>
                         </div>
                       )}
 
                       {/* Expiry date */}
-                      {(customer.expirationDate ||
-                        customer.rawPayload?.expirationTime) && (
+                      {rawPlanEndDate && (
                         <p
                           className={`text-xs flex items-center gap-1.5 ${isDark ? "text-white/40" : "text-gray-400"}`}
                         >
                           <Calendar className="w-3 h-3" />
-                          Expired on:{" "}
-                          {formatPaymentDate(
-                            customer.expirationDate ||
-                              customer.rawPayload?.expirationTime
-                          )}
+                          Expired on: {formatPaymentDate(rawPlanEndDate)}
                         </p>
                       )}
 
@@ -1295,13 +1324,7 @@ const CustomerDetails = () => {
                           <p
                             className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
                           >
-                            {latestSuccessfulPayment?.planName ||
-                              customer.planName ||
-                              customer.profileName ||
-                              customer.rawPayload?.group_name ||
-                              customer.rawPayload?.bandwidthTemplateName ||
-                              customer.userType ||
-                              "No plan found"}
+                            {planNameDisplay}
                           </p>
                         </div>
                         <p
@@ -1327,42 +1350,24 @@ const CustomerDetails = () => {
                                 <CreditCard className="w-3 h-3" />
                                 Unpaid
                               </span>
-                            ) : latestSuccessfulPayment ? (
-                              formatPaymentAmount(
-                                latestSuccessfulPayment.amount,
-                                latestSuccessfulPayment.currency
-                              )
                             ) : (
-                              formatPaymentAmount(customer.planAmount)
+                              formatPaymentAmount(
+                                rawAmount,
+                                latestSuccessfulPayment?.currency || "INR"
+                              )
                             )}
                           </p>
                           <p>
                             Last Paid:{" "}
-                            {latestSuccessfulPayment
-                              ? formatPaymentDate(
-                                  latestSuccessfulPayment.paidAt ||
-                                    latestSuccessfulPayment.createdAt
-                                )
-                              : customer.lastPaidDate || customer.activationDate
-                                ? formatPaymentDate(
-                                    customer.lastPaidDate ||
-                                      customer.activationDate
-                                  )
-                                : "--"}
+                            {rawLastPaidDate
+                              ? formatPaymentDate(rawLastPaidDate)
+                              : "--"}
                           </p>
                           <p>
                             Plan End:{" "}
-                            {latestSuccessfulPayment
-                              ? formatPaymentDate(
-                                  latestSuccessfulPayment.planEndDate
-                                )
-                              : customer.expirationDate ||
-                                  customer.rawPayload?.expirationTime
-                                ? formatPaymentDate(
-                                    customer.expirationDate ||
-                                      customer.rawPayload?.expirationTime
-                                  )
-                                : "--"}
+                            {rawPlanEndDate
+                              ? formatPaymentDate(rawPlanEndDate)
+                              : "--"}
                           </p>
                         </div>
                       </div>

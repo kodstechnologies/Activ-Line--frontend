@@ -289,12 +289,17 @@ const CustomerPlans = () => {
         throw new Error("Order ID not returned from create-order API.");
       }
 
-      // Use live Razorpay key from backend or frontend env
+      // Use live Razorpay key from backend or frontend env variables
       const keyId =
         createResponsePayload.key ||
         createResponsePayload.keyId ||
+        createResponsePayload.key_id ||
         import.meta.env.VITE_RAZORPAY_KEY_ID ||
+        import.meta.env.VITE_RAZORPAY_KEY ||
+        import.meta.env.VITE_RAZORPAY_LIVE_KEY ||
+        import.meta.env.VITE_RAZOR_PAY_KEY_ID ||
         import.meta.env.RAZORPAY_KEY_ID ||
+        import.meta.env.RAZORPAY_KEY ||
         "rzp_live_TP8cWDoOKHBgIs";
 
       await loadRazorpayScript();

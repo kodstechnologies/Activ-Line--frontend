@@ -43,17 +43,6 @@ const statusConfig = {
     borderLight: "border-green-200",
     borderDark: "border-green-500/20",
   },
-  PENDING: {
-    label: "Pending",
-    icon: Clock,
-    color: "yellow",
-    bgLight: "bg-yellow-50",
-    bgDark: "bg-yellow-500/10",
-    textLight: "text-yellow-700",
-    textDark: "text-yellow-400",
-    borderLight: "border-yellow-200",
-    borderDark: "border-yellow-500/20",
-  },
   FAILED: {
     label: "Failed",
     icon: XCircleIcon,
@@ -138,7 +127,7 @@ const StatCard = ({ icon: Icon, label, value, isDark }) => (
 );
 
 const StatusBadge = ({ status, isDark }) => {
-  const config = statusConfig[status] || statusConfig.PENDING;
+  const config = statusConfig[status] || statusConfig.FAILED;
   const Icon = config.icon;
 
   return (
@@ -208,12 +197,13 @@ const BillingPage = () => {
           page: currentPage,
           limit: itemsPerPage,
           profileId: resolvedProfileId || undefined,
-          status: "SUCCESS",
         });
 
         const rawRows = Array.isArray(res?.data) ? res.data : [];
         const rows = rawRows.filter(
-          (tx) => tx.status !== "PENDING" && tx.status !== "CREATED",
+          (tx) =>
+            String(tx?.status || "").toUpperCase() !== "PENDING" &&
+            String(tx?.status || "").toUpperCase() !== "CREATED",
         );
         setTransactions(rows);
         setTotalItems(Number(res?.total || rows.length || 0));
@@ -274,7 +264,11 @@ const BillingPage = () => {
   const filteredTransactions = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     return paginationData.paginatedTransactions
-      .filter((tx) => tx.status !== "PENDING" && tx.status !== "CREATED")
+      .filter(
+        (tx) =>
+          String(tx?.status || "").toUpperCase() !== "PENDING" &&
+          String(tx?.status || "").toUpperCase() !== "CREATED",
+      )
       .filter((tx) => {
         if (selectedStatus !== "All" && tx.status !== selectedStatus)
           return false;

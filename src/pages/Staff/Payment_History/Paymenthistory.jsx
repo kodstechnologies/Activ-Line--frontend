@@ -25,8 +25,9 @@ import {
 
 
 const statusFilterToApi = {
-  All: "SUCCESS",
+  All: "",
   Paid: "SUCCESS",
+  Failed: "FAILED",
 };
 
 const statusToUi = {
@@ -152,7 +153,9 @@ const BillingPage = () => {
         payload?.history ||
         [];
       const rows = rawRows.filter(
-        (tx) => tx.status !== "PENDING" && tx.status !== "CREATED",
+        (tx) =>
+          String(tx?.status || "").toUpperCase() !== "PENDING" &&
+          String(tx?.status || "").toUpperCase() !== "CREATED",
       );
       setTransactions(rows);
       const meta = payload?.meta || {};
@@ -221,7 +224,7 @@ const BillingPage = () => {
 
   const uiRows = useMemo(() => {
     return paginationData.paginatedTransactions.map((tx) => {
-      const status = statusToUi[tx.status] || tx.status || "Pending";
+      const status = statusToUi[tx.status] || tx.status || "--";
       const rawDate = tx.paidAt || tx.createdAt;
       const planEndDate =
         tx.planEndDate ||
@@ -463,6 +466,7 @@ const BillingPage = () => {
                           >
                             <option value="All">All Transactions</option>
                             <option value="Paid">Paid</option>
+                            <option value="Failed">Failed</option>
                           </select>
                           <ChevronDown
                             className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDark ? "text-slate-400" : "text-gray-500"}`}
@@ -706,13 +710,9 @@ const BillingPage = () => {
                                   ? isDark
                                     ? "text-green-400 bg-green-500/10 border border-green-500/20"
                                     : "bg-green-50 text-green-700 border border-green-200"
-                                  : tx.status === "Failed"
-                                    ? isDark
-                                      ? "text-red-400 bg-red-500/10 border border-red-500/20"
-                                      : "bg-red-50 text-red-700 border border-red-200"
-                                    : isDark
-                                      ? "text-yellow-400 bg-yellow-500/10 border border-yellow-500/20"
-                                      : "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                                  : isDark
+                                    ? "text-red-400 bg-red-500/10 border border-red-500/20"
+                                    : "bg-red-50 text-red-700 border border-red-200"
                               }`}
                             >
                               {tx.status === "Paid" && (

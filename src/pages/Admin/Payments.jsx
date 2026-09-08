@@ -34,8 +34,9 @@ import {
 
 
 const statusFilterToApi = {
-  All: "SUCCESS",
+  All: "",
   Paid: "SUCCESS",
+  Failed: "FAILED",
 };
 
 const statusToUi = {
@@ -184,7 +185,9 @@ const BillingPage = () => {
 
       const rawRows = Array.isArray(res?.data) ? res.data : [];
       const rows = rawRows.filter(
-        (tx) => tx.status !== "PENDING" && tx.status !== "CREATED",
+        (tx) =>
+          String(tx?.status || "").toUpperCase() !== "PENDING" &&
+          String(tx?.status || "").toUpperCase() !== "CREATED",
       );
       setTransactions(rows);
       setTotalItems(Number(res?.total || rows.length || 0));
@@ -313,7 +316,7 @@ const BillingPage = () => {
 
   const uiRows = useMemo(() => {
     return paginationData.paginatedTransactions.map((tx) => {
-      const status = statusToUi[tx.status] || tx.status || "Pending";
+      const status = statusToUi[tx.status] || tx.status || "--";
       const rawDate = tx.paidAt || tx.createdAt;
       const planEndDate =
         tx.planEndDate ||
@@ -622,6 +625,7 @@ const BillingPage = () => {
                       >
                         <option value="All">All Transactions</option>
                         <option value="Paid">Paid</option>
+                        <option value="Failed">Failed</option>
                       </select>
 
                       <label
@@ -978,22 +982,14 @@ const BillingPage = () => {
                             ? isDark
                               ? "bg-green-500/10 text-green-400 border border-green-500/20"
                               : "bg-green-50 text-green-700 border border-green-200"
-                            : tx.status === "Failed"
-                              ? isDark
-                                ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                                : "bg-red-50 text-red-700 border border-red-200"
-                              : isDark
-                                ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"
-                                : "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                            : isDark
+                              ? "bg-red-500/10 text-red-400 border border-red-500/20"
+                              : "bg-red-50 text-red-700 border border-red-200"
                         }`}
                       >
                         <span
                           className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                            tx.status === "Paid"
-                              ? "bg-green-500"
-                              : tx.status === "Failed"
-                                ? "bg-red-500"
-                                : "bg-yellow-500"
+                            tx.status === "Paid" ? "bg-green-500" : "bg-red-500"
                           }`}
                         ></span>
                         {tx.status}
@@ -1326,13 +1322,9 @@ const BillingPage = () => {
                                 ? isDark
                                   ? "bg-green-500/10 text-green-400"
                                   : "bg-green-50 text-green-700"
-                                : selectedPayment?.status === "PENDING"
-                                  ? isDark
-                                    ? "bg-yellow-500/10 text-yellow-400"
-                                    : "bg-yellow-50 text-yellow-700"
-                                  : isDark
-                                    ? "bg-red-500/10 text-red-400"
-                                    : "bg-red-50 text-red-700"
+                                : isDark
+                                  ? "bg-red-500/10 text-red-400"
+                                  : "bg-red-50 text-red-700"
                             }`}
                           >
                             {statusToUi[selectedPayment?.status] ||
