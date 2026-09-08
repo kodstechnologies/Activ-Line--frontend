@@ -39,6 +39,7 @@ import {
   getFranchiseTariff,
   createChatRoomApi,
 } from "../../api/customer.api";
+import { getLiveRazorpayKey } from "../../utils/razorpay";
 import { getTicketRooms } from "../../api/frenchise/franchiseTicketApi";
 import pdfIcon from "../../assets/images/pdf_icon1.jpg";
 const CustomerDetails = () => {
@@ -601,18 +602,10 @@ const CustomerDetails = () => {
         throw new Error("Order ID not returned from create-order API.");
       }
 
-      // Use live Razorpay key from backend or frontend env variables
-      const keyId =
-        createResponsePayload.key ||
-        createResponsePayload.keyId ||
-        createResponsePayload.key_id ||
-        import.meta.env.VITE_RAZORPAY_KEY_ID ||
-        import.meta.env.VITE_RAZORPAY_KEY ||
-        import.meta.env.VITE_RAZORPAY_LIVE_KEY ||
-        import.meta.env.VITE_RAZOR_PAY_KEY_ID ||
-        import.meta.env.RAZORPAY_KEY_ID ||
-        import.meta.env.RAZORPAY_KEY ||
-        "rzp_live_TP8cWDoOKHBgIs";
+      // Strictly enforce LIVE Razorpay key (reject any test key like rzp_test_...)
+      const keyId = getLiveRazorpayKey(
+        createResponsePayload.key || createResponsePayload.keyId
+      );
 
       await loadRazorpayScript();
 
@@ -1277,181 +1270,194 @@ const CustomerDetails = () => {
                     Current Plan
                   </h3>
 
-                  {/* ── EXPIRED STATE ── */}
-                  {isExpired ? (
-                    <div className="relative z-10 space-y-4">
-                      {/* Red expired banner */}
-                      <div
-                        className={`flex items-center gap-3 p-4 rounded-xl border ${
-                          isDark
-                            ? "bg-red-500/10 border-red-500/30 text-red-300"
-                            : "bg-red-50 border-red-200 text-red-700"
-                        }`}
-                      >
-                        <AlertCircle className="w-5 h-5 shrink-0" />
-                        <div>
-                          <p className="font-semibold text-sm">Plan Expired</p>
-                          <p className={`text-xs mt-0.5 ${isDark ? "text-red-400/80" : "text-red-500"}`}>
-                            This customer's plan has expired. Please renew to
-                            restore access.
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Show last known plan name faded */}
-                      {planNameDisplay !== "No plan found" && (
-                        <div className="flex items-center gap-2">
-                          <Award
-                            className={`w-4 h-4 ${isDark ? "text-white/30" : "text-gray-300"}`}
-                          />
-                          <p
-                            className={`text-sm line-through ${isDark ? "text-white/30" : "text-gray-400"}`}
-                          >
-                            {planNameDisplay}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Expiry date */}
-                      {rawPlanEndDate && (
+                  {/* Expired warning banner if expired */}
+                  {isExpired && (
+                    <div
+                      className={`flex items-center gap-3 p-3.5 mb-4 rounded-xl border relative z-10 ${
+                        isDark
+                          ? "bg-red-500/10 border-red-500/30 text-red-300"
+                          : "bg-red-50 border-red-200 text-red-700"
+                      }`}
+                    >
+                      <AlertCircle className="w-5 h-5 shrink-0" />
+                      <div>
+                        <p className="font-semibold text-sm">Plan Expired</p>
                         <p
-                          className={`text-xs flex items-center gap-1.5 ${isDark ? "text-white/40" : "text-gray-400"}`}
-                        >
-                          <Calendar className="w-3 h-3" />
-                          Expired on: {formatPaymentDate(rawPlanEndDate)}
-                        </p>
-                      )}
-
-                      {/* Payment status banner when amount is also missing/zero */}
-                      {isAmountMissing && (
-                        <div
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border ${
-                            isDark
-                              ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
-                              : "bg-amber-50 border-amber-200 text-amber-700"
+                          className={`text-xs mt-0.5 ${
+                            isDark ? "text-red-400/80" : "text-red-500"
                           }`}
                         >
-                          <CreditCard className="w-3.5 h-3.5 shrink-0" />
-                          Payment Status: Unpaid / No payment record found
-                        </div>
-                      )}
+                          This customer's plan has expired. Please renew to
+                          restore access.
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
-                      {/* Only show Change Plan button when expired */}
+                  {/* Complete Plan Details (always shown for active, expired, and unpaid) */}
+                  <div className="mb-6 relative z-10">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Award
+                          className={`w-5 h-5 ${
+                            isExpired
+                              ? isDark
+                                ? "text-red-400"
+                                : "text-red-500"
+                              : isDark
+                                ? "text-amber-300"
+                                : "text-amber-500"
+                          }`}
+                        />
+                        <p
+                          className={`text-xl font-bold ${
+                            isDark ? "text-white" : "text-gray-900"
+                          }`}
+                        >
+                          {planNameDisplay}
+                        </p>
+                      </div>
+                      {isExpired && (
+                        <span
+                          className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${
+                            isDark
+                              ? "bg-red-500/15 border-red-500/30 text-red-300"
+                              : "bg-red-50 border-red-200 text-red-700"
+                          }`}
+                        >
+                          Expired
+                        </span>
+                      )}
+                    </div>
+                    <p
+                      className={`text-sm ${
+                        isDark ? "text-white/60" : "text-gray-500"
+                      } flex items-center gap-2`}
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      Username: {customer.userName || "N/A"}
+                    </p>
+                    <div
+                      className={`mt-3 space-y-1.5 text-sm ${
+                        isDark ? "text-white/60" : "text-gray-500"
+                      }`}
+                    >
+                      {/* Amount row — shows Unpaid badge if missing/zero */}
+                      <p className="flex items-center gap-2">
+                        <span>Amount:</span>
+                        {isAmountMissing ? (
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border ${
+                              isDark
+                                ? "bg-amber-500/15 border-amber-500/30 text-amber-300"
+                                : "bg-amber-50 border-amber-200 text-amber-700"
+                            }`}
+                          >
+                            <CreditCard className="w-3 h-3" />
+                            Unpaid
+                          </span>
+                        ) : (
+                          <span
+                            className={`font-medium ${
+                              isDark ? "text-white/90" : "text-gray-800"
+                            }`}
+                          >
+                            {formatPaymentAmount(
+                              rawAmount,
+                              latestSuccessfulPayment?.currency || "INR"
+                            )}
+                          </span>
+                        )}
+                      </p>
+                      <p>
+                        Last Paid:{" "}
+                        <span
+                          className={
+                            rawLastPaidDate
+                              ? isDark
+                                ? "text-white/80"
+                                : "text-gray-700"
+                              : ""
+                          }
+                        >
+                          {rawLastPaidDate
+                            ? formatPaymentDate(rawLastPaidDate)
+                            : "--"}
+                        </span>
+                      </p>
+                      <p className="flex items-center gap-1.5 flex-wrap">
+                        <span>Plan End:</span>
+                        <span
+                          className={
+                            rawPlanEndDate
+                              ? isDark
+                                ? "text-white/80"
+                                : "text-gray-700"
+                              : ""
+                          }
+                        >
+                          {rawPlanEndDate
+                            ? formatPaymentDate(rawPlanEndDate)
+                            : "--"}
+                        </span>
+                        {isExpired && rawPlanEndDate && (
+                          <span className="text-xs font-medium text-red-500">
+                            (Expired)
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={handlePayCurrentPlan}
+                        disabled={isPaying}
+                        className={`w-full py-3 rounded-xl font-semibold transition-all relative z-10 border ${
+                          isDark
+                            ? "bg-white/10 text-white border-white/20 hover:bg-white/15"
+                            : "bg-white text-violet-700 border-violet-200 hover:bg-violet-50"
+                        } ${isPaying ? "opacity-70 cursor-not-allowed" : ""}`}
+                      >
+                        {isPaying && !isPlanModalOpen ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            Processing...
+                          </span>
+                        ) : isExpired ? (
+                          "Renew Current Plan"
+                        ) : (
+                          "Current Plan"
+                        )}
+                      </button>
                       <button
                         type="button"
                         onClick={handleOpenPlanModal}
                         disabled={isPaying}
                         className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl relative z-10"
                       >
-                        Renew / Change Plan
+                        Change Plan
                       </button>
                     </div>
-                  ) : (
-                    /* ── ACTIVE STATE ── */
-                    <>
-                      <div className="mb-6 relative z-10">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Award
-                            className={`w-5 h-5 ${isDark ? "text-amber-300" : "text-amber-500"}`}
-                          />
-                          <p
-                            className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
-                          >
-                            {planNameDisplay}
-                          </p>
-                        </div>
-                        <p
-                          className={`text-sm ${isDark ? "text-white/60" : "text-gray-500"} flex items-center gap-2`}
-                        >
-                          <User className="w-3 h-3" />
-                          Username: {customer.userName || "N/A"}
-                        </p>
-                        <div
-                          className={`mt-3 space-y-1 text-sm ${isDark ? "text-white/60" : "text-gray-500"}`}
-                        >
-                          {/* Amount row — shows Unpaid badge if missing/zero */}
-                          <p className="flex items-center gap-2">
-                            Amount:{" "}
-                            {isAmountMissing ? (
-                              <span
-                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border ${
-                                  isDark
-                                    ? "bg-amber-500/15 border-amber-500/30 text-amber-300"
-                                    : "bg-amber-50 border-amber-200 text-amber-700"
-                                }`}
-                              >
-                                <CreditCard className="w-3 h-3" />
-                                Unpaid
-                              </span>
-                            ) : (
-                              formatPaymentAmount(
-                                rawAmount,
-                                latestSuccessfulPayment?.currency || "INR"
-                              )
-                            )}
-                          </p>
-                          <p>
-                            Last Paid:{" "}
-                            {rawLastPaidDate
-                              ? formatPaymentDate(rawLastPaidDate)
-                              : "--"}
-                          </p>
-                          <p>
-                            Plan End:{" "}
-                            {rawPlanEndDate
-                              ? formatPaymentDate(rawPlanEndDate)
-                              : "--"}
-                          </p>
-                        </div>
+                    {paymentStatus && !isPlanModalOpen && (
+                      <div
+                        className={`mt-2 p-3 rounded-xl text-sm border relative z-10 ${
+                          paymentStatus.type === "success"
+                            ? isDark
+                              ? "bg-green-500/10 border-green-500/20 text-green-300"
+                              : "bg-green-50 border-green-200 text-green-700"
+                            : isDark
+                              ? "bg-red-500/10 border-red-500/20 text-red-300"
+                              : "bg-red-50 border-red-200 text-red-600"
+                        }`}
+                      >
+                        {paymentStatus.message}
                       </div>
-                      <div className="flex flex-col gap-3">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <button
-                            type="button"
-                            onClick={handlePayCurrentPlan}
-                            disabled={isPaying}
-                            className={`w-full py-3 rounded-xl font-semibold transition-all relative z-10 border ${
-                              isDark
-                                ? "bg-white/10 text-white border-white/20 hover:bg-white/15"
-                                : "bg-white text-violet-700 border-violet-200 hover:bg-violet-50"
-                            } ${isPaying ? "opacity-70 cursor-not-allowed" : ""}`}
-                          >
-                            {isPaying && !isPlanModalOpen ? (
-                              <span className="flex items-center justify-center gap-2">
-                                <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                Processing...
-                              </span>
-                            ) : (
-                              "Current Plan"
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleOpenPlanModal}
-                            disabled={isPaying}
-                            className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-violet-500/30 hover:shadow-xl relative z-10"
-                          >
-                            Change Plan
-                          </button>
-                        </div>
-                        {paymentStatus && !isPlanModalOpen && (
-                          <div
-                            className={`mt-2 p-3 rounded-xl text-sm border relative z-10 ${
-                              paymentStatus.type === "success"
-                                ? isDark
-                                  ? "bg-green-500/10 border-green-500/20 text-green-300"
-                                  : "bg-green-50 border-green-200 text-green-700"
-                                : isDark
-                                  ? "bg-red-500/10 border-red-500/20 text-red-300"
-                                  : "bg-red-50 border-red-200 text-red-600"
-                            }`}
-                          >
-                            {paymentStatus.message}
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  )}
+                    )}
+                  </div>
                 </div>
               );
             })()}

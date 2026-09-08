@@ -9,6 +9,7 @@ import {
   getSingleCustomer,
   getFranchiseTariff,
 } from "../../api/customer.api";
+import { getLiveRazorpayKey } from "../../utils/razorpay";
 
 const CustomerPlans = () => {
   const navigate = useNavigate();
@@ -289,18 +290,10 @@ const CustomerPlans = () => {
         throw new Error("Order ID not returned from create-order API.");
       }
 
-      // Use live Razorpay key from backend or frontend env variables
-      const keyId =
-        createResponsePayload.key ||
-        createResponsePayload.keyId ||
-        createResponsePayload.key_id ||
-        import.meta.env.VITE_RAZORPAY_KEY_ID ||
-        import.meta.env.VITE_RAZORPAY_KEY ||
-        import.meta.env.VITE_RAZORPAY_LIVE_KEY ||
-        import.meta.env.VITE_RAZOR_PAY_KEY_ID ||
-        import.meta.env.RAZORPAY_KEY_ID ||
-        import.meta.env.RAZORPAY_KEY ||
-        "rzp_live_TP8cWDoOKHBgIs";
+      // Strictly enforce LIVE Razorpay key (reject any test key like rzp_test_...)
+      const keyId = getLiveRazorpayKey(
+        createResponsePayload.key || createResponsePayload.keyId
+      );
 
       await loadRazorpayScript();
 
