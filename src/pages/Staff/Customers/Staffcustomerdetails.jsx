@@ -551,16 +551,13 @@ const CustomerDetails = () => {
         throw new Error("Order ID not returned from create-order API.");
       }
 
-      // Prefer the key returned by the backend so test/live mode always matches.
-      // Fallback to the env variable only if the backend did not return one.
+      // Use live Razorpay key from backend or frontend env
       const keyId =
         createResponsePayload.key ||
-        import.meta.env.VITE_RAZORPAY_KEY_ID;
-      if (!keyId) {
-        throw new Error(
-          "Razorpay key not found. Backend must return key or set VITE_RAZORPAY_KEY_ID in .env.",
-        );
-      }
+        createResponsePayload.keyId ||
+        import.meta.env.VITE_RAZORPAY_KEY_ID ||
+        import.meta.env.RAZORPAY_KEY_ID ||
+        "rzp_live_TP8cWDoOKHBgIs";
 
       await loadRazorpayScript();
 
