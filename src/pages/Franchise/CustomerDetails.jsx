@@ -36,7 +36,7 @@ import {
   createPlanOrder,
   verifyPlanPayment,
   renewPlan,
-  getFranchiseTariff,
+  getFranchiseTariff,     
   createChatRoomApi,
 } from "../../api/customer.api";
 import { getLiveRazorpayKey } from "../../utils/razorpay";
