@@ -408,7 +408,11 @@ const CustomerDetails = () => {
 
   const formatPaymentDate = (value) => {
     if (!value) return "--";
-    const date = new Date(value);
+    // Normalize "YYYY-MM-DD HH:MM:SS" (space-separated) to ISO "YYYY-MM-DDTHH:MM:SS"
+    // so new Date() parses reliably across all browsers.
+    const normalized =
+      typeof value === "string" ? value.replace(" ", "T") : value;
+    const date = new Date(normalized);
     if (Number.isNaN(date.getTime())) return "--";
     return date.toLocaleString("en-IN", {
       day: "2-digit",
@@ -1337,7 +1341,7 @@ const CustomerDetails = () => {
                         )}
                       </p>
                       <p>
-                        Last Paid:{" "}
+                        Last Billing Date:{" "}
                         <span
                           className={
                             rawLastPaidDate
