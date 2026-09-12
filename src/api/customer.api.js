@@ -37,10 +37,15 @@ export const getFranchiseProfiles = (
   accountId,
   includeDetails = true,
   type,
+  limit = 200,
 ) => {
   if (!accountId) throw new Error("accountId is required");
   return api.get(`/api/franchise/${encodeURIComponent(accountId)}/profiles`, {
-    params: { includeDetails, ...(type ? { type } : {}) },
+    params: {
+      includeDetails,
+      limit,
+      ...(type ? { type } : {}),
+    },
   });
 };
 

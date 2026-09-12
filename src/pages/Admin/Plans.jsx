@@ -4,6 +4,7 @@ import {
   fetchGroupDetails,
   fetchProfileDetails,
 } from "../../api/plans";
+import { getFranchiseProfiles } from "../../api/customer.api";
 import { useTheme } from "../../context/ThemeContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -952,32 +953,81 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
   useEffect(() => {
     setError(null);
     setLoading(true);
-    fetchGroupDetails(franchise.accountId, debouncedSearch)
-      .then((res) => {
-        const list = Array.isArray(res?.data?.data)
+
+    // Fetch both group details AND all raw profiles in parallel
+    Promise.allSettled([
+      fetchGroupDetails(franchise.accountId, debouncedSearch),
+      getFranchiseProfiles(franchise.accountId, false, undefined, 200),
+    ]).then(([groupsResult, profilesResult]) => {
+      // ── Groups (from get_group_details) ──────────────────────────────────────
+      let groupList = [];
+      if (groupsResult.status === "fulfilled") {
+        const res = groupsResult.value;
+        const raw = Array.isArray(res?.data?.data)
           ? res.data.data
           : Array.isArray(res?.data)
             ? res.data
             : [];
+        groupList = raw;
+      }
 
-        if (list.length === 0) {
-          setError(
-            debouncedSearch
-              ? "There is no plan like that."
-              : "There is no plan for this franchise.",
-          );
-          setGroups([]);
-        } else {
-          setGroups(list);
-          setError(null);
-        }
-      })
-      .catch((err) => {
-        console.error("Error loading group details:", err);
-        setError("There is no plan for this franchise.");
+      // ── All Profiles (from get_all_profile_ids) ───────────────────────────────
+      let allProfiles = [];
+      if (profilesResult.status === "fulfilled") {
+        const pRes = profilesResult.value;
+        const rawProfiles = Array.isArray(pRes?.data?.data)
+          ? pRes.data.data
+          : [];
+        allProfiles = rawProfiles;
+      }
+
+      // Build a Set of Profile_ids already covered by a group entry
+      const coveredProfileIds = new Set(
+        groupList.map((g) => String(g.Profile_id || ""))
+      );
+
+      // Build synthetic group-like entries for profiles without a group
+      const profilesWithoutGroup = allProfiles
+        .filter((item) => {
+          const pid = String(item?.Profile?.id || item?.id || "");
+          return pid && !coveredProfileIds.has(pid);
+        })
+        .map((item) => {
+          const profile = item?.Profile || item || {};
+          const name = String(profile.name || "Unnamed Plan");
+          // If searching, filter client-side too
+          if (
+            debouncedSearch &&
+            !name.toLowerCase().includes(debouncedSearch.toLowerCase())
+          )
+            return null;
+          return {
+            Group_id: null,
+            Group_name: name,
+            Profile_id: String(profile.id || ""),
+            Profile_Name: name,
+            Active_Users: "-",
+            Total_Users: "-",
+            Online_Users: "-",
+            _profileOnly: true, // marker so UI can render differently
+          };
+        })
+        .filter(Boolean);
+
+      const merged = [...groupList, ...profilesWithoutGroup];
+
+      if (merged.length === 0) {
+        setError(
+          debouncedSearch
+            ? "There is no plan like that."
+            : "There is no plan for this franchise."
+        );
         setGroups([]);
-      })
-      .finally(() => setLoading(false));
+      } else {
+        setGroups(merged);
+        setError(null);
+      }
+    }).finally(() => setLoading(false));
   }, [franchise, debouncedSearch]);
 
   const activeBadgeColor = (active, total) => {
@@ -1096,7 +1146,7 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
           <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
             {paginatedGroups.map((g, index) => (
               <motion.button
-                key={g.Group_id}
+                key={g.Group_id || `profile-${g.Profile_id}-${index}`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
@@ -1110,15 +1160,21 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
                 }`}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg ${g._profileOnly ? "bg-gradient-to-br from-slate-500 to-slate-700" : "bg-gradient-to-br from-indigo-500 to-purple-600"}`}>
                     {g.Group_name?.[0]?.toUpperCase()}
                   </div>
-                  <Badge
-                    color={activeBadgeColor(g.Active_Users, g.Total_Users)}
-                    icon="👥"
-                  >
-                    {g.Active_Users}/{g.Total_Users} active
-                  </Badge>
+                  {g._profileOnly ? (
+                    <Badge color="slate" icon="📋">
+                      Plan Only
+                    </Badge>
+                  ) : (
+                    <Badge
+                      color={activeBadgeColor(g.Active_Users, g.Total_Users)}
+                      icon="👥"
+                    >
+                      {g.Active_Users}/{g.Total_Users} active
+                    </Badge>
+                  )}
                 </div>
                 <p
                   className={`font-bold text-base transition-colors ${
@@ -1140,43 +1196,45 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
                     {g.Profile_Name}
                   </span>
                 </p>
-                <div className="mt-3 grid grid-cols-3 gap-1.5 sm:gap-2">
-                  {[
-                    {
-                      label: "Total",
-                      val: g.Total_Users,
-                      icon: "👥",
-                      color: isDark ? "text-slate-200" : "text-slate-700",
-                    },
-                    {
-                      label: "Active",
-                      val: g.Active_Users,
-                      icon: "✅",
-                      color: isDark ? "text-emerald-300" : "text-emerald-600",
-                    },
-                    {
-                      label: "Online",
-                      val: g.Online_Users,
-                      icon: "🟢",
-                      color: isDark ? "text-blue-300" : "text-blue-600",
-                    },
-                  ].map(({ label, val, icon, color }) => (
-                    <div
-                      key={label}
-                      className={`rounded-lg px-1 sm:px-2 py-1.5 sm:py-2 text-center transition-all group-hover:scale-105 ${
-                        isDark ? "bg-slate-800/60" : "bg-slate-50"
-                      }`}
-                    >
-                      <p className={`text-lg font-bold ${color}`}>{val}</p>
-                      <p
-                        className={`text-[10px] font-medium flex items-center justify-center gap-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+                {!g._profileOnly && (
+                  <div className="mt-3 grid grid-cols-3 gap-1.5 sm:gap-2">
+                    {[
+                      {
+                        label: "Total",
+                        val: g.Total_Users,
+                        icon: "👥",
+                        color: isDark ? "text-slate-200" : "text-slate-700",
+                      },
+                      {
+                        label: "Active",
+                        val: g.Active_Users,
+                        icon: "✅",
+                        color: isDark ? "text-emerald-300" : "text-emerald-600",
+                      },
+                      {
+                        label: "Online",
+                        val: g.Online_Users,
+                        icon: "🟢",
+                        color: isDark ? "text-blue-300" : "text-blue-600",
+                      },
+                    ].map(({ label, val, icon, color }) => (
+                      <div
+                        key={label}
+                        className={`rounded-lg px-1 sm:px-2 py-1.5 sm:py-2 text-center transition-all group-hover:scale-105 ${
+                          isDark ? "bg-slate-800/60" : "bg-slate-50"
+                        }`}
                       >
-                        <span>{icon}</span>
-                        {label}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                        <p className={`text-lg font-bold ${color}`}>{val}</p>
+                        <p
+                          className={`text-[10px] font-medium flex items-center justify-center gap-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+                        >
+                          <span>{icon}</span>
+                          {label}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div
                   className={`mt-4 flex items-center gap-1.5 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity ${isDark ? "text-indigo-300" : "text-indigo-500"}`}
                 >
