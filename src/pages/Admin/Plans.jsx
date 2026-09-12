@@ -1006,10 +1006,10 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
             Group_name: name,
             Profile_id: String(profile.id || ""),
             Profile_Name: name,
-            Active_Users: "-",
-            Total_Users: "-",
-            Online_Users: "-",
-            _profileOnly: true, // marker so UI can render differently
+            Active_Users: 0,
+            Total_Users: 0,
+            Online_Users: 0,
+            _profileOnly: true, // marker so UI can render consistently
           };
         })
         .filter(Boolean);
@@ -1160,21 +1160,15 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
                 }`}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg ${g._profileOnly ? "bg-gradient-to-br from-slate-500 to-slate-700" : "bg-gradient-to-br from-indigo-500 to-purple-600"}`}>
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
                     {g.Group_name?.[0]?.toUpperCase()}
                   </div>
-                  {g._profileOnly ? (
-                    <Badge color="slate" icon="📋">
-                      Plan Only
-                    </Badge>
-                  ) : (
-                    <Badge
-                      color={activeBadgeColor(g.Active_Users, g.Total_Users)}
-                      icon="👥"
-                    >
-                      {g.Active_Users}/{g.Total_Users} active
-                    </Badge>
-                  )}
+                  <Badge
+                    color={activeBadgeColor(Number(g.Active_Users) || 0, Number(g.Total_Users) || 0)}
+                    icon="👥"
+                  >
+                    {g.Active_Users || 0}/{g.Total_Users || 0} active
+                  </Badge>
                 </div>
                 <p
                   className={`font-bold text-base transition-colors ${
@@ -1196,45 +1190,43 @@ const GroupList = ({ franchise, onSelect, onBack }) => {
                     {g.Profile_Name}
                   </span>
                 </p>
-                {!g._profileOnly && (
-                  <div className="mt-3 grid grid-cols-3 gap-1.5 sm:gap-2">
-                    {[
-                      {
-                        label: "Total",
-                        val: g.Total_Users,
-                        icon: "👥",
-                        color: isDark ? "text-slate-200" : "text-slate-700",
-                      },
-                      {
-                        label: "Active",
-                        val: g.Active_Users,
-                        icon: "✅",
-                        color: isDark ? "text-emerald-300" : "text-emerald-600",
-                      },
-                      {
-                        label: "Online",
-                        val: g.Online_Users,
-                        icon: "🟢",
-                        color: isDark ? "text-blue-300" : "text-blue-600",
-                      },
-                    ].map(({ label, val, icon, color }) => (
-                      <div
-                        key={label}
-                        className={`rounded-lg px-1 sm:px-2 py-1.5 sm:py-2 text-center transition-all group-hover:scale-105 ${
-                          isDark ? "bg-slate-800/60" : "bg-slate-50"
-                        }`}
+                <div className="mt-3 grid grid-cols-3 gap-1.5 sm:gap-2">
+                  {[
+                    {
+                      label: "Total",
+                      val: g.Total_Users ?? 0,
+                      icon: "👥",
+                      color: isDark ? "text-slate-200" : "text-slate-700",
+                    },
+                    {
+                      label: "Active",
+                      val: g.Active_Users ?? 0,
+                      icon: "✅",
+                      color: isDark ? "text-emerald-300" : "text-emerald-600",
+                    },
+                    {
+                      label: "Online",
+                      val: g.Online_Users ?? 0,
+                      icon: "🟢",
+                      color: isDark ? "text-blue-300" : "text-blue-600",
+                    },
+                  ].map(({ label, val, icon, color }) => (
+                    <div
+                      key={label}
+                      className={`rounded-lg px-1 sm:px-2 py-1.5 sm:py-2 text-center transition-all group-hover:scale-105 ${
+                        isDark ? "bg-slate-800/60" : "bg-slate-50"
+                      }`}
+                    >
+                      <p className={`text-lg font-bold ${color}`}>{val}</p>
+                      <p
+                        className={`text-[10px] font-medium flex items-center justify-center gap-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}
                       >
-                        <p className={`text-lg font-bold ${color}`}>{val}</p>
-                        <p
-                          className={`text-[10px] font-medium flex items-center justify-center gap-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}
-                        >
-                          <span>{icon}</span>
-                          {label}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                        <span>{icon}</span>
+                        {label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
                 <div
                   className={`mt-4 flex items-center gap-1.5 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity ${isDark ? "text-indigo-300" : "text-indigo-500"}`}
                 >
